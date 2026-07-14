@@ -414,3 +414,62 @@ router.get('/performance/meta', (req, res) => {
   `).all();
   res.json(data);
 });
+
+// 7. Get Global Server Lamp Distribution by Constant
+router.get('/performance/lamps', (req, res) => {
+  const data = db.prepare(`
+    SELECT 
+      c.constant,
+      SUM(CASE WHEN s.lamp = 'AJC' THEN 1 ELSE 0 END) as ajc,
+      SUM(CASE WHEN s.lamp = 'AJ' THEN 1 ELSE 0 END) as aj,
+      SUM(CASE WHEN s.lamp = 'FC' THEN 1 ELSE 0 END) as fc,
+      SUM(CASE WHEN s.lamp = 'CLEAR' THEN 1 ELSE 0 END) as clear,
+      SUM(CASE WHEN s.lamp = 'FAILED' THEN 1 ELSE 0 END) as failed,
+      COUNT(*) as total
+    FROM (
+      SELECT player_id, chart_id, MAX(score) as score, lamp
+      FROM scores
+      GROUP BY player_id, chart_id
+    ) s
+    JOIN charts c ON s.chart_id = c.id
+    WHERE c.difficulty IN ('MAS', 'ULT')
+    GROUP BY c.constant
+  `).all();
+  res.json(data);
+});
+
+// 8. Get Average OP Yield by Constant
+router.get('/performance/op', (req, res) => {
+  const data = db.prepare(`
+    SELECT 
+      c.constant,
+      AVG(s.op) as avgOp,
+      COUNT(s.op) as count
+    FROM (
+      SELECT player_id, chart_id, MAX(score) as score, op
+      FROM scores
+      GROUP BY player_id, chart_id
+    ) s
+    JOIN charts c ON s.chart_id = c.id
+    WHERE c.difficulty IN ('MAS', 'ULT')
+    GROUP BY c.constant
+  `).all();
+  res.json(data);
+});
+
+// 9. Get Player OP Distribution (Skill Stratification)
+router.get('/performance/players', (req, res) => {
+  const data = db.prepare(`
+    SELECT 
+      p.username,
+      SUM(s.op) as totalOp
+    FROM players p
+    JOIN (
+      SELECT player_id, chart_id, MAX(score) as score, op
+      FROM scores
+      GROUP BY player_id, chart_id
+    ) s ON s.player_id = p.id
+    GROUP BY p.id
+  `).all();
+  res.json(data);
+});

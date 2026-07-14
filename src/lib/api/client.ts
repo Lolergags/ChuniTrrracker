@@ -55,5 +55,20 @@ export const api = {
   getChartMeta: async (): Promise<import('../types/index.js').ApiChartMeta[]> => {
     const res = await fetch(`${API_BASE}/performance/meta`);
     return res.json();
+  },
+
+  getLampDistribution: async (): Promise<import('../types/index.js').ApiLampDistribution[]> => {
+    const res = await fetch(`${API_BASE}/performance/lamps`);
+    return res.json();
+  },
+
+  getOpYield: async (): Promise<import('../types/index.js').ApiOpYield[]> => {
+    const res = await fetch(`${API_BASE}/performance/op`);
+    return res.json();
+  },
+
+  getPlayerOpDistribution: async (): Promise<import('../types/index.js').ApiPlayerOpDistribution[]> => {
+    const res = await fetch(`${API_BASE}/performance/players`);
+    return res.json();
   }
 };

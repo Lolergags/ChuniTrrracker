@@ -75,3 +75,24 @@ export interface ApiChartMeta {
   playCount: number;
   avgScore: number;
 }
+
+export interface ApiLampDistribution {
+  constant: number;
+  ajc: number;
+  aj: number;
+  fc: number;
+  clear: number;
+  failed: number;
+  total: number;
+}
+
+export interface ApiOpYield {
+  constant: number;
+  avgOp: number;
+  count: number;
+}
+
+export interface ApiPlayerOpDistribution {
+  username: string;
+  totalOp: number;
+}

@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line } from 'recharts';
 import { api } from '../lib/api/client.js';
-import type { ApiHeatmapData, ApiChartMeta } from '../lib/types/index.js';
+import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
 const PerformanceAnalysis: React.FC = () => {
   const [heatmapData, setHeatmapData] = useState<ApiHeatmapData[]>([]);
   const [metaData, setMetaData] = useState<ApiChartMeta[]>([]);
+  const [lampData, setLampData] = useState<ApiLampDistribution[]>([]);
+  const [opYieldData, setOpYieldData] = useState<ApiOpYield[]>([]);
+  const [playerOpData, setPlayerOpData] = useState<ApiPlayerOpDistribution[]>([]);
   
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
@@ -15,10 +18,16 @@ const PerformanceAnalysis: React.FC = () => {
     // Fetch global data
     Promise.all([
       api.getHeatmap(),
-      api.getChartMeta()
-    ]).then(([heatmap, meta]) => {
+      api.getChartMeta(),
+      api.getLampDistribution(),
+      api.getOpYield(),
+      api.getPlayerOpDistribution()
+    ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
       setHeatmapData(heatmap);
       setMetaData(meta);
+      setLampData(lamps);
+      setOpYieldData(opYield);
+      setPlayerOpData(playerOp);
       setIsLoadingGlobal(false);
     }).catch(err => {
       console.error(err);
@@ -56,6 +65,53 @@ const PerformanceAnalysis: React.FC = () => {
     
     return { constants: sortedConstants, grid: gridData };
   }, [heatmapData]);
+
+  const survivalData = useMemo(() => {
+    return lampData.sort((a, b) => a.constant - b.constant).map(d => ({
+      constant: d.constant.toFixed(1),
+      ajRate: d.total > 0 ? ((d.ajc + d.aj) / d.total) * 100 : 0,
+      fcRate: d.total > 0 ? ((d.ajc + d.aj + d.fc) / d.total) * 100 : 0,
+    }));
+  }, [lampData]);
+
+  const sortedLampData = useMemo(() => {
+    return lampData.map(d => ({
+      ...d,
+      constantLabel: d.constant.toFixed(1)
+    })).sort((a, b) => a.constant - b.constant);
+  }, [lampData]);
+
+  const sortedOpYield = useMemo(() => {
+    return opYieldData.map(d => ({
+      ...d,
+      constantLabel: d.constant.toFixed(1)
+    })).sort((a, b) => a.constant - b.constant);
+  }, [opYieldData]);
+
+  const opDistribution = useMemo(() => {
+    const buckets: Record<number, number> = {};
+    const BUCKET_SIZE = 10000;
+    let minBucket = Infinity;
+    let maxBucket = 0;
+
+    playerOpData.forEach(p => {
+      const b = Math.floor(p.totalOp / BUCKET_SIZE) * BUCKET_SIZE;
+      buckets[b] = (buckets[b] || 0) + 1;
+      if (b < minBucket) minBucket = b;
+      if (b > maxBucket) maxBucket = b;
+    });
+
+    if (minBucket === Infinity) return [];
+
+    const result = [];
+    for (let i = minBucket; i <= maxBucket; i += BUCKET_SIZE) {
+      result.push({
+        bucket: `${(i / 1000).toFixed(0)}k+`,
+        count: buckets[i] || 0
+      });
+    }
+    return result;
+  }, [playerOpData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -129,6 +185,104 @@ const PerformanceAnalysis: React.FC = () => {
                   })}
                 </React.Fragment>
               ))}
+            </div>
+          </div>
+
+          {/* Survival Rate */}
+          <div className="glass-panel">
+            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>AJ & FC Survival Rate</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              The exact percentage chance of a player achieving an All Justice or Full Combo plotted against the Chart Constant. Shows the difficulty cliff.
+            </p>
+            <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={survivalData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="constant" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                    formatter={(val: any) => [val.toFixed(1) + '%']}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
+                  <Line type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Lamp Distribution Stacked Bar */}
+          <div className="glass-panel">
+            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Server-Wide Lamp Distribution</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Normalized distribution of all logged lamps across chart constants. Compare this against your personal dashboard.
+            </p>
+            <div style={{ height: '350px', width: '100%', minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }} stackOffset="expand">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                    formatter={(value: any) => [value, undefined]}
+                  />
+                  <Legend />
+                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
+                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
+                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Lucrative OP Levels */}
+          <div className="glass-panel">
+            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Average OP Yield by Level</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              The average amount of Overpower rewarded per play grouped by Chart Constant.
+            </p>
+            <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" domain={['auto', 'auto']} tickFormatter={(val) => (val/10000).toFixed(1)} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                    formatter={(val: any) => [(val/10000).toFixed(2), "Average OP"]}
+                  />
+                  <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Player Skill Stratification */}
+          <div className="glass-panel">
+            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Server Skill Stratification</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              The bell curve of total Overpower for all players on the server.
+            </p>
+            <div style={{ height: '250px', width: '100%', minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="bucket" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                  <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

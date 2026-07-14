@@ -145,7 +145,7 @@ const SongAnalytics: React.FC = () => {
 
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {/* Left column: Song List */}
-        <div style={{ flex: '1 1 300px', position: 'sticky', top: '2rem' }}>
+        <div style={{ flex: '1 1 300px', position: 'sticky', top: '6rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <input 
               type="text" 

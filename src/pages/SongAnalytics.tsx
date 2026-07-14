@@ -8,6 +8,9 @@ const SongAnalytics: React.FC = () => {
   const [songs, setSongs] = useState<ApiSong[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [sortType, setSortType] = useState<'title' | 'constant'>('constant');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [diffFilter, setDiffFilter] = useState<string>('ALL');
   
   const [leaderboard, setLeaderboard] = useState<Array<{ username: string, score: number, lamp: LampType, op: number, timeAchieved: number }>>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(false);
@@ -60,10 +63,32 @@ const SongAnalytics: React.FC = () => {
   }, [songs]);
 
   const filteredCharts = useMemo(() => {
-    if (!searchFilter) return allCharts.slice(0, 100); // Only show first 100 to prevent lag if no search
-    const lower = searchFilter.toLowerCase();
-    return allCharts.filter(c => c.title.toLowerCase().includes(lower) || c.level.includes(lower));
-  }, [allCharts, searchFilter]);
+    let result = allCharts;
+
+    // Filter by difficulty
+    if (diffFilter !== 'ALL') {
+      result = result.filter(c => c.difficulty === diffFilter);
+    }
+
+    // Filter by text (name or level)
+    if (searchFilter) {
+      const lower = searchFilter.toLowerCase();
+      result = result.filter(c => c.title.toLowerCase().includes(lower) || c.level.includes(lower));
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      let comparison = 0;
+      if (sortType === 'title') {
+        comparison = a.title.localeCompare(b.title);
+      } else {
+        comparison = a.constant - b.constant;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result.slice(0, 100); // Limit to 100 for performance
+  }, [allCharts, searchFilter, diffFilter, sortType, sortOrder]);
 
   return (
     <div className="glass-panel">
@@ -75,21 +100,56 @@ const SongAnalytics: React.FC = () => {
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         {/* Left column: Song List */}
         <div style={{ flex: '1 1 300px' }}>
-          <input 
-            type="text" 
-            placeholder="Search song title or level (e.g. 14+)..." 
-            value={searchFilter}
-            onChange={e => setSearchFilter(e.target.value)}
-            style={{ 
-              width: '100%',
-              padding: '0.75rem', 
-              borderRadius: 'var(--radius-md)', 
-              border: '1px solid rgba(255,255,255,0.2)',
-              background: 'rgba(0,0,0,0.3)',
-              color: 'var(--text-primary)',
-              marginBottom: '1rem'
-            }}
-          />
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <input 
+              type="text" 
+              placeholder="Search song title or level (e.g. 14+)..." 
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
+              style={{ 
+                flex: '1',
+                padding: '0.75rem', 
+                borderRadius: 'var(--radius-md)', 
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: 'rgba(0,0,0,0.3)',
+                color: 'var(--text-primary)',
+                outline: 'none'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <select 
+              value={diffFilter}
+              onChange={(e) => setDiffFilter(e.target.value)}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="ALL">All Diff</option>
+              <option value="BAS">Basic</option>
+              <option value="ADV">Advanced</option>
+              <option value="EXP">Expert</option>
+              <option value="MAS">Master</option>
+              <option value="ULT">Ultima</option>
+            </select>
+
+            <select 
+              value={sortType}
+              onChange={(e) => setSortType(e.target.value as 'title' | 'constant')}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="constant">Sort: Constant</option>
+              <option value="title">Sort: Name</option>
+            </select>
+
+            <button 
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
+            >
+              {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+            </button>
+          </div>
           <div style={{ height: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
             {filteredCharts.map(chart => (
               <div 

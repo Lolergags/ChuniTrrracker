@@ -32,8 +32,8 @@ export const api = {
     return res.json();
   },
 
-  getLeaderboard: async (): Promise<Array<{ username: string, totalOp: number, opPercent: number }>> => {
-    const res = await fetch(`${API_BASE}/leaderboard`);
+  getLeaderboard: async (page = 1, limit = 50): Promise<import('../types/index.js').PaginatedResponse<import('../types/index.js').ApiPlayer>> => {
+    const res = await fetch(`${API_BASE}/leaderboard?page=${page}&limit=${limit}`);
     return res.json();
   },
 

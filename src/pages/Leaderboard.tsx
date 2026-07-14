@@ -2,20 +2,27 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
+import type { ApiPlayer } from '../lib/types/index.js';
 
 const Leaderboard: React.FC = () => {
-  const [players, setPlayers] = useState<Array<{ username: string, totalOp: number, opPercent: number }>>([]);
+  const [players, setPlayers] = useState<ApiPlayer[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   
   const { setActivePlayer } = useContext(GlobalContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.getLeaderboard()
-      .then(data => setPlayers(data))
+    setIsLoading(true);
+    api.getLeaderboard(page, 50)
+      .then(response => {
+        setPlayers(response.data);
+        setTotalPages(response.totalPages || 1);
+      })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [page]);
 
   const handleRowClick = (username: string) => {
     setActivePlayer(username);
@@ -46,6 +53,7 @@ const Leaderboard: React.FC = () => {
                 <th style={{ padding: '1rem' }}>Player</th>
                 <th style={{ padding: '1rem' }}>Total OP</th>
                 <th style={{ padding: '1rem' }}>OP %</th>
+                <th style={{ padding: '1rem' }}>Possession</th>
               </tr>
             </thead>
             <tbody>
@@ -57,14 +65,35 @@ const Leaderboard: React.FC = () => {
                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td style={{ padding: '1rem', color: idx === 0 ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{idx + 1}</td>
+                  <td style={{ padding: '1rem', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{((page - 1) * 50) + idx + 1}</td>
                   <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
                   <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{player.totalOp.toFixed(2)}</td>
                   <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{player.opPercent.toFixed(2)}%</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold', color: player.possession === 'Gold' ? '#ffd700' : player.possession === 'Silver' ? '#c0c0c0' : 'var(--text-secondary)' }}>
+                    {player.possession !== 'None' ? player.possession : '-'}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '1rem' }}>
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              Previous
+            </button>
+            <span style={{ color: 'var(--text-secondary)' }}>Page {page} of {totalPages}</span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === totalPages ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === totalPages ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

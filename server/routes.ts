@@ -53,33 +53,75 @@ router.get('/players', (req, res) => {
 
 // 2. Get Global Leaderboard
 router.get('/leaderboard', (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = (page - 1) * limit;
+
   const totalPossibleOp = getTotalPossibleOp();
+  const totalMasUlt = (db.prepare(`SELECT COUNT(*) as count FROM charts WHERE difficulty IN ('MAS', 'ULT')`).get() as any).count;
 
   // We need to calculate each player's Total OP = SUM(MAX(op) per song_id)
   const players = db.prepare(`
     SELECT p.username, 
-           SUM(max_op) as total_op,
-           ROUND((SUM(max_op) / ?) * 100, 2) as op_percent
+           SUM(max_scores.max_op) as total_op,
+           ROUND((SUM(max_scores.max_op) / ?) * 100, 2) as op_percent,
+           IFNULL(lamp_counts.s_plus_count, 0) as s_plus_count,
+           IFNULL(lamp_counts.s_count, 0) as s_count
     FROM players p
-    JOIN (
+    LEFT JOIN (
       -- Subquery gets max OP per song per player
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
+    LEFT JOIN (
+      -- Subquery gets S/S+ counts for MAS/ULT
+      SELECT 
+        player_id,
+        SUM(CASE WHEN max_score >= 990000 THEN 1 ELSE 0 END) as s_plus_count,
+        SUM(CASE WHEN max_score >= 975000 THEN 1 ELSE 0 END) as s_count
+      FROM (
+        SELECT s.player_id, c.id as chart_id, MAX(s.score) as max_score
+        FROM scores s
+        JOIN charts c ON s.chart_id = c.id
+        WHERE c.difficulty IN ('MAS', 'ULT')
+        GROUP BY s.player_id, c.id
+      )
+      GROUP BY player_id
+    ) lamp_counts ON p.id = lamp_counts.player_id
     GROUP BY p.id
     ORDER BY total_op DESC
-  `).all(totalPossibleOp * 10000); // Pass in raw total possible
+    LIMIT ? OFFSET ?
+  `).all(totalPossibleOp * 10000, limit, offset);
+
+  const totalPlayers = (db.prepare(`SELECT COUNT(*) as count FROM players`).get() as any).count;
 
   // Map to frontend expected shape
-  const result = players.map((row: any) => ({
-    username: row.username,
-    totalOp: row.total_op / 10000,
-    opPercent: row.op_percent
-  }));
+  const result = players.map((row: any) => {
+    let possession = 'None';
+    // Add leniency for mocking or total completion
+    if (row.s_plus_count >= totalMasUlt && row.op_percent >= 97.5) {
+      possession = 'Gold';
+    } else if (row.s_count >= totalMasUlt) {
+      possession = 'Silver';
+    }
 
-  res.json(result);
+    return {
+      username: row.username,
+      totalOp: row.total_op / 10000,
+      opPercent: row.op_percent,
+      possession
+    };
+  });
+
+  res.json({
+    data: result,
+    total: totalPlayers,
+    page,
+    limit,
+    totalPages: Math.ceil(totalPlayers / limit)
+  });
 });
 
 // 3. Get Player Dashboard Data

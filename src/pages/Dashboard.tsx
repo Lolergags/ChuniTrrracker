@@ -5,7 +5,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 
 const Dashboard: React.FC = () => {
-  const { playersList, activePlayer, setActivePlayer } = useContext(GlobalContext);
+  const { playersList, activePlayer } = useContext(GlobalContext);
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
   const [scores, setScores] = useState<ApiProcessedScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,26 +41,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="glass-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
         <h1 className="text-gradient">Player Dashboard</h1>
-        
-        <select 
-          value={activePlayer || ''}
-          onChange={(e) => setActivePlayer(e.target.value)}
-          style={{ 
-            padding: '0.5rem 1rem', 
-            borderRadius: 'var(--radius-md)', 
-            border: '1px solid rgba(255,255,255,0.2)',
-            background: 'rgba(0,0,0,0.3)',
-            color: 'var(--text-primary)',
-            outline: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          {playersList.map(username => (
-            <option key={username} value={username}>{username}</option>
-          ))}
-        </select>
       </div>
       
       <p style={{ color: 'var(--text-secondary)' }}>
@@ -103,7 +85,9 @@ const Dashboard: React.FC = () => {
               <Tooltip 
                 contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                 itemStyle={{ color: 'var(--text-primary)' }}
-                formatter={(value: any) => [value, undefined]}
+                formatter={(value: any) => {
+                  return [value, undefined];
+                }}
               />
               <Legend />
               <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
@@ -111,7 +95,7 @@ const Dashboard: React.FC = () => {
               <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
               <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
               <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
-              <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.1)" name="Unplayed" />
+              <Bar dataKey="UNPLAYED" stackId="a" fill="transparent" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>
         </div>

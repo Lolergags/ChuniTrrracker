@@ -1,6 +1,21 @@
 export type LampType = 'FAILED' | 'CLEAR' | 'FC' | 'AJ' | 'AJC';
 
 // What the server API returns
+export interface ApiPlayer {
+  username: string;
+  totalOp: number;
+  opPercent: number;
+  possession: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface ApiPlayerStats {
   username: string;
   totalOp: number;

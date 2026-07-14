@@ -293,7 +293,7 @@ const SongAnalytics: React.FC = () => {
         </div>
 
         {/* Right column: Leaderboard */}
-        <div style={{ flex: '2 1 400px' }}>
+        <div style={{ flex: '2 1 400px', minWidth: 0 }}>
           {selectedSongId ? (
             <div className="glass-panel">
               <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Chart Leaderboard</h2>

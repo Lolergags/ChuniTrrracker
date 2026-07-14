@@ -89,16 +89,18 @@ const PerformanceAnalysis: React.FC = () => {
   }, [opYieldData]);
 
   const opDistribution = useMemo(() => {
-    const buckets: Record<number, number> = {};
-    const PERCENT_BUCKET_SIZE = 5;
+    const buckets: Record<string, number> = {};
+    const PERCENT_BUCKET_SIZE = 0.5;
     let minBucket = Infinity;
     let maxBucket = 0;
 
     playerOpData.forEach(p => {
       const percent = p.opPercent || 0;
-      const b = Math.floor(percent / PERCENT_BUCKET_SIZE) * PERCENT_BUCKET_SIZE;
+      const bucketIndex = Math.floor(percent / PERCENT_BUCKET_SIZE);
+      const b = bucketIndex * PERCENT_BUCKET_SIZE;
+      const formattedB = b.toFixed(1);
       
-      buckets[b] = (buckets[b] || 0) + 1;
+      buckets[formattedB] = (buckets[formattedB] || 0) + 1;
       if (b < minBucket) minBucket = b;
       if (b > maxBucket) maxBucket = b;
     });
@@ -106,10 +108,15 @@ const PerformanceAnalysis: React.FC = () => {
     if (minBucket === Infinity) return [];
 
     const result = [];
-    for (let i = minBucket; i <= maxBucket; i += PERCENT_BUCKET_SIZE) {
+    const minIndex = Math.floor(minBucket / PERCENT_BUCKET_SIZE);
+    const maxIndex = Math.floor(maxBucket / PERCENT_BUCKET_SIZE);
+
+    for (let i = minIndex; i <= maxIndex; i++) {
+      const val = i * PERCENT_BUCKET_SIZE;
+      const key = val.toFixed(1);
       result.push({
-        bucket: `${i}%`,
-        count: buckets[i] || 0
+        bucket: `${key}%`,
+        count: buckets[key] || 0
       });
     }
     return result;

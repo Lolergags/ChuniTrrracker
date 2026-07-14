@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
+import { GlobalContext } from '../lib/context/GlobalContext.js';
 
 const Leaderboard: React.FC = () => {
   const [players, setPlayers] = useState<Array<{ username: string, totalOp: number, opPercent: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { setActivePlayer } = useContext(GlobalContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.getLeaderboard()
@@ -11,6 +16,11 @@ const Leaderboard: React.FC = () => {
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const handleRowClick = (username: string) => {
+    setActivePlayer(username);
+    navigate('/');
+  };
 
   return (
     <div className="glass-panel">
@@ -25,7 +35,7 @@ const Leaderboard: React.FC = () => {
         </div>
       ) : players.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          Import some players to build the leaderboard!
+          No players found in the database.
         </div>
       ) : (
         <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
@@ -40,7 +50,13 @@ const Leaderboard: React.FC = () => {
             </thead>
             <tbody>
               {players.map((player, idx) => (
-                <tr key={player.username} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                <tr 
+                  key={player.username} 
+                  onClick={() => handleRowClick(player.username)}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }} 
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   <td style={{ padding: '1rem', color: idx === 0 ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{idx + 1}</td>
                   <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
                   <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{player.totalOp.toFixed(2)}</td>

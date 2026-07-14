@@ -1,6 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import type { ApiSong, LampType } from '../lib/types/index.js';
+import { GlobalContext } from '../lib/context/GlobalContext.js';
 
 const SongAnalytics: React.FC = () => {
   const [songs, setSongs] = useState<ApiSong[]>([]);
@@ -9,6 +11,9 @@ const SongAnalytics: React.FC = () => {
   
   const [leaderboard, setLeaderboard] = useState<Array<{ username: string, score: number, lamp: LampType, op: number, timeAchieved: number }>>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(false);
+
+  const { setActivePlayer } = useContext(GlobalContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.getSongs()
@@ -29,6 +34,11 @@ const SongAnalytics: React.FC = () => {
       .catch(err => console.error(err))
       .finally(() => setIsLoadingBoard(false));
   }, [selectedSongId]);
+
+  const handleRowClick = (username: string) => {
+    setActivePlayer(username);
+    navigate('/');
+  };
 
   // Get a flat list of all charts (song + difficulty)
   const allCharts = useMemo(() => {
@@ -126,7 +136,13 @@ const SongAnalytics: React.FC = () => {
                   </thead>
                   <tbody>
                     {leaderboard.map((row, idx) => (
-                      <tr key={row.username} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <tr 
+                        key={row.username} 
+                        onClick={() => handleRowClick(row.username)}
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
                         <td style={{ padding: '1rem', fontWeight: 'bold', color: idx === 0 ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{idx + 1}</td>
                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
                         <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>

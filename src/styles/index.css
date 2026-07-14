@@ -97,3 +97,12 @@ h1, h2, h3, h4 {
 .animate-fade-in {
   animation: fadeIn var(--transition-smooth) forwards;
 }
+
+/* Responsive sticky column */
+@media (min-width: 768px) {
+  .sticky-column {
+    position: sticky;
+    top: 4.5rem;
+    /* max-height: calc(100vh - 5rem); optional if we want to ensure it doesn't overflow bottom */
+  }
+}

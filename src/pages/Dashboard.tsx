@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
@@ -85,6 +86,31 @@ const Dashboard: React.FC = () => {
         <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center' }}>
           <h3 style={{ color: 'var(--rank-aj)', marginBottom: '0.5rem' }}>AJ Count</h3>
           <h2 style={{ fontSize: '2.5rem', color: 'var(--rank-aj)' }}>{stats.ajCount.toLocaleString()}</h2>
+        </div>
+      </div>
+
+      <div className="glass-panel" style={{ marginTop: '2rem' }}>
+        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Lamp Distribution by Level</h2>
+        <div style={{ width: '100%', height: '400px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={stats.levelStats}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+            >
+              <XAxis dataKey="level" stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" />
+              <Tooltip 
+                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                itemStyle={{ color: 'var(--text-primary)' }}
+              />
+              <Legend />
+              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
+              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
+              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

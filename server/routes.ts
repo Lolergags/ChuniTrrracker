@@ -116,6 +116,36 @@ router.get('/players/:username', (req, res) => {
     WHERE player_id = ?
   `).get(player.id) as any;
 
+  // Get lamp distribution grouped by chart level
+  const lampQuery = db.prepare(`
+    SELECT 
+      c.level,
+      s.lamp,
+      COUNT(*) as count
+    FROM scores s
+    JOIN charts c ON s.chart_id = c.id
+    WHERE s.player_id = ?
+    GROUP BY c.level, s.lamp
+  `).all(player.id) as any[];
+
+  const levelStats: Record<string, any> = {};
+  lampQuery.forEach(row => {
+    if (!levelStats[row.level]) {
+      levelStats[row.level] = { level: row.level, AJC: 0, AJ: 0, FC: 0, CLEAR: 0, FAILED: 0 };
+    }
+    levelStats[row.level][row.lamp] = row.count;
+  });
+  
+  // Sort the levels logically
+  const sortedLevelStats = Object.values(levelStats).sort((a, b) => {
+    const parseLevel = (lvl: string) => {
+      let num = parseFloat(lvl.replace(/[^0-9.]/g, ''));
+      if (lvl.includes('+')) num += 0.5;
+      return num;
+    };
+    return parseLevel(a.level) - parseLevel(b.level);
+  });
+
   res.json({
     username,
     totalOp: Number(totalOp.toFixed(2)),
@@ -127,7 +157,8 @@ router.get('/players/:username', (req, res) => {
     fcCount: stats.fcCount || 0,
     clearCount: stats.clearCount || 0,
     scoreCount: stats.scoreCount || 0,
-    lastSynced: player.last_synced_at
+    lastSynced: player.last_synced_at,
+    levelStats: sortedLevelStats
   });
 });
 

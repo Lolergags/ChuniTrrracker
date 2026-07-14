@@ -1,51 +1,56 @@
-import React, { useContext } from 'react';
-import { UserContext } from '../App';
-import { usePlayerData } from '../lib/hooks/usePlayerData';
+import React, { useEffect, useState } from 'react';
+import { api } from '../lib/api/client.js';
 
 const Leaderboard: React.FC = () => {
-  // Currently just showing the active player since we don't have a backend to fetch all players
-  const { username } = useContext(UserContext);
-  const { data, isLoading } = usePlayerData(username);
+  const [players, setPlayers] = useState<Array<{ username: string, totalOp: number, opPercent: number }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    api.getLeaderboard()
+      .then(data => setPlayers(data))
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Global Leaderboard</h1>
       <p style={{ color: 'var(--text-secondary)' }}>
-        Compare your Overpower with other players globally.
-        <br/><small>(Note: Showing local search cache only. Full global leaderboard requires backend aggregation.)</small>
+        Compare Overpower among all imported players.
       </p>
       
-      <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <th style={{ padding: '1rem' }}>Rank</th>
-              <th style={{ padding: '1rem' }}>Player</th>
-              <th style={{ padding: '1rem' }}>Total OP</th>
-              <th style={{ padding: '1rem' }}>Avg Score</th>
-              <th style={{ padding: '1rem' }}>AJC / AJ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={5} style={{ padding: '1rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Loading player data...</td>
+      {isLoading ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Loading leaderboard data...
+        </div>
+      ) : players.length === 0 ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Import some players to build the leaderboard!
+        </div>
+      ) : (
+        <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <th style={{ padding: '1rem' }}>Rank</th>
+                <th style={{ padding: '1rem' }}>Player</th>
+                <th style={{ padding: '1rem' }}>Total OP</th>
+                <th style={{ padding: '1rem' }}>OP %</th>
               </tr>
-            )}
-            {!isLoading && data && (
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
-                <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>#1</td>
-                <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{username}</td>
-                <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{data.stats.totalOp.toFixed(2)}</td>
-                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{data.stats.averageScore.toLocaleString()}</td>
-                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ color: 'var(--rank-ajc)' }}>{data.stats.ajcCount}</span> / <span style={{ color: 'var(--rank-aj)' }}>{data.stats.ajCount}</span>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {players.map((player, idx) => (
+                <tr key={player.username} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <td style={{ padding: '1rem', color: idx === 0 ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{idx + 1}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
+                  <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{player.totalOp.toFixed(2)}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{player.opPercent.toFixed(2)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

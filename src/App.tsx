@@ -1,32 +1,33 @@
-import React, { createContext, useContext, useState } from 'react';
-import { Routes, Route, NavLink } from 'react-router-dom';
+import React, { useContext, useState } from 'react';
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import { Activity, BarChart2, Home, Trophy, Search } from 'lucide-react';
-import Dashboard from './pages/Dashboard';
-import Leaderboard from './pages/Leaderboard';
-import SongAnalytics from './pages/SongAnalytics';
-import PerformanceAnalysis from './pages/PerformanceAnalysis';
+import Dashboard from './pages/Dashboard.js';
+import Leaderboard from './pages/Leaderboard.js';
+import SongAnalytics from './pages/SongAnalytics.js';
+import PerformanceAnalysis from './pages/PerformanceAnalysis.js';
+import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
-interface UserContextType {
-  username: string;
-  setUsername: (name: string) => void;
-}
-
-export const UserContext = createContext<UserContextType>({
-  username: 'Lolergags',
-  setUsername: () => {},
-});
-
-function App() {
-  const [username, setUsername] = useState('Lolergags');
-  const [searchInput, setSearchInput] = useState('Lolergags');
+const AppContent = () => {
+  const { playersList, setActivePlayer } = useContext(GlobalContext);
+  const [searchInput, setSearchInput] = useState('');
+  const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setUsername(searchInput);
+    const query = searchInput.trim();
+    if (query) {
+      if (playersList.includes(query)) {
+        setActivePlayer(query);
+        navigate('/'); // Go to dashboard
+      } else {
+        alert("Player not found in database.");
+      }
+      setSearchInput('');
+    }
   };
 
   return (
-    <UserContext.Provider value={{ username, setUsername }}>
+    <>
       <nav className="navbar">
         <div className="nav-logo">
           <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -53,10 +54,11 @@ function App() {
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-secondary)' }} />
             <input 
-              type="text" 
+              type="search" 
+              list="player-datalist"
               value={searchInput} 
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search Kamaitachi User"
+              placeholder="Search Players..."
               style={{ 
                 padding: '0.5rem 1rem 0.5rem 2rem', 
                 borderRadius: 'var(--radius-full)', 
@@ -66,6 +68,11 @@ function App() {
                 outline: 'none'
               }}
             />
+            <datalist id="player-datalist">
+              {playersList.map(player => (
+                <option key={player} value={player} />
+              ))}
+            </datalist>
           </div>
         </form>
       </nav>
@@ -78,7 +85,15 @@ function App() {
           <Route path="/performance" element={<PerformanceAnalysis />} />
         </Routes>
       </main>
-    </UserContext.Provider>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <GlobalProvider>
+      <AppContent />
+    </GlobalProvider>
   );
 }
 

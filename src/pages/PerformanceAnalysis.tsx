@@ -1,24 +1,33 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis } from 'recharts';
-import { UserContext } from '../App';
-import { usePlayerData } from '../lib/hooks/usePlayerData';
+import { GlobalContext } from '../lib/context/GlobalContext.js';
+import { api } from '../lib/api/client.js';
+import type { ApiProcessedScore } from '../lib/types/index.js';
 
 const PerformanceAnalysis: React.FC = () => {
-  const { username } = useContext(UserContext);
-  const { data, isLoading } = usePlayerData(username);
+  const { activePlayer } = useContext(GlobalContext);
+  const [scores, setScores] = useState<ApiProcessedScore[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!activePlayer) return;
+    setIsLoading(true);
+    api.getPlayerScores(activePlayer, 500)
+      .then(data => setScores(data))
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
+  }, [activePlayer]);
 
   // Transform data for scatter plot: x = Score, y = Constant, z = OP (size)
   const chartData = useMemo(() => {
-    if (!data) return [];
-    // Take top 500 scores so the browser doesn't lag rendering thousands of dots
-    return data.processedScores.slice(0, 500).map(s => ({
+    return scores.map(s => ({
       name: s.songTitle,
       score: s.score,
       constant: s.constant,
       opDisplay: Number((s.op / 10000).toFixed(2)),
       lamp: s.lamp
     }));
-  }, [data]);
+  }, [scores]);
 
   return (
     <div className="glass-panel">
@@ -27,9 +36,10 @@ const PerformanceAnalysis: React.FC = () => {
         Visualize your top 500 plays. Correlation between Score and Chart Constant.
       </p>
 
+      {!activePlayer && <p style={{ color: 'var(--text-secondary)' }}>Select a player to view performance analysis.</p>}
       {isLoading && <p style={{ color: 'var(--text-secondary)' }}>Loading visualization...</p>}
 
-      {!isLoading && data && (
+      {!isLoading && activePlayer && scores.length > 0 && (
         <div style={{ height: '500px', width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-md)' }}>
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>

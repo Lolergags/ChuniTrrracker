@@ -1,4 +1,4 @@
-import { LampType } from '../types';
+import type { LampType } from '../types';
 
 /**
  * Calculates the Overpower (OP) for a given score, chart constant, and lamp status.

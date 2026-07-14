@@ -1,0 +1,9 @@
+{
+  "name": "chunitrrracker-server",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server/index.ts",
+    "start": "node dist/server/index.js",
+    "seed": "tsx server/seed.ts"
+  }
+}

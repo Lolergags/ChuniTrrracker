@@ -1,4 +1,4 @@
-import type { ApiPlayerStats, ApiProcessedScore, ApiSong, LampType } from '../types/index.js';
+import type { ApiPlayerStats, ApiProcessedScore, ApiSong } from '../types/index.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -42,8 +42,8 @@ export const api = {
     return res.json();
   },
 
-  getChartLeaderboard: async (songId: number, difficulty: string): Promise<Array<{ username: string, score: number, lamp: LampType, op: number, timeAchieved: number }>> => {
-    const res = await fetch(`${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard`);
+  getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 50): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
+    const res = await fetch(`${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard?page=${page}&limit=${limit}`);
     return res.json();
   }
 };

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api/client.js';
-import type { ApiSong, LampType } from '../lib/types/index.js';
+import type { ApiSong, ChartLeaderboardResponse } from '../lib/types/index.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 
 const SongAnalytics: React.FC = () => {
@@ -21,7 +21,11 @@ const SongAnalytics: React.FC = () => {
     );
   };
   
-  const [leaderboard, setLeaderboard] = useState<Array<{ username: string, score: number, lamp: LampType, op: number, timeAchieved: number }>>([]);
+  const [leaderboard, setLeaderboard] = useState<ChartLeaderboardResponse['data']>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [gradeDistribution, setGradeDistribution] = useState<ChartLeaderboardResponse['gradeDistribution']>([]);
+  const [normalDistribution, setNormalDistribution] = useState<ChartLeaderboardResponse['normalDistribution']>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(false);
 
   const { setActivePlayer } = useContext(GlobalContext);
@@ -33,19 +37,31 @@ const SongAnalytics: React.FC = () => {
       .catch(err => console.error(err));
   }, []);
 
-  // Fetch leaderboard when chart selection changes
+  // Reset page when chart changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedSongId]);
+
+  // Fetch leaderboard when chart selection or page changes
   useEffect(() => {
     if (!selectedSongId) {
       setLeaderboard([]);
+      setGradeDistribution([]);
+      setNormalDistribution([]);
       return;
     }
     const [songId, difficulty] = selectedSongId.split('-');
     setIsLoadingBoard(true);
-    api.getChartLeaderboard(Number(songId), difficulty)
-      .then(data => setLeaderboard(data))
+    api.getChartLeaderboard(Number(songId), difficulty, page, 50)
+      .then(response => {
+        setLeaderboard(response.data);
+        setTotalPages(response.totalPages || 1);
+        setGradeDistribution(response.gradeDistribution);
+        setNormalDistribution(response.normalDistribution);
+      })
       .catch(err => console.error(err))
       .finally(() => setIsLoadingBoard(false));
-  }, [selectedSongId]);
+  }, [selectedSongId, page]);
 
   const handleRowClick = (username: string) => {
     setActivePlayer(username);
@@ -109,29 +125,6 @@ const SongAnalytics: React.FC = () => {
 
     return result.slice(0, 100); // Limit to 100 for performance
   }, [allCharts, searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
-
-  const scoreDistribution = useMemo(() => {
-    const bins = [
-      { name: 'SSS+', min: 1009000, count: 0 },
-      { name: 'SSS', min: 1007500, count: 0 },
-      { name: 'SS+', min: 1005000, count: 0 },
-      { name: 'SS', min: 1000000, count: 0 },
-      { name: 'S+', min: 990000, count: 0 },
-      { name: 'S', min: 975000, count: 0 },
-      { name: '< S', min: 0, count: 0 },
-    ];
-
-    leaderboard.forEach(entry => {
-      for (let i = 0; i < bins.length; i++) {
-        if (entry.score >= bins[i].min) {
-          bins[i].count++;
-          break;
-        }
-      }
-    });
-
-    return bins.reverse();
-  }, [leaderboard]);
 
   return (
     <div className="glass-panel">
@@ -272,7 +265,7 @@ const SongAnalytics: React.FC = () => {
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                        <td style={{ padding: '1rem', fontWeight: 'bold', color: idx === 0 ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{idx + 1}</td>
+                        <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 50) + idx + 1}</td>
                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
                         <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
                         <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
@@ -284,11 +277,31 @@ const SongAnalytics: React.FC = () => {
               )}
 
               {leaderboard.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <button 
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    Previous
+                  </button>
+                  <span style={{ color: 'var(--text-secondary)' }}>Page {page} of {totalPages}</span>
+                  <button 
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === totalPages ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === totalPages ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              {gradeDistribution.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Score Distribution</h3>
                   <div style={{ width: '100%', height: '250px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={scoreDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
                         <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
                         <Tooltip 
@@ -298,6 +311,26 @@ const SongAnalytics: React.FC = () => {
                         />
                         <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} />
                       </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {normalDistribution.length > 0 && (
+                <div style={{ marginTop: '3rem' }}>
+                  <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Normal Distribution</h3>
+                  <div style={{ width: '100%', height: '250px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
+                        <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                          itemStyle={{ color: 'var(--text-primary)' }}
+                          cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                        />
+                        <Line type="monotone" dataKey="count" stroke="#ff66ff" strokeWidth={3} dot={{ r: 4, fill: '#ff66ff', strokeWidth: 0 }} name="Players" />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>

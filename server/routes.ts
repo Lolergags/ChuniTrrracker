@@ -9,10 +9,15 @@ export const router = Router();
 // + 1250 AJC bonus = const*5000 + 13750 + 1250 = const*5000 + 15000
 // Since OP is stored floored to nearest 5 for >= 975k
 function getTotalPossibleOp() {
-  const charts = db.prepare(`SELECT constant FROM charts`).all() as { constant: number }[];
+  const charts = db.prepare(`
+    SELECT MAX(constant) as max_const 
+    FROM charts 
+    GROUP BY song_id
+  `).all() as { max_const: number }[];
+  
   let totalRaw = 0;
   for (const chart of charts) {
-    const maxOp = (chart.constant * 5000) + 15000;
+    const maxOp = (chart.max_const * 5000) + 15000;
     const flooredOp = Math.floor(maxOp / 5) * 5;
     totalRaw += flooredOp;
   }
@@ -281,6 +286,22 @@ router.get('/songs', (req, res) => {
 // 6. Get Chart Leaderboard
 router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   const { songId, difficulty } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = (page - 1) * limit;
+
+  // Fetch all scores for calculating accurate distributions
+  const allScoresQuery = db.prepare(`
+    SELECT s.score
+    FROM scores s
+    JOIN charts c ON s.chart_id = c.id
+    WHERE c.song_id = ? AND c.difficulty = ?
+    AND s.score = (
+      SELECT MAX(s2.score)
+      FROM scores s2
+      WHERE s2.player_id = s.player_id AND s2.chart_id = s.chart_id
+    )
+  `).all(songId, difficulty) as { score: number }[];
 
   const leaderboard = db.prepare(`
     SELECT p.username, s.score, s.lamp, s.op, s.time_achieved as timeAchieved
@@ -288,14 +309,66 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-    -- Only show the best score per player for this chart
     AND s.score = (
       SELECT MAX(s2.score)
       FROM scores s2
       WHERE s2.player_id = s.player_id AND s2.chart_id = s.chart_id
     )
-    ORDER BY s.score DESC
-  `).all(songId, difficulty);
+    ORDER BY s.score DESC, s.time_achieved ASC
+    LIMIT ? OFFSET ?
+  `).all(songId, difficulty, limit, offset);
 
-  res.json(leaderboard);
+  // Compute Grade Distribution (Bar Chart)
+  const gradeBins = [
+    { name: 'SSS+', min: 1009000, count: 0 },
+    { name: 'SSS', min: 1007500, count: 0 },
+    { name: 'SS+', min: 1005000, count: 0 },
+    { name: 'SS', min: 1000000, count: 0 },
+    { name: 'S+', min: 990000, count: 0 },
+    { name: 'S', min: 975000, count: 0 },
+    { name: '< S', min: 0, count: 0 },
+  ];
+
+  allScoresQuery.forEach(row => {
+    for (let i = 0; i < gradeBins.length; i++) {
+      if (row.score >= gradeBins[i].min) {
+        gradeBins[i].count++;
+        break;
+      }
+    }
+  });
+  const gradeDistribution = gradeBins.reverse();
+
+  // Compute Normal Distribution (Line Chart)
+  const normalBinsMap = new Map<number, number>();
+  for (let i = 900000; i <= 1010000; i += 5000) {
+    normalBinsMap.set(i, 0);
+  }
+  normalBinsMap.set(0, 0); // Catch-all for < 900k
+
+  allScoresQuery.forEach(row => {
+    let bucket = 0;
+    if (row.score >= 900000) {
+      bucket = Math.floor(row.score / 5000) * 5000;
+      if (bucket > 1010000) bucket = 1010000;
+    }
+    normalBinsMap.set(bucket, (normalBinsMap.get(bucket) || 0) + 1);
+  });
+
+  const normalDistribution = Array.from(normalBinsMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([bucket, count]) => ({
+      bucket: bucket === 0 ? '< 900k' : (bucket / 1000).toString() + 'k',
+      count
+    }));
+
+  res.json({
+    data: leaderboard,
+    total: allScoresQuery.length,
+    page,
+    limit,
+    totalPages: Math.ceil(allScoresQuery.length / limit),
+    gradeDistribution,
+    normalDistribution
+  });
 });

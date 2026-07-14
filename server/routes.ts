@@ -292,29 +292,21 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
   // Fetch all scores for calculating accurate distributions
   const allScoresQuery = db.prepare(`
-    SELECT s.score
+    SELECT MAX(s.score) as score
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-    AND s.score = (
-      SELECT MAX(s2.score)
-      FROM scores s2
-      WHERE s2.player_id = s.player_id AND s2.chart_id = s.chart_id
-    )
+    GROUP BY s.player_id
   `).all(songId, difficulty) as { score: number }[];
 
   const leaderboard = db.prepare(`
-    SELECT p.username, s.score, s.lamp, s.op, s.time_achieved as timeAchieved
+    SELECT p.username, MAX(s.score) as score, s.lamp, s.op, MIN(s.time_achieved) as timeAchieved
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-    AND s.score = (
-      SELECT MAX(s2.score)
-      FROM scores s2
-      WHERE s2.player_id = s.player_id AND s2.chart_id = s.chart_id
-    )
-    ORDER BY s.score DESC, s.time_achieved ASC
+    GROUP BY p.id
+    ORDER BY score DESC, timeAchieved ASC
     LIMIT ? OFFSET ?
   `).all(songId, difficulty, limit, offset);
 

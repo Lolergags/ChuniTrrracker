@@ -95,4 +95,5 @@ export interface ApiOpYield {
 export interface ApiPlayerOpDistribution {
   username: string;
   totalOp: number;
+  opPercent: number;
 }

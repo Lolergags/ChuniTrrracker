@@ -459,7 +459,7 @@ router.get('/performance/op', (req, res) => {
 
 // 9. Get Player OP Distribution (Skill Stratification)
 router.get('/performance/players', (req, res) => {
-  const data = db.prepare(`
+  const rawData = db.prepare(`
     SELECT 
       p.username,
       SUM(s.op) as totalOp
@@ -470,6 +470,17 @@ router.get('/performance/players', (req, res) => {
       GROUP BY player_id, chart_id
     ) s ON s.player_id = p.id
     GROUP BY p.id
-  `).all();
+  `).all() as any[];
+
+  const totalPossibleOp = getTotalPossibleOp();
+  const data = rawData.map(row => {
+    const displayOp = row.totalOp / 10000;
+    return {
+      username: row.username,
+      totalOp: displayOp,
+      opPercent: Number(((displayOp / totalPossibleOp) * 100).toFixed(2))
+    };
+  });
+
   res.json(data);
 });

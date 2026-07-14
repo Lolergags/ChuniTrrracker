@@ -106,6 +106,11 @@ const Leaderboard: React.FC = () => {
                 onBlur={() => {
                   if (!page || page < 1) setPage(1);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e') {
+                    e.preventDefault();
+                  }
+                }}
                 style={{ width: '50px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }} 
                 min={1} 
                 max={totalPages} 

@@ -8,9 +8,17 @@ const SongAnalytics: React.FC = () => {
   const [songs, setSongs] = useState<ApiSong[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
-  const [sortType, setSortType] = useState<'title' | 'constant'>('constant');
+  const [sortType, setSortType] = useState<'title' | 'constant' | 'notes'>('constant');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [diffFilter, setDiffFilter] = useState<string>('ALL');
+  const [diffFilters, setDiffFilters] = useState<string[]>([]);
+  const [minConst, setMinConst] = useState<string>('');
+  const [maxConst, setMaxConst] = useState<string>('');
+
+  const toggleDiff = (diff: string) => {
+    setDiffFilters(prev => 
+      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
+    );
+  };
   
   const [leaderboard, setLeaderboard] = useState<Array<{ username: string, score: number, lamp: LampType, op: number, timeAchieved: number }>>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(false);
@@ -45,7 +53,7 @@ const SongAnalytics: React.FC = () => {
 
   // Get a flat list of all charts (song + difficulty)
   const allCharts = useMemo(() => {
-    const list: { id: number; title: string; difficulty: string; constant: number; level: string; uniqueId: string }[] = [];
+    const list: { id: number; title: string; difficulty: string; constant: number; level: string; noteCount: number; uniqueId: string }[] = [];
     songs.forEach(song => {
       song.charts.forEach(chart => {
         list.push({
@@ -54,6 +62,7 @@ const SongAnalytics: React.FC = () => {
           difficulty: chart.difficulty,
           constant: chart.constant,
           level: chart.level,
+          noteCount: chart.noteCount || 0,
           uniqueId: `${song.id}-${chart.difficulty}`
         });
       });
@@ -65,9 +74,17 @@ const SongAnalytics: React.FC = () => {
   const filteredCharts = useMemo(() => {
     let result = allCharts;
 
-    // Filter by difficulty
-    if (diffFilter !== 'ALL') {
-      result = result.filter(c => c.difficulty === diffFilter);
+    // Filter by difficulty (multi-select)
+    if (diffFilters.length > 0) {
+      result = result.filter(c => diffFilters.includes(c.difficulty));
+    }
+
+    // Filter by Constant Range
+    if (minConst !== '') {
+      result = result.filter(c => c.constant >= Number(minConst));
+    }
+    if (maxConst !== '') {
+      result = result.filter(c => c.constant <= Number(maxConst));
     }
 
     // Filter by text (name or level)
@@ -81,6 +98,8 @@ const SongAnalytics: React.FC = () => {
       let comparison = 0;
       if (sortType === 'title') {
         comparison = a.title.localeCompare(b.title);
+      } else if (sortType === 'notes') {
+        comparison = a.noteCount - b.noteCount;
       } else {
         comparison = a.constant - b.constant;
       }
@@ -88,7 +107,7 @@ const SongAnalytics: React.FC = () => {
     });
 
     return result.slice(0, 100); // Limit to 100 for performance
-  }, [allCharts, searchFilter, diffFilter, sortType, sortOrder]);
+  }, [allCharts, searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
 
   return (
     <div className="glass-panel">
@@ -118,27 +137,53 @@ const SongAnalytics: React.FC = () => {
             />
           </div>
 
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+            {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
+              <button
+                key={diff}
+                onClick={() => toggleDiff(diff)}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                  background: diffFilters.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
+                  color: '#fff',
+                  border: diffFilters.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {diff}
+              </button>
+            ))}
+          </div>
+
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <select 
-              value={diffFilter}
-              onChange={(e) => setDiffFilter(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="ALL">All Diff</option>
-              <option value="BAS">Basic</option>
-              <option value="ADV">Advanced</option>
-              <option value="EXP">Expert</option>
-              <option value="MAS">Master</option>
-              <option value="ULT">Ultima</option>
-            </select>
+            <input 
+              type="number"
+              placeholder="Min CC"
+              value={minConst}
+              onChange={e => setMinConst(e.target.value)}
+              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none' }}
+              step="0.1"
+            />
+            <input 
+              type="number"
+              placeholder="Max CC"
+              value={maxConst}
+              onChange={e => setMaxConst(e.target.value)}
+              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none' }}
+              step="0.1"
+            />
 
             <select 
               value={sortType}
-              onChange={(e) => setSortType(e.target.value as 'title' | 'constant')}
+              onChange={(e) => setSortType(e.target.value as 'title' | 'constant' | 'notes')}
               style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
             >
               <option value="constant">Sort: Constant</option>
               <option value="title">Sort: Name</option>
+              <option value="notes">Sort: Note Count</option>
             </select>
 
             <button 

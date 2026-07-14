@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api/client.js';
 import type { ApiSong, LampType } from '../lib/types/index.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
@@ -108,6 +109,29 @@ const SongAnalytics: React.FC = () => {
 
     return result.slice(0, 100); // Limit to 100 for performance
   }, [allCharts, searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
+
+  const scoreDistribution = useMemo(() => {
+    const bins = [
+      { name: 'SSS+', min: 1009000, count: 0 },
+      { name: 'SSS', min: 1007500, count: 0 },
+      { name: 'SS+', min: 1005000, count: 0 },
+      { name: 'SS', min: 1000000, count: 0 },
+      { name: 'S+', min: 990000, count: 0 },
+      { name: 'S', min: 975000, count: 0 },
+      { name: '< S', min: 0, count: 0 },
+    ];
+
+    leaderboard.forEach(entry => {
+      for (let i = 0; i < bins.length; i++) {
+        if (entry.score >= bins[i].min) {
+          bins[i].count++;
+          break;
+        }
+      }
+    });
+
+    return bins.reverse();
+  }, [leaderboard]);
 
   return (
     <div className="glass-panel">
@@ -257,6 +281,26 @@ const SongAnalytics: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+
+              {leaderboard.length > 0 && (
+                <div style={{ marginTop: '3rem' }}>
+                  <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Score Distribution</h3>
+                  <div style={{ width: '100%', height: '250px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={scoreDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
+                        <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                          itemStyle={{ color: 'var(--text-primary)' }}
+                          cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                        />
+                        <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               )}
             </div>
           ) : (

@@ -45,5 +45,15 @@ export const api = {
   getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 10): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
     const res = await fetch(`${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard?page=${page}&limit=${limit}`);
     return res.json();
+  },
+
+  getHeatmap: async (): Promise<import('../types/index.js').ApiHeatmapData[]> => {
+    const res = await fetch(`${API_BASE}/performance/heatmap`);
+    return res.json();
+  },
+
+  getChartMeta: async (): Promise<import('../types/index.js').ApiChartMeta[]> => {
+    const res = await fetch(`${API_BASE}/performance/meta`);
+    return res.json();
   }
 };

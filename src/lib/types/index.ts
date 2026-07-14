@@ -60,3 +60,18 @@ export interface ApiSong {
     noteCount: number;
   }>;
 }
+
+export interface ApiHeatmapData {
+  constant: number;
+  grade: string;
+  count: number;
+}
+
+export interface ApiChartMeta {
+  song_id: number;
+  difficulty: string;
+  constant: number;
+  title: string;
+  playCount: number;
+  avgScore: number;
+}

@@ -364,3 +364,53 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     normalDistribution
   });
 });
+
+// 5. Get Aggregate Performance Heatmap Data
+router.get('/performance/heatmap', (req, res) => {
+  const data = db.prepare(`
+    SELECT 
+      c.constant,
+      CASE 
+        WHEN s.score >= 1009000 THEN 'SSS+'
+        WHEN s.score >= 1007500 THEN 'SSS'
+        WHEN s.score >= 1005000 THEN 'SS+'
+        WHEN s.score >= 1000000 THEN 'SS'
+        WHEN s.score >= 990000 THEN 'S+'
+        WHEN s.score >= 975000 THEN 'S'
+        ELSE '< S'
+      END as grade,
+      COUNT(*) as count
+    FROM (
+      SELECT player_id, chart_id, MAX(score) as score 
+      FROM scores 
+      GROUP BY player_id, chart_id
+    ) s
+    JOIN charts c ON s.chart_id = c.id
+    WHERE c.difficulty IN ('MAS', 'ULT')
+    GROUP BY c.constant, grade
+  `).all();
+  res.json(data);
+});
+
+// 6. Get Aggregate Global Chart Meta (Popularity vs Average Score)
+router.get('/performance/meta', (req, res) => {
+  const data = db.prepare(`
+    SELECT 
+      c.song_id,
+      c.difficulty,
+      c.constant,
+      so.title,
+      COUNT(s.player_id) as playCount,
+      AVG(s.score) as avgScore
+    FROM (
+      SELECT player_id, chart_id, MAX(score) as score
+      FROM scores
+      GROUP BY player_id, chart_id
+    ) s
+    JOIN charts c ON s.chart_id = c.id
+    JOIN songs so ON c.song_id = so.id
+    WHERE c.difficulty IN ('MAS', 'ULT')
+    GROUP BY c.id
+  `).all();
+  res.json(data);
+});

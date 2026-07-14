@@ -90,7 +90,28 @@ const Leaderboard: React.FC = () => {
             >
               Previous
             </button>
-            <span style={{ color: 'var(--text-secondary)' }}>Page {page} of {totalPages}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+              Page 
+              <input 
+                type="number" 
+                value={page || ''} 
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) {
+                    setPage(Math.min(Math.max(1, val), totalPages));
+                  } else if (e.target.value === '') {
+                    setPage(0 as any);
+                  }
+                }}
+                onBlur={() => {
+                  if (!page || page < 1) setPage(1);
+                }}
+                style={{ width: '50px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }} 
+                min={1} 
+                max={totalPages} 
+              />
+              of {totalPages}
+            </div>
             <button 
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}

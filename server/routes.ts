@@ -65,6 +65,8 @@ router.get('/leaderboard', (req, res) => {
     SELECT p.username, 
            SUM(max_scores.max_op) as total_op,
            ROUND((SUM(max_scores.max_op) / ?) * 100, 2) as op_percent,
+           IFNULL(lamp_counts.sss_plus_count, 0) as sss_plus_count,
+           IFNULL(lamp_counts.sss_count, 0) as sss_count,
            IFNULL(lamp_counts.s_plus_count, 0) as s_plus_count,
            IFNULL(lamp_counts.s_count, 0) as s_count
     FROM players p
@@ -79,6 +81,8 @@ router.get('/leaderboard', (req, res) => {
       -- Subquery gets S/S+ counts for MAS/ULT
       SELECT 
         player_id,
+        SUM(CASE WHEN max_score >= 1009000 THEN 1 ELSE 0 END) as sss_plus_count,
+        SUM(CASE WHEN max_score >= 1007500 THEN 1 ELSE 0 END) as sss_count,
         SUM(CASE WHEN max_score >= 990000 THEN 1 ELSE 0 END) as s_plus_count,
         SUM(CASE WHEN max_score >= 975000 THEN 1 ELSE 0 END) as s_count
       FROM (
@@ -100,8 +104,11 @@ router.get('/leaderboard', (req, res) => {
   // Map to frontend expected shape
   const result = players.map((row: any) => {
     let possession = 'None';
-    // Add leniency for mocking or total completion
-    if (row.s_plus_count >= totalMasUlt && row.op_percent >= 97.5) {
+    if (row.sss_plus_count >= totalMasUlt && row.op_percent >= 99.5) {
+      possession = 'Rainbow';
+    } else if (row.sss_count >= totalMasUlt && row.op_percent >= 99) {
+      possession = 'Platinum';
+    } else if (row.s_plus_count >= totalMasUlt && row.op_percent >= 97.5) {
       possession = 'Gold';
     } else if (row.s_count >= totalMasUlt) {
       possession = 'Silver';

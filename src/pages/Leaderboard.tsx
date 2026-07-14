@@ -69,7 +69,12 @@ const Leaderboard: React.FC = () => {
                   <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
                   <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{player.totalOp.toFixed(2)}</td>
                   <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{player.opPercent.toFixed(2)}%</td>
-                  <td style={{ padding: '1rem', fontWeight: 'bold', color: player.possession === 'Gold' ? '#ffd700' : player.possession === 'Silver' ? '#c0c0c0' : 'var(--text-secondary)' }}>
+                  <td style={{ 
+                    padding: '1rem', 
+                    fontWeight: 'bold', 
+                    color: player.possession === 'Rainbow' ? '#ff66ff' : player.possession === 'Platinum' ? '#e5e4e2' : player.possession === 'Gold' ? '#ffd700' : player.possession === 'Silver' ? '#c0c0c0' : 'var(--text-secondary)',
+                    textShadow: player.possession === 'Rainbow' ? '0 0 10px rgba(255,102,255,0.5)' : player.possession === 'Platinum' ? '0 0 10px rgba(229,228,226,0.5)' : 'none'
+                  }}>
                     {player.possession !== 'None' ? player.possession : '-'}
                   </td>
                 </tr>

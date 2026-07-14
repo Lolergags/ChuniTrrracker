@@ -90,18 +90,20 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="glass-panel" style={{ marginTop: '2rem' }}>
-        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Lamp Distribution by Level</h2>
+        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Lamp Distribution by Level (Normalized)</h2>
         <div style={{ width: '100%', height: '400px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={stats.levelStats}
               margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+              stackOffset="expand"
             >
               <XAxis dataKey="level" stroke="var(--text-secondary)" />
-              <YAxis stroke="var(--text-secondary)" />
+              <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
               <Tooltip 
                 contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                 itemStyle={{ color: 'var(--text-primary)' }}
+                formatter={(value: any) => [value, undefined]}
               />
               <Legend />
               <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
@@ -109,6 +111,7 @@ const Dashboard: React.FC = () => {
               <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
               <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
               <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
+              <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.1)" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>
         </div>

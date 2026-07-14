@@ -13,7 +13,7 @@ export interface ApiPlayerStats {
   clearCount: number;
   scoreCount: number;
   lastSynced: number;
-  levelStats: { level: string; AJC: number; AJ: number; FC: number; CLEAR: number; FAILED: number }[];
+  levelStats: { level: string; AJC: number; AJ: number; FC: number; CLEAR: number; FAILED: number; UNPLAYED: number }[];
 }
 
 export interface ApiProcessedScore {

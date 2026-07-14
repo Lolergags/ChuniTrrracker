@@ -128,12 +128,22 @@ router.get('/players/:username', (req, res) => {
     GROUP BY c.level, s.lamp
   `).all(player.id) as any[];
 
+  const totalChartsQuery = db.prepare(`
+    SELECT level, COUNT(*) as count
+    FROM charts
+    GROUP BY level
+  `).all() as any[];
+
   const levelStats: Record<string, any> = {};
+  totalChartsQuery.forEach(row => {
+    levelStats[row.level] = { level: row.level, AJC: 0, AJ: 0, FC: 0, CLEAR: 0, FAILED: 0, UNPLAYED: row.count };
+  });
+
   lampQuery.forEach(row => {
-    if (!levelStats[row.level]) {
-      levelStats[row.level] = { level: row.level, AJC: 0, AJ: 0, FC: 0, CLEAR: 0, FAILED: 0 };
+    if (levelStats[row.level]) {
+      levelStats[row.level][row.lamp] = row.count;
+      levelStats[row.level].UNPLAYED -= row.count;
     }
-    levelStats[row.level][row.lamp] = row.count;
   });
   
   // Sort the levels logically

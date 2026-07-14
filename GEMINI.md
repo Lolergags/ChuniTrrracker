@@ -54,7 +54,10 @@ The OP calculation is a piecewise function based on the user's score relative to
 
 *   **TypeScript:** Use strict mode.
 *   **Logic Porting:** When moving logic from the Python notebook to TypeScript, ensure parity with the `polars` aggregations and the piecewise OP formula.
-*   **Testing:** TODO (Document testing practices once implementation begins).
+*   **Testing:** 
+    *   **Unit Tests:** Use `vitest` for all mathematical logic, utility functions, and backend queries. Place test files adjacent to the code they test or in dedicated backend directories (e.g., `server/queries.test.ts`).
+    *   **Bug Regression:** Whenever an issue, logical flaw, or edge case is encountered and fixed (e.g., duplicate SQL records, negative UI bounds), **you must write an automated test case** to verify the fix and ensure the error does not repeat.
+    *   **SQL & Backend Tests:** For database query logic, spin up an in-memory SQLite database (`new Database(':memory:')`), seed it with explicit edge-case data, and strictly verify the output.
 
 ## Build and Run
 

@@ -14,6 +14,11 @@ const SongAnalytics: React.FC = () => {
   const [diffFilters, setDiffFilters] = useState<string[]>([]);
   const [minConst, setMinConst] = useState<string>('');
   const [maxConst, setMaxConst] = useState<string>('');
+  const [chartPage, setChartPage] = useState(1);
+
+  useEffect(() => {
+    setChartPage(1);
+  }, [searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
 
   const toggleDiff = (diff: string) => {
     setDiffFilters(prev => 
@@ -123,8 +128,13 @@ const SongAnalytics: React.FC = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-    return result.slice(0, 100); // Limit to 100 for performance
+    return result;
   }, [allCharts, searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
+
+  const paginatedCharts = useMemo(() => {
+    const startIndex = (chartPage - 1) * 50;
+    return filteredCharts.slice(startIndex, startIndex + 50);
+  }, [filteredCharts, chartPage]);
 
   return (
     <div className="glass-panel">
@@ -133,9 +143,9 @@ const SongAnalytics: React.FC = () => {
         Search for a song and select a chart to view the leaderboard across all imported players.
       </p>
 
-      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {/* Left column: Song List */}
-        <div style={{ flex: '1 1 300px' }}>
+        <div style={{ flex: '1 1 300px', position: 'sticky', top: '2rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <input 
               type="text" 
@@ -212,8 +222,8 @@ const SongAnalytics: React.FC = () => {
               {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
             </button>
           </div>
-          <div style={{ height: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-            {filteredCharts.map(chart => (
+          <div style={{ height: '500px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1rem' }}>
+            {paginatedCharts.map(chart => (
               <div 
                 key={chart.uniqueId}
                 onClick={() => setSelectedSongId(chart.uniqueId)}
@@ -234,6 +244,26 @@ const SongAnalytics: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {filteredCharts.length > 50 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button 
+                onClick={() => setChartPage(p => Math.max(1, p - 1))}
+                disabled={chartPage === 1}
+                style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: chartPage === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Prev
+              </button>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Page {chartPage} of {Math.ceil(filteredCharts.length / 50)}</span>
+              <button 
+                onClick={() => setChartPage(p => Math.min(Math.ceil(filteredCharts.length / 50), p + 1))}
+                disabled={chartPage === Math.ceil(filteredCharts.length / 50)}
+                style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: chartPage === Math.ceil(filteredCharts.length / 50) ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === Math.ceil(filteredCharts.length / 50) ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === Math.ceil(filteredCharts.length / 50) ? 'not-allowed' : 'pointer' }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right column: Leaderboard */}

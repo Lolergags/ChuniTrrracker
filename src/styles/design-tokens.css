@@ -1,0 +1,37 @@
+:root {
+  /* Premium Dark Mode Colors */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #13131a;
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  
+  --text-primary: #f8f9fa;
+  --text-secondary: #adb5bd;
+  
+  --accent-primary: #6366f1; /* Indigo */
+  --accent-glow: rgba(99, 102, 241, 0.5);
+  --accent-secondary: #ec4899; /* Pink */
+  
+  /* Rank Colors */
+  --rank-ajc: #fbbf24;
+  --rank-aj: #ef4444;
+  --rank-fc: #3b82f6;
+  --rank-clear: #22c55e;
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Spacing */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 4rem;
+  
+  /* Border Radius */
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease-in-out;
+  --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}

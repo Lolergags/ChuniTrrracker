@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
     setIsLoading(true);
     Promise.all([
       api.getPlayer(activePlayer),
-      api.getPlayerScores(activePlayer, 15)
+      api.getPlayerScores(activePlayer, 500)
     ]).then(([playerStats, playerScores]) => {
       setStats(playerStats);
       setScores(playerScores);
@@ -101,6 +101,53 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      <div className="glass-panel" style={{ marginTop: '2rem', height: '500px', width: '100%', minWidth: 0 }}>
+        <h2 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Personal Performance Scatter</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          Top 500 plays. Correlation between Score and Chart Constant. Bubble size represents OP.
+        </p>
+        <div style={{ height: 'calc(100% - 70px)' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis 
+                type="number" 
+                dataKey="score" 
+                name="Score" 
+                domain={[900000, 1010000]} 
+                stroke="var(--text-secondary)"
+                tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'} 
+              />
+              <YAxis 
+                type="number" 
+                dataKey="constant" 
+                name="Level Constant" 
+                domain={['dataMin - 0.5', 'dataMax + 0.2']} 
+                stroke="var(--text-secondary)" 
+              />
+              <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
+              <Tooltip 
+                cursor={{ strokeDasharray: '3 3' }} 
+                contentStyle={{ backgroundColor: 'var(--bg-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
+                itemStyle={{ color: 'var(--text-primary)' }}
+              />
+              <Scatter 
+                name="Scores" 
+                data={scores.map(s => ({
+                  name: s.songTitle,
+                  score: s.score,
+                  constant: s.constant,
+                  opDisplay: Number((s.op / 10000).toFixed(2)),
+                  lamp: s.lamp
+                }))} 
+                fill="var(--accent-primary)" 
+                fillOpacity={0.6} 
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       <h2 className="text-gradient" style={{ marginTop: '3rem', marginBottom: '1rem' }}>Top 15 Plays (by OP)</h2>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -114,7 +161,7 @@ const Dashboard: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {scores.map((score, idx) => (
+            {scores.slice(0, 15).map((score, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>

@@ -41,6 +41,16 @@ router.post('/players/import', async (req, res) => {
   }
 });
 
+// 1.5 Get All Players
+router.get('/players', (req, res) => {
+  try {
+    const players = db.prepare(`SELECT username, last_synced_at FROM players ORDER BY username ASC`).all();
+    res.json(players);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 2. Get Global Leaderboard
 router.get('/leaderboard', (req, res) => {
   const totalPossibleOp = getTotalPossibleOp();

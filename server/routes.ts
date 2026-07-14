@@ -386,7 +386,7 @@ router.get('/performance/heatmap', (req, res) => {
       GROUP BY player_id, chart_id
     ) s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT')
+    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant, grade
   `).all();
   res.json(data);
@@ -409,7 +409,7 @@ router.get('/performance/meta', (req, res) => {
     ) s
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
-    WHERE c.difficulty IN ('MAS', 'ULT')
+    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.id
   `).all();
   res.json(data);
@@ -432,7 +432,7 @@ router.get('/performance/lamps', (req, res) => {
       GROUP BY player_id, chart_id
     ) s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT')
+    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant
   `).all();
   res.json(data);
@@ -451,7 +451,7 @@ router.get('/performance/op', (req, res) => {
       GROUP BY player_id, chart_id
     ) s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT')
+    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant
   `).all();
   res.json(data);

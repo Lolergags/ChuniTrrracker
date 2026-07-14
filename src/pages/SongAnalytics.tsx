@@ -52,7 +52,7 @@ const SongAnalytics: React.FC = () => {
     }
     const [songId, difficulty] = selectedSongId.split('-');
     setIsLoadingBoard(true);
-    api.getChartLeaderboard(Number(songId), difficulty, page, 50)
+    api.getChartLeaderboard(Number(songId), difficulty, page, 10)
       .then(response => {
         setLeaderboard(response.data);
         setTotalPages(response.totalPages || 1);
@@ -265,7 +265,7 @@ const SongAnalytics: React.FC = () => {
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                        <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 50) + idx + 1}</td>
+                        <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
                         <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
                         <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>

@@ -42,7 +42,7 @@ export const api = {
     return res.json();
   },
 
-  getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 50): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
+  getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 10): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
     const res = await fetch(`${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard?page=${page}&limit=${limit}`);
     return res.json();
   }

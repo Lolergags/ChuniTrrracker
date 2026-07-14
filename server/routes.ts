@@ -341,14 +341,14 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
   // Compute Normal Distribution (Line Chart)
   const normalBinsMap = new Map<number, number>();
-  for (let i = 900000; i <= 1010000; i += 5000) {
+  for (let i = 975000; i <= 1010000; i += 5000) {
     normalBinsMap.set(i, 0);
   }
-  normalBinsMap.set(0, 0); // Catch-all for < 900k
+  normalBinsMap.set(0, 0); // Catch-all for < 975k
 
   allScoresQuery.forEach(row => {
     let bucket = 0;
-    if (row.score >= 900000) {
+    if (row.score >= 975000) {
       bucket = Math.floor(row.score / 5000) * 5000;
       if (bucket > 1010000) bucket = 1010000;
     }
@@ -358,7 +358,7 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   const normalDistribution = Array.from(normalBinsMap.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([bucket, count]) => ({
-      bucket: bucket === 0 ? '< 900k' : (bucket / 1000).toString() + 'k',
+      bucket: bucket === 0 ? '< 975k' : (bucket / 1000).toString() + 'k',
       count
     }));
 

@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Activity, BarChart2, Trophy, Search, DownloadCloud } from 'lucide-react';
+import { Activity, BarChart2, Trophy, Search, DownloadCloud, User } from 'lucide-react';
+import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
 import SongAnalytics from './pages/SongAnalytics.js';
@@ -19,7 +20,7 @@ const AppContent = () => {
     setActivePlayer(username);
     setSearchInput('');
     setShowDropdown(false);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -39,12 +40,19 @@ const AppContent = () => {
     <>
       <nav className="navbar">
         <div className="nav-logo">
-          <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Activity /> ChuniTrrracker
-          </h2>
+          <NavLink to="/" style={{ textDecoration: 'none' }}>
+            <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Activity /> ChuniTrrracker
+            </h2>
+          </NavLink>
         </div>
         
         <div className="nav-links">
+          {activePlayer && (
+            <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><User size={18} /> Dashboard</span>
+            </NavLink>
+          )}
           <NavLink to="/leaderboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Trophy size={18} /> Leaderboard</span>
           </NavLink>
@@ -128,7 +136,8 @@ const AppContent = () => {
       
       <main className="container animate-fade-in">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/analytics" element={<SongAnalytics />} />
           <Route path="/performance" element={<PerformanceAnalysis />} />

@@ -101,6 +101,10 @@ export function Dashboard() {
     );
   }
 
+  if (!activePlayer) {
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Please search for and select a player to view their dashboard.</div>;
+  }
+
   if (isLoading || !stats) {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Loading player data...</div>;
   }

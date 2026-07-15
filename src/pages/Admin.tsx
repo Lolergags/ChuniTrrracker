@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { api } from '../lib/api/client.js';
 
 export function Admin() {
   const [status, setStatus] = useState<string>('Idle');
@@ -8,12 +9,7 @@ export function Admin() {
   const startScrape = async () => {
     setStatus('Starting...');
     try {
-      const res = await fetch('/api/scraper/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startId, testMode: isTestMode })
-      });
-      const data = await res.json();
+      const data = await api.startScraper(startId, isTestMode);
       setStatus(data.message || 'Scraping...');
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
@@ -22,8 +18,7 @@ export function Admin() {
 
   const stopScrape = async () => {
     try {
-      const res = await fetch('/api/scraper/stop', { method: 'POST' });
-      const data = await res.json();
+      const data = await api.stopScraper();
       setStatus(data.message || 'Stopped.');
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);

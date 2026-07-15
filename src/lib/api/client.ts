@@ -71,5 +71,21 @@ export const api = {
   getPlayerOpDistribution: async (): Promise<import('../types/index.js').ApiPlayerOpDistribution[]> => {
     const res = await fetch(`${API_BASE}/performance/players`);
     return res.json();
+  },
+
+  startScraper: async (startId: number, testMode: boolean) => {
+    const res = await fetch(`${API_BASE}/scraper/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startId, testMode }),
+    });
+    if (!res.ok) throw new Error('Failed to start scraper');
+    return res.json();
+  },
+
+  stopScraper: async () => {
+    const res = await fetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to stop scraper');
+    return res.json();
   }
 };

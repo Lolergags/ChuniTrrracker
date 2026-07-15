@@ -263,18 +263,18 @@ const PerformanceAnalysis: React.FC = () => {
           <div className="glass-panel">
             <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Average OP Yield by Level</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              The average amount of Overpower rewarded per play grouped by Chart Constant.
+              The average percentage of maximum Overpower rewarded per play grouped by Chart Constant.
             </p>
             <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" domain={['auto', 'auto']} tickFormatter={(val) => (val/10000).toFixed(1)} />
+                  <YAxis stroke="var(--text-secondary)" domain={['auto', 'auto']} tickFormatter={(val) => val.toFixed(0) + '%'} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                     itemStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(val: any) => [(val/10000).toFixed(2), "Average OP"]}
+                    formatter={(val: any) => [val.toFixed(2) + '%', "Average OP Yield"]}
                   />
                   <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} />
                 </BarChart>

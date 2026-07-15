@@ -526,7 +526,7 @@ router.get('/performance/op', (req, res) => {
   const data = db.prepare(`
     SELECT 
       c.constant,
-      AVG(s.op) as avgOp,
+      (AVG(s.op) / (c.constant * 5000 + 15000)) * 100 as avgOp,
       COUNT(s.op) as count
     FROM scores s
     JOIN charts c ON s.chart_id = c.id

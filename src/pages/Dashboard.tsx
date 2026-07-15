@@ -171,7 +171,9 @@ export function Dashboard() {
               <Legend content={(props: any) => {
                 const { payload } = props;
                 const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
-                const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+                const sortedPayload = [...(payload || [])]
+                  .filter(p => p.value !== 'Unplayed')
+                  .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
                 return (
                   <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
                     {sortedPayload.map((entry, index) => (
@@ -183,11 +185,11 @@ export function Dashboard() {
                   </ul>
                 );
               }} />
-              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
-              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
-              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
               <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
+              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
+              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
               <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>

@@ -325,7 +325,8 @@ const PerformanceAnalysis: React.FC = () => {
                     type="number" 
                     dataKey="avgScore" 
                     name="Avg Score" 
-                    domain={[975000, 1010000]} 
+                    domain={[975000, 1010000]}
+                    allowDataOverflow={true}
                     stroke="var(--text-secondary)" 
                     tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'}
                     label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}

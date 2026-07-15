@@ -560,7 +560,7 @@ router.get('/performance/players', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
-      WHERE ${conditions.join(' AND ')}
+      ${whereClause}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
     LEFT JOIN (
@@ -573,7 +573,7 @@ router.get('/performance/players', (req, res) => {
     GROUP BY p.username
     HAVING totalOp > 0
     ORDER BY totalOp DESC
-  `).all(...bindings, totalActiveSongs, ...bindings) as any[];
+  `).all(totalActiveSongs, ...bindings, ...bindings) as any[];
 
   const data = rawData.map(row => {
     return {

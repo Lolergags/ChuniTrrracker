@@ -179,4 +179,43 @@ describe('Database Queries (Production Schema)', () => {
     expect(row.op).toBe(83500);
     expect(row.time_achieved).toBe(200);
   });
+
+  it('groups constants in 0.5 steps correctly for non-MAS_ULT broad filters', () => {
+    // Seed some songs
+    db.prepare('INSERT INTO songs (id, title, artist) VALUES (?, ?, ?)').run(2, 'Song 2', 'Artist 2');
+    db.prepare('INSERT INTO songs (id, title, artist) VALUES (?, ?, ?)').run(3, 'Song 3', 'Artist 3');
+    
+    // Group 1: 10.0 to 10.4 -> should map to 10.0
+    db.prepare('INSERT INTO charts (id, song_id, difficulty, constant, level) VALUES (?, ?, ?, ?, ?)').run(10, 1, 'ADV', 10.0, '10');
+    db.prepare('INSERT INTO charts (id, song_id, difficulty, constant, level) VALUES (?, ?, ?, ?, ?)').run(11, 2, 'ADV', 10.4, '10');
+    
+    // Group 2: 10.5 to 10.9 -> should map to 10.5
+    db.prepare('INSERT INTO charts (id, song_id, difficulty, constant, level) VALUES (?, ?, ?, ?, ?)').run(12, 3, 'EXP', 10.5, '10+');
+    db.prepare('INSERT INTO charts (id, song_id, difficulty, constant, level) VALUES (?, ?, ?, ?, ?)').run(13, 2, 'EXP', 10.9, '10+');
+
+    const insert = db.prepare('INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved) VALUES (?, ?, ?, ?, ?, ?)');
+    insert.run(1, 10, 1000000, 'CLEAR', 75000, 100);
+    insert.run(1, 11, 1000000, 'CLEAR', 75000, 100);
+    insert.run(1, 12, 1000000, 'CLEAR', 75000, 100);
+    insert.run(1, 13, 1000000, 'CLEAR', 75000, 100);
+
+    // This replicates the 0.5 grouping logic added to routes.ts for broad filters
+    const query = db.prepare(`
+      SELECT 
+        CAST((c.constant * 2) AS INTEGER) / 2.0 as groupedConstant,
+        COUNT(s.id) as count
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      WHERE c.id IN (10, 11, 12, 13)
+      GROUP BY groupedConstant
+      ORDER BY groupedConstant ASC
+    `).all() as any[];
+
+    expect(query.length).toBe(2);
+    expect(query[0].groupedConstant).toBe(10.0);
+    expect(query[0].count).toBe(2); // IDs 10 and 11
+    
+    expect(query[1].groupedConstant).toBe(10.5);
+    expect(query[1].count).toBe(2); // IDs 12 and 13
+  });
 });

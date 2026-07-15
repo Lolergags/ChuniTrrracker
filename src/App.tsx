@@ -6,6 +6,7 @@ import Leaderboard from './pages/Leaderboard.js';
 import SongAnalytics from './pages/SongAnalytics.js';
 import PerformanceAnalysis from './pages/PerformanceAnalysis.js';
 import { ImportDataForm } from './components/ImportDataForm.js';
+import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 const AppContent = () => {
@@ -132,6 +133,7 @@ const AppContent = () => {
           <Route path="/analytics" element={<SongAnalytics />} />
           <Route path="/performance" element={<PerformanceAnalysis />} />
           <Route path="/import" element={<ImportDataForm />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
     </>

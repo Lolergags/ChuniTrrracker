@@ -112,20 +112,10 @@ export async function syncPlayer(username: string, apiKey?: string) {
     username = meData.body.username; // Use actual username
   }
 
-  // Fetch or create player (now that we potentially resolved username from API key)
-  const insertPlayer = db.prepare(`
-    INSERT INTO players (username, kamaitachi_id, last_synced_at)
-    VALUES (@username, @kamaitachi_id, @now)
-    ON CONFLICT(username) DO UPDATE SET
-      kamaitachi_id=COALESCE(excluded.kamaitachi_id, players.kamaitachi_id),
-      last_synced_at=@now
-  `);
-  insertPlayer.run({ username, kamaitachi_id: apiKey ? parseInt(targetUserId) || null : null, now: Date.now() });
-  const player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
-
   let rawScores: any[] = [];
   let rawCharts: any[] = [];
   let rawSongs: any[] = [];
+  let player: { id: number };
 
   try {
     const scoresUrl = `https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}/games/chunithm/pbs/all`;
@@ -142,6 +132,17 @@ export async function syncPlayer(username: string, apiKey?: string) {
     rawScores = scoresDataJson.body.pbs || [];
     rawCharts = scoresDataJson.body.charts || [];
     rawSongs = scoresDataJson.body.songs || [];
+
+    // Fetch or create player only after we've confirmed they exist and have scores
+    const insertPlayer = db.prepare(`
+      INSERT INTO players (username, kamaitachi_id, last_synced_at)
+      VALUES (@username, @kamaitachi_id, @now)
+      ON CONFLICT(username) DO UPDATE SET
+        kamaitachi_id=COALESCE(excluded.kamaitachi_id, players.kamaitachi_id),
+        last_synced_at=@now
+    `);
+    insertPlayer.run({ username, kamaitachi_id: apiKey ? parseInt(targetUserId) || null : null, now: Date.now() });
+    player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
   } catch (err: any) {
     if (username.toLowerCase() === 'mock') {
       console.warn('Kamaitachi API failed, falling back to mock data:', err.message);

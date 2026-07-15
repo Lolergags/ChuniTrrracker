@@ -206,7 +206,7 @@ export function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {scores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
+            {uniqueScores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
@@ -226,41 +226,54 @@ export function Dashboard() {
         </table>
       </div>
       
-      {scores.length > itemsPerPage && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-          <button 
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            style={{ 
-              padding: '0.5rem 1rem', 
-              borderRadius: '4px', 
-              background: page === 1 ? 'var(--bg-secondary)' : 'var(--accent)',
-              color: page === 1 ? 'var(--text-secondary)' : 'white',
-              border: 'none',
-              cursor: page === 1 ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Previous
-          </button>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            Page {page} of {Math.ceil(scores.length / itemsPerPage)}
-          </span>
-          <button 
-            onClick={() => setPage(p => Math.min(Math.ceil(scores.length / itemsPerPage), p + 1))}
-            disabled={page === Math.ceil(scores.length / itemsPerPage)}
-            style={{ 
-              padding: '0.5rem 1rem', 
-              borderRadius: '4px', 
-              background: page === Math.ceil(scores.length / itemsPerPage) ? 'var(--bg-secondary)' : 'var(--accent)',
-              color: page === Math.ceil(scores.length / itemsPerPage) ? 'var(--text-secondary)' : 'white',
-              border: 'none',
-              cursor: page === Math.ceil(scores.length / itemsPerPage) ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {uniqueScores.length > itemsPerPage && (() => {
+        const totalPages = Math.ceil(uniqueScores.length / itemsPerPage);
+        return (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '1rem' }}>
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              Previous
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+              Page 
+              <input 
+                type="number" 
+                value={page || ''} 
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) {
+                    setPage(Math.min(Math.max(1, val), totalPages));
+                  } else if (e.target.value === '') {
+                    setPage(0 as any);
+                  }
+                }}
+                onBlur={() => {
+                  if (!page || page < 1) setPage(1);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e') {
+                    e.preventDefault();
+                  }
+                }}
+                style={{ width: '50px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }} 
+                min={1} 
+                max={totalPages} 
+              />
+              of {totalPages}
+            </div>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === totalPages ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === totalPages ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              Next
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 };

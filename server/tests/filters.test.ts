@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getChartFilterConditions, CHRONOLOGICAL_VERSIONS } from './filters.js';
+import { getChartFilterConditions, CHRONOLOGICAL_VERSIONS } from '../utils/filters.js';
 
 describe('getChartFilterConditions', () => {
   it('should default to JP active and exclude WE charts', () => {

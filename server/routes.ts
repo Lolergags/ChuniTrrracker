@@ -472,7 +472,7 @@ router.get('/performance/players', (req, res) => {
 });
 
 // 10. Scraper Controls
-import { runGlobalScrape, stopGlobalScrape } from './scraper.js';
+import { runGlobalScrape, stopGlobalScrape, getScraperStatus } from './scraper.js';
 
 router.post('/scraper/start', (req, res) => {
   const { startId = 1, testMode = false } = req.body;
@@ -484,6 +484,10 @@ router.post('/scraper/start', (req, res) => {
 router.post('/scraper/stop', (req, res) => {
   stopGlobalScrape();
   res.json({ success: true, message: 'Scraper stopping.' });
+});
+
+router.get('/scraper/status', (req, res) => {
+  res.json(getScraperStatus());
 });
 
 export default router;

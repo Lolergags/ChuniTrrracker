@@ -61,3 +61,7 @@ export async function runGlobalScrape(startId: number = 1, testMode: boolean = f
 export function stopGlobalScrape() {
   isScraping = false;
 }
+
+export function getScraperStatus() {
+  return { isScraping, currentScrapeId };
+}

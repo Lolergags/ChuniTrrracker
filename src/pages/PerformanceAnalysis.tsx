@@ -239,7 +239,7 @@ const PerformanceAnalysis: React.FC = () => {
             </p>
             <div style={{ height: '350px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }} stackOffset="expand" reverseStackOrder={true}>
+                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }} stackOffset="expand">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
                   <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
@@ -248,12 +248,26 @@ const PerformanceAnalysis: React.FC = () => {
                     itemStyle={{ color: 'var(--text-primary)' }}
                     formatter={(value: any) => [value, undefined]}
                   />
-                  <Legend />
-                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
-                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
-                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
+                  <Legend content={(props: any) => {
+                    const { payload } = props;
+                    const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
+                    const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+                    return (
+                      <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+                        {sortedPayload.map((entry, index) => (
+                          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                            <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
+                            <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  }} />
                   <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" />
+                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
+                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

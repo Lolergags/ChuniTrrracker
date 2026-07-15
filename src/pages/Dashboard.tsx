@@ -10,6 +10,8 @@ export function Dashboard() {
   const [scores, setScores] = useState<ApiProcessedScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     if (!activePlayer) return;
@@ -27,6 +29,10 @@ export function Dashboard() {
     }).finally(() => {
       setIsLoading(false);
     });
+  }, [activePlayer, filters]);
+
+  useEffect(() => {
+    setPage(1);
   }, [activePlayer, filters]);
 
   const uniqueScores = useMemo(() => {
@@ -187,7 +193,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <h2 className="text-gradient" style={{ marginTop: '3rem', marginBottom: '1rem' }}>Top 15 Plays (by OP)</h2>
+      <h2 className="text-gradient" style={{ marginTop: '3rem', marginBottom: '1rem' }}>All Plays (by OP)</h2>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
@@ -200,7 +206,7 @@ export function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {scores.slice(0, 15).map((score, idx) => (
+            {scores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
@@ -219,6 +225,42 @@ export function Dashboard() {
           </tbody>
         </table>
       </div>
+      
+      {scores.length > itemsPerPage && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+          <button 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              borderRadius: '4px', 
+              background: page === 1 ? 'var(--bg-secondary)' : 'var(--accent)',
+              color: page === 1 ? 'var(--text-secondary)' : 'white',
+              border: 'none',
+              cursor: page === 1 ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Previous
+          </button>
+          <span style={{ color: 'var(--text-secondary)' }}>
+            Page {page} of {Math.ceil(scores.length / itemsPerPage)}
+          </span>
+          <button 
+            onClick={() => setPage(p => Math.min(Math.ceil(scores.length / itemsPerPage), p + 1))}
+            disabled={page === Math.ceil(scores.length / itemsPerPage)}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              borderRadius: '4px', 
+              background: page === Math.ceil(scores.length / itemsPerPage) ? 'var(--bg-secondary)' : 'var(--accent)',
+              color: page === Math.ceil(scores.length / itemsPerPage) ? 'var(--text-secondary)' : 'white',
+              border: 'none',
+              cursor: page === Math.ceil(scores.length / itemsPerPage) ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

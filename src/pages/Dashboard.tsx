@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api, type ApiPlayerStats, type ApiProcessedScore } from '../lib/api/client.js';
@@ -17,7 +17,7 @@ export function Dashboard() {
     setError(null);
     Promise.all([
       api.getPlayer(activePlayer, filters),
-      api.getPlayerScores(activePlayer, 500, filters)
+      api.getPlayerScores(activePlayer, 5000, filters)
     ]).then(([playerStats, playerScores]) => {
       setStats(playerStats);
       setScores(playerScores);
@@ -28,6 +28,17 @@ export function Dashboard() {
       setIsLoading(false);
     });
   }, [activePlayer, filters]);
+
+  const uniqueScores = useMemo(() => {
+    return Array.from(
+      scores.filter(s => s.score >= 975000).reduce((map, s) => {
+        if (!map.has(s.songId) || map.get(s.songId)!.op < s.op) {
+          map.set(s.songId, s);
+        }
+        return map;
+      }, new Map<number, ApiProcessedScore>()).values()
+    );
+  }, [scores]);
 
   if (playersList.length === 0) {
     return (
@@ -131,7 +142,7 @@ export function Dashboard() {
       <div className="glass-panel" style={{ marginTop: '2rem', height: '500px', width: '100%', minWidth: 0 }}>
         <h2 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Personal Performance Scatter</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-          Top 500 plays. Correlation between Score and Chart Constant. Bubble size represents OP.
+          All imported plays. Correlation between Score and Chart Constant. Bubble size represents OP.
         </p>
         <div style={{ height: 'calc(100% - 70px)' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -139,18 +150,19 @@ export function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis 
                 type="number" 
-                dataKey="score" 
-                name="Score" 
-                domain={[900000, 1010000]} 
-                stroke="var(--text-secondary)"
-                tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'} 
-              />
-              <YAxis 
-                type="number" 
                 dataKey="constant" 
                 name="Level Constant" 
                 domain={['dataMin - 0.5', 'dataMax + 0.2']} 
                 stroke="var(--text-secondary)" 
+                tickFormatter={(val) => val.toFixed(1)}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="score" 
+                name="Score" 
+                domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
+                stroke="var(--text-secondary)"
+                tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'} 
               />
               <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
               <Tooltip 
@@ -160,7 +172,7 @@ export function Dashboard() {
               />
               <Scatter 
                 name="Scores" 
-                data={scores.map(s => ({
+                data={uniqueScores.map(s => ({
                   name: s.songTitle,
                   score: s.score,
                   constant: s.constant,

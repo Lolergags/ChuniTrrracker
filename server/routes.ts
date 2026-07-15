@@ -311,6 +311,7 @@ router.get('/players/:username/scores', (req, res) => {
   
   const scores = db.prepare(`
     SELECT 
+      so.id as songId,
       so.title as songTitle,
       so.artist,
       c.difficulty,

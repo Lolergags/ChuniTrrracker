@@ -37,6 +37,7 @@ export interface ApiPlayerStats {
 }
 
 export interface ApiProcessedScore {
+  songId: number;
   songTitle: string;
   artist: string;
   difficulty: string;

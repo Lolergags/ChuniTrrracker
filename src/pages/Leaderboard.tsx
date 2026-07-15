@@ -28,7 +28,7 @@ const Leaderboard: React.FC = () => {
 
   const handleRowClick = (username: string) => {
     setActivePlayer(username);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const VERSIONS = [

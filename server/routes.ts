@@ -124,8 +124,8 @@ router.get('/leaderboard', (req, res) => {
 
     return {
       username: row.username,
-      totalOp: row.total_op / 10000,
-      opPercent: row.op_percent,
+      totalOp: (row.total_op || 0) / 10000,
+      opPercent: row.op_percent || 0,
       possession
     };
   });

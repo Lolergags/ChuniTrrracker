@@ -67,8 +67,8 @@ const Leaderboard: React.FC = () => {
                 >
                   <td style={{ padding: '1rem', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{((page - 1) * 50) + idx + 1}</td>
                   <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
-                  <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{player.totalOp.toFixed(2)}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{player.opPercent.toFixed(2)}%</td>
+                  <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{(player.totalOp || 0).toFixed(2)}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{(player.opPercent || 0).toFixed(2)}%</td>
                   <td style={{ 
                     padding: '1rem', 
                     fontWeight: 'bold', 

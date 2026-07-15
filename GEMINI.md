@@ -59,6 +59,14 @@ The OP calculation is a piecewise function based on the user's score relative to
     *   **Bug Regression:** Whenever an issue, logical flaw, or edge case is encountered and fixed (e.g., duplicate SQL records, negative UI bounds), **you must write an automated test case** to verify the fix and ensure the error does not repeat.
     *   **SQL & Backend Tests:** For database query logic, spin up an in-memory SQLite database (`new Database(':memory:')`), seed it with explicit edge-case data, and strictly verify the output.
 
+## Kamaitachi Integration Quirks & Edge Cases
+
+*   **API Pathing:** Chunithm is a single-playtype game. Kamaitachi drops the playtype segment entirely from the route. Use `/games/chunithm/pbs/all` (do NOT include `/Single`).
+*   **Endpoint Selection:** Always use the `pbs/all` (Personal Bests) endpoint instead of `scores/all` to automatically retrieve the highest score and best lamp correctly merged by Kamaitachi.
+*   **Data Normalization:** Kamaitachi identifies songs with string IDs (e.g. `S...`). You must map these to the local integer IDs (sourced from Beerpsi) by matching against the `title` property found in the API's `body.songs` array.
+*   **SQLite Constraints:** Be extremely careful about schema drift. SQLite's `CREATE TABLE IF NOT EXISTS` does not update existing constraints. If you modify constraints like `UNIQUE(player_id, chart_id)`, you must drop the table manually in prototyping environments.
+*   **Frontend NULL Handling:** If a user has exactly 0 scores (e.g. they imported an empty profile), `SUM()` in SQL aggregations evaluates to `NULL`. Always implement fallback logic (`|| 0`) on backend responses and frontend numerical properties (like `.toFixed(2)`) to prevent fatal React render crashes.
+
 ## Build and Run
 
 As the project is currently in the research/prototype phase:

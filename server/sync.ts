@@ -123,12 +123,63 @@ export async function syncPlayer(username: string, apiKey?: string) {
   insertPlayer.run({ username, kamaitachi_id: apiKey ? parseInt(targetUserId) || null : null, now: Date.now() });
   const player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
 
-  const scoresUrl = `https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}/games/chunithm/Single/scores/all`;
-  const scoresRes = await fetch(scoresUrl, { headers });
-  if (!scoresRes.ok) throw new Error(`Failed to fetch scores: ${scoresRes.statusText}`);
-  const scoresDataJson = await scoresRes.json();
-  const rawScores = scoresDataJson.body.scores || [];
-  const rawCharts = scoresDataJson.body.charts || [];
+  let rawScores: any[] = [];
+  let rawCharts: any[] = [];
+  let rawSongs: any[] = [];
+
+  try {
+    const scoresUrl = `https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}/games/chunithm/pbs/all`;
+    const scoresRes = await fetch(scoresUrl, { headers });
+    
+    if (!scoresRes.ok) {
+      if (scoresRes.status === 404) {
+        throw new Error(`User not found or has no Chunithm scores on Kamaitachi.`);
+      }
+      throw new Error(`Failed to fetch scores: ${scoresRes.status} ${scoresRes.statusText}`);
+    }
+    
+    const scoresDataJson = await scoresRes.json();
+    rawScores = scoresDataJson.body.pbs || [];
+    rawCharts = scoresDataJson.body.charts || [];
+    rawSongs = scoresDataJson.body.songs || [];
+  } catch (err: any) {
+    if (username.toLowerCase() === 'mock') {
+      console.warn('Kamaitachi API failed, falling back to mock data:', err.message);
+      
+      // Get 250 random MAS/ULT/EXP charts from the DB
+      const randomCharts = db.prepare(`
+        SELECT id, song_id as songId, difficulty 
+        FROM charts 
+        WHERE difficulty IN ('MAS', 'ULT', 'EXP') 
+        ORDER BY RANDOM() 
+        LIMIT 250
+      `).all() as any[];
+      
+      for (const c of randomCharts) {
+        const mockChartId = `mock-${c.id}`;
+        // Map internal difficulty back to Kamaitachi format
+        const ktDiff = Object.keys(KAMAITACHI_DIFF_MAP).find(k => KAMAITACHI_DIFF_MAP[k] === c.difficulty) || 'MASTER';
+        
+        rawCharts.push({ chartID: mockChartId, difficulty: ktDiff });
+        
+        // Random score between 950,000 and 1,010,000
+        const scoreVal = Math.floor(Math.random() * 60000) + 950000;
+        let lamp = 'CLEAR';
+        if (scoreVal >= 1009000) lamp = Math.random() > 0.5 ? 'ALL JUSTICE CRITICAL' : 'ALL JUSTICE';
+        else if (scoreVal >= 1000000) lamp = Math.random() > 0.4 ? 'ALL JUSTICE' : 'FULL COMBO';
+        else if (scoreVal >= 980000) lamp = Math.random() > 0.6 ? 'FULL COMBO' : 'CLEAR';
+        
+        rawScores.push({
+          chartID: mockChartId,
+          songID: c.songId,
+          scoreData: { score: scoreVal, noteLamp: lamp },
+          timeAchieved: Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)
+        });
+      }
+    } else {
+      throw err;
+    }
+  }
 
   // Create chart lookup map
   const chartInfoMap = new Map<string, string>();
@@ -136,6 +187,19 @@ export async function syncPlayer(username: string, apiKey?: string) {
     if (KAMAITACHI_DIFF_MAP[c.difficulty]) {
       chartInfoMap.set(c.chartID, KAMAITACHI_DIFF_MAP[c.difficulty]);
     }
+  }
+
+  // Map Kamaitachi Song ID -> Title
+  const kamaiSongMap = new Map<string, string>();
+  for (const s of rawSongs) {
+    kamaiSongMap.set(s.id, s.title);
+  }
+
+  // Pre-fetch all local songs for faster title matching
+  const allLocalSongs = db.prepare('SELECT id, title FROM songs').all() as { id: number, title: string }[];
+  const localSongTitleMap = new Map<string, number>();
+  for (const s of allLocalSongs) {
+    localSongTitleMap.set(s.title.toLowerCase().trim(), s.id);
   }
 
   const insertScore = db.prepare(`
@@ -158,7 +222,17 @@ export async function syncPlayer(username: string, apiKey?: string) {
     const diff = chartInfoMap.get(score.chartID);
     if (!diff) continue;
 
-    const songId = score.songID;
+    // Resolve string ID to title, then to Beerpsi integer ID
+    const kamaiTitle = kamaiSongMap.get(score.songID);
+    if (!kamaiTitle) continue;
+
+    const localSongId = localSongTitleMap.get(kamaiTitle.toLowerCase().trim());
+    if (!localSongId) {
+      console.warn(`Could not find local DB match for Kamaitachi song: ${kamaiTitle}`);
+      continue;
+    }
+
+    const songId = localSongId;
     const scoreVal = score.scoreData.score;
     const lampStr = score.scoreData.noteLamp;
     const lamp: LampType = KAMAITACHI_LAMP_MAP[lampStr] || 'FAILED';

@@ -168,18 +168,26 @@ export function Dashboard() {
                   return [value, undefined];
                 }}
               />
-              <Legend payload={[
-                { value: 'All Justice Critical', type: 'rect', color: 'var(--rank-ajc)' },
-                { value: 'All Justice', type: 'rect', color: 'var(--rank-aj)' },
-                { value: 'Full Combo', type: 'rect', color: 'var(--rank-fc)' },
-                { value: 'Clear', type: 'rect', color: 'var(--rank-clear)' },
-                { value: 'Failed', type: 'rect', color: 'var(--rank-failed)' }
-              ]} />
-              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
-              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
-              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
+              <Legend content={(props: any) => {
+                const { payload } = props;
+                const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
+                const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+                return (
+                  <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+                    {sortedPayload.map((entry, index) => (
+                      <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                        <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
+                        <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              }} />
               <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
+              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
+              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
               <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>

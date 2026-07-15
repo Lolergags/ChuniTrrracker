@@ -1,28 +1,11 @@
 import { Router } from 'express';
 import db from './db.js';
 import { syncPlayer } from './sync.js';
+import { getChartFilterConditions } from './utils/filters.js';
 
 export const router = Router();
 
-// Calculate total possible OP for a player (assumes 1,010,000 + AJC on all available charts)
-// 1010000 = (const*10000 + 20000 + (1010000-1007500)*3) / 2 = (const*10000 + 27500)/2
-// + 1250 AJC bonus = const*5000 + 13750 + 1250 = const*5000 + 15000
-// Since OP is stored floored to nearest 5 for >= 975k
-function getTotalPossibleOp() {
-  const charts = db.prepare(`
-    SELECT MAX(constant) as max_const 
-    FROM charts 
-    GROUP BY song_id
-  `).all() as { max_const: number }[];
-  
-  let totalRaw = 0;
-  for (const chart of charts) {
-    const maxOp = (chart.max_const * 5000) + 15000;
-    const flooredOp = Math.floor(maxOp / 5) * 5;
-    totalRaw += flooredOp;
-  }
-  return totalRaw / 10000;
-}
+
 
 // 1. Import Player
 router.post('/players/import', async (req, res) => {
@@ -62,50 +45,101 @@ router.get('/players', (req, res) => {
 
 // 2. Get Global Leaderboard
 router.get('/leaderboard', (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 50;
-  const offset = (page - 1) * limit;
+  const { page = 1, limit = 50, server = 'jp', version = 'all' } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
 
-  const totalPossibleOp = getTotalPossibleOp();
-  const totalMasUlt = (db.prepare(`SELECT COUNT(*) as count FROM charts WHERE difficulty IN ('MAS', 'ULT')`).get() as any).count;
+  // Map server query to db column
+  const serverCol = server === 'intl' ? 'is_intl_active' : 'is_jp_active';
+  
+  // Ordered version list (earliest to latest) — matches the game's release order
+  const VERSION_ORDER = [
+    'CHUNITHM', 'CHUNITHM PLUS', 'AIR', 'AIR PLUS', 'STAR', 'STAR PLUS',
+    'AMAZON', 'AMAZON PLUS', 'CRYSTAL', 'CRYSTAL PLUS', 'PARADISE', 'PARADISE LOST',
+    'NEW', 'NEW PLUS', 'SUN', 'SUN PLUS', 'LUMINOUS', 'LUMINOUS PLUS',
+    'VERSE', 'X-VERSE', 'X-VERSE-X', 'MATE',
+  ];
 
-  // We need to calculate each player's Total OP = SUM(MAX(op) per song_id)
-  const players = db.prepare(`
+  // Build version filter: include all songs from the selected version AND all prior versions
+  let versionFilter = '';
+  const versionParams: any[] = [];
+  if (version !== 'all') {
+    const idx = VERSION_ORDER.indexOf(version as string);
+    if (idx >= 0) {
+      const includedVersions = VERSION_ORDER.slice(0, idx + 1);
+      const placeholders = includedVersions.map(() => '?').join(',');
+      versionFilter = `AND songs.version IN (${placeholders})`;
+      versionParams.push(...includedVersions);
+    }
+  }
+
+  // Count total MAS/ULT charts within the filtered tracklist (used for possession)
+  const totalMasUlt = (db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM charts c
+    JOIN songs ON c.song_id = songs.id
+    WHERE c.difficulty IN ('MAS', 'ULT')
+    AND songs.${serverCol} = 1
+    ${versionFilter}
+  `).get(...versionParams) as any).count;
+
+  // Determine total active songs for denominator (used for averaging percentages)
+  const totalActiveSongs = (db.prepare(`
+    SELECT COUNT(DISTINCT song_id) as count
+    FROM charts c
+    JOIN songs ON c.song_id = songs.id
+    WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1
+    ${versionFilter}
+  `).get(...versionParams) as any).count;
+
+  // OP% = Average of (Player's best OP per song / Max OP for that song)
+  const playersQuery = `
     SELECT p.username, 
-           SUM(max_scores.max_op) as total_op,
-           ROUND((SUM(max_scores.max_op) / ?) * 100, 2) as op_percent,
+           IFNULL(SUM(max_scores.max_op), 0) as total_op,
+           IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as op_percent,
            IFNULL(lamp_counts.sss_count, 0) as sss_count,
            IFNULL(lamp_counts.ss_count, 0) as ss_count,
            IFNULL(lamp_counts.s_plus_count, 0) as s_plus_count,
            IFNULL(lamp_counts.s_count, 0) as s_count
     FROM players p
     LEFT JOIN (
-      -- Subquery gets max OP per song per player
+      -- Subquery gets max OP per song per player (filtered by server/version)
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
+      JOIN songs on c.song_id = songs.id
+      WHERE songs.${serverCol} = 1 ${versionFilter}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
     LEFT JOIN (
+      -- Subquery gets max possible OP per song
+      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
+      FROM charts c
+      JOIN songs on c.song_id = songs.id
+      WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1 ${versionFilter}
+      GROUP BY c.song_id
+    ) song_max ON max_scores.song_id = song_max.song_id
+    LEFT JOIN (
       -- Subquery gets S/S+ counts for MAS/ULT
       SELECT 
-        player_id,
-        SUM(CASE WHEN max_score >= 1007500 THEN 1 ELSE 0 END) as sss_count,
-        SUM(CASE WHEN max_score >= 1000000 THEN 1 ELSE 0 END) as ss_count,
-        SUM(CASE WHEN max_score >= 990000 THEN 1 ELSE 0 END) as s_plus_count,
-        SUM(CASE WHEN max_score >= 975000 THEN 1 ELSE 0 END) as s_count
-      FROM (
-        SELECT s.player_id, c.id as chart_id, s.score as max_score
-        FROM scores s
-        JOIN charts c ON s.chart_id = c.id
-        WHERE c.difficulty IN ('MAS', 'ULT')
-      )
-      GROUP BY player_id
+        s.player_id,
+        SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss_count,
+        SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss_count,
+        SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as s_plus_count,
+        SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s_count
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      JOIN songs on c.song_id = songs.id
+      WHERE c.difficulty IN ('MAS', 'ULT') AND songs.${serverCol} = 1 ${versionFilter}
+      GROUP BY s.player_id
     ) lamp_counts ON p.id = lamp_counts.player_id
     GROUP BY p.id
+    HAVING total_op > 0
     ORDER BY total_op DESC
     LIMIT ? OFFSET ?
-  `).all(totalPossibleOp * 10000, limit, offset);
+  `;
+  
+  const queryParams = [totalActiveSongs, ...versionParams, ...versionParams, ...versionParams, Number(limit), Number(offset)];
+  const players = db.prepare(playersQuery).all(...queryParams);
 
   const totalPlayers = (db.prepare(`SELECT COUNT(*) as count FROM players`).get() as any).count;
 
@@ -124,7 +158,7 @@ router.get('/leaderboard', (req, res) => {
 
     return {
       username: row.username,
-      totalOp: (row.total_op || 0) / 10000,
+      totalOp: (row.total_op || 0) / 1000,
       opPercent: row.op_percent || 0,
       possession
     };
@@ -135,7 +169,7 @@ router.get('/leaderboard', (req, res) => {
     total: totalPlayers,
     page,
     limit,
-    totalPages: Math.ceil(totalPlayers / limit)
+    totalPages: Math.ceil(totalPlayers / Number(limit))
   });
 });
 
@@ -145,20 +179,52 @@ router.get('/players/:username', (req, res) => {
   const player = db.prepare(`SELECT id, last_synced_at FROM players WHERE username = ?`).get(username) as any;
   if (!player) return res.status(404).json({ error: 'Player not found' });
 
-  const totalPossibleOp = getTotalPossibleOp();
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  // Get MAX OP per song to sum
-  const maxOps = db.prepare(`
-    SELECT c.song_id, MAX(s.op) as max_op
-    FROM scores s
-    JOIN charts c ON s.chart_id = c.id
-    WHERE s.player_id = ?
-    GROUP BY c.song_id
-  `).all(player.id) as any[];
+  // Determine total active songs for the selected filters
+  const totalActiveSongs = (db.prepare(`
+    SELECT COUNT(DISTINCT song_id) as count
+    FROM charts c
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
+  `).get(...bindings) as any).count || 1; // fallback to 1 to avoid division by zero
 
-  const totalOpRaw = maxOps.reduce((sum, row) => sum + row.max_op, 0);
-  const totalOp = totalOpRaw / 10000;
-  const opPercent = Number(((totalOp / totalPossibleOp) * 100).toFixed(2));
+  // Get MAX OP per song to sum and calculate OP%
+  const opData = (db.prepare(`
+    SELECT 
+      IFNULL(SUM(max_scores.max_op), 0) as total_op_raw,
+      IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as op_percent
+    FROM (
+      SELECT c.song_id, MAX(s.op) as max_op
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      JOIN songs ON c.song_id = songs.id
+      WHERE s.player_id = ? AND ${conditions.join(' AND ')}
+      GROUP BY c.song_id
+    ) max_scores
+    LEFT JOIN (
+      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
+      FROM charts c
+      JOIN songs on c.song_id = songs.id
+      ${whereClause}
+      GROUP BY c.song_id
+    ) song_max ON max_scores.song_id = song_max.song_id
+  `).get(totalActiveSongs, player.id, ...bindings, ...bindings) as any);
+
+  const totalMaxOp = (db.prepare(`
+    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+      FROM charts c
+      JOIN songs ON c.song_id = songs.id
+      ${whereClause}
+      GROUP BY c.song_id
+    )
+  `).get(...bindings) as any).total_max_op;
+
+  const totalOp = opData.total_op_raw / 1000;
+  const totalPossibleOp = totalMaxOp / 1000;
+  const opPercent = opData.op_percent;
 
   // Get other stats directly from scores
   const stats = db.prepare(`
@@ -168,7 +234,7 @@ router.get('/players/:username', (req, res) => {
       SUM(CASE WHEN lamp = 'AJC' THEN 1 ELSE 0 END) as ajcCount,
       SUM(CASE WHEN lamp = 'AJ' THEN 1 ELSE 0 END) as ajCount,
       SUM(CASE WHEN lamp = 'FC' THEN 1 ELSE 0 END) as fcCount,
-      SUM(CASE WHEN lamp = 'CLEAR' THEN 1 ELSE 0 END) as clearCount
+      SUM(CASE WHEN clear_lamp != 'FAILED' THEN 1 ELSE 0 END) as clearCount
     FROM scores
     WHERE player_id = ?
   `).get(player.id) as any;
@@ -177,19 +243,26 @@ router.get('/players/:username', (req, res) => {
   const lampQuery = db.prepare(`
     SELECT 
       c.level,
-      s.lamp,
+      CASE 
+        WHEN s.lamp IN ('AJC', 'AJ', 'FC') THEN s.lamp
+        WHEN s.clear_lamp = 'FAILED' THEN 'FAILED'
+        ELSE 'CLEAR'
+      END as display_lamp,
       COUNT(*) as count
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
-    WHERE s.player_id = ?
-    GROUP BY c.level, s.lamp
-  `).all(player.id) as any[];
+    JOIN songs ON c.song_id = songs.id
+    WHERE s.player_id = ? AND ${conditions.join(' AND ')}
+    GROUP BY c.level, display_lamp
+  `).all(player.id, ...bindings) as any[];
 
   const totalChartsQuery = db.prepare(`
     SELECT level, COUNT(*) as count
-    FROM charts
+    FROM charts c
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
     GROUP BY level
-  `).all() as any[];
+  `).all(...bindings) as any[];
 
   const levelStats: Record<string, any> = {};
   totalChartsQuery.forEach(row => {
@@ -198,7 +271,7 @@ router.get('/players/:username', (req, res) => {
 
   lampQuery.forEach(row => {
     if (levelStats[row.level]) {
-      levelStats[row.level][row.lamp] = row.count;
+      levelStats[row.level][row.display_lamp] += row.count;
       levelStats[row.level].UNPLAYED -= row.count;
     }
   });
@@ -234,6 +307,8 @@ router.get('/players/:username/scores', (req, res) => {
   const { username } = req.params;
   const limit = parseInt(req.query.limit as string) || 500;
   
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c');
+  
   const scores = db.prepare(`
     SELECT 
       so.title as songTitle,
@@ -249,10 +324,10 @@ router.get('/players/:username/scores', (req, res) => {
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
-    WHERE p.username = ?
+    WHERE p.username = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?
-  `).all(username, limit);
+  `).all(username, ...bindings, limit);
 
   res.json(scores);
 });
@@ -260,7 +335,7 @@ router.get('/players/:username/scores', (req, res) => {
 // 5. Get Songs List
 router.get('/songs', (req, res) => {
   // Fetch all songs
-  const songs = db.prepare(`SELECT id, title, artist, genre, jacket_url FROM songs`).all() as any[];
+  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url FROM songs`).all() as any[];
   
   // Fetch all charts and attach to songs
   const charts = db.prepare(`SELECT song_id, difficulty, constant, level, note_count FROM charts`).all() as any[];
@@ -444,27 +519,47 @@ router.get('/performance/op', (req, res) => {
 
 // 9. Get Player OP Distribution (Skill Stratification)
 router.get('/performance/players', (req, res) => {
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const totalActiveSongs = (db.prepare(`
+    SELECT COUNT(DISTINCT song_id) as count
+    FROM charts c
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
+  `).get(...bindings) as any).count || 1;
+
   const rawData = db.prepare(`
     SELECT 
       p.username,
-      SUM(song_max.max_op) as totalOp
+      IFNULL(SUM(max_scores.max_op), 0) as totalOp,
+      IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as opPercent
     FROM players p
-    JOIN (
+    LEFT JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
+      JOIN songs ON c.song_id = songs.id
+      WHERE ${conditions.join(' AND ')}
       GROUP BY s.player_id, c.song_id
-    ) song_max ON song_max.player_id = p.id
-    GROUP BY p.id
-  `).all() as any[];
+    ) max_scores ON p.id = max_scores.player_id
+    LEFT JOIN (
+      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
+      FROM charts c
+      JOIN songs on c.song_id = songs.id
+      ${whereClause}
+      GROUP BY c.song_id
+    ) song_max ON max_scores.song_id = song_max.song_id
+    GROUP BY p.username
+    HAVING totalOp > 0
+    ORDER BY totalOp DESC
+  `).all(...bindings, totalActiveSongs, ...bindings) as any[];
 
-  const totalPossibleOp = getTotalPossibleOp();
   const data = rawData.map(row => {
-    const displayOp = row.totalOp / 10000;
     return {
       username: row.username,
-      totalOp: displayOp,
-      opPercent: Number(((displayOp / totalPossibleOp) * 100).toFixed(2))
+      totalOp: row.totalOp / 1000,
+      opPercent: row.opPercent
     };
   });
 

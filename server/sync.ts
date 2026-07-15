@@ -37,14 +37,16 @@ export async function syncSongs() {
   console.log(`Received ${data.length} songs. Syncing to DB (JP track list)...`);
 
   const insertSong = db.prepare(`
-    INSERT INTO songs (id, title, artist, genre, version, jacket_url)
-    VALUES (@id, @title, @artist, @genre, @version, @jacket_url)
+    INSERT INTO songs (id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active)
+    VALUES (@id, @title, @artist, @genre, @version, @jacket_url, @is_jp_active, @is_intl_active)
     ON CONFLICT(id) DO UPDATE SET
-      title=excluded.title,
-      artist=excluded.artist,
-      genre=excluded.genre,
-      version=excluded.version,
-      jacket_url=excluded.jacket_url
+      title = excluded.title,
+      artist = excluded.artist,
+      genre = excluded.genre,
+      version = excluded.version,
+      jacket_url = excluded.jacket_url,
+      is_jp_active = excluded.is_jp_active,
+      is_intl_active = excluded.is_intl_active
   `);
 
   const insertChart = db.prepare(`
@@ -62,16 +64,16 @@ export async function syncSongs() {
 
   const transaction = db.transaction((songs: any[]) => {
     for (const song of songs) {
-      // Filter for JP availability
-      if (!song.availability || !song.availability.jp) continue;
-
+      // We no longer filter out non-JP songs completely, we just mark their availability
       insertSong.run({
         id: song.id,
         title: song.title,
         artist: song.artist,
         genre: song.genre,
         version: song.version,
-        jacket_url: song.jacket_url || ''
+        jacket_url: song.jacket_url || '',
+        is_jp_active: (song.availability && song.availability.jp) ? 1 : 0,
+        is_intl_active: (song.availability && song.availability.intl) ? 1 : 0
       });
       songCount++;
 
@@ -204,11 +206,12 @@ export async function syncPlayer(username: string, apiKey?: string) {
   }
 
   const insertScore = db.prepare(`
-    INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved)
-    VALUES (@player_id, @chart_id, @score, @lamp, @op, @time_achieved)
+    INSERT INTO scores (player_id, chart_id, score, lamp, clear_lamp, op, time_achieved)
+    VALUES (@player_id, @chart_id, @score, @lamp, @clear_lamp, @op, @time_achieved)
     ON CONFLICT(player_id, chart_id) DO UPDATE SET
       score = MAX(excluded.score, scores.score),
-      lamp = CASE WHEN excluded.op > scores.op THEN excluded.lamp ELSE scores.lamp END,
+      lamp = CASE WHEN excluded.op >= scores.op THEN excluded.lamp ELSE scores.lamp END,
+      clear_lamp = CASE WHEN excluded.op >= scores.op THEN excluded.clear_lamp ELSE scores.clear_lamp END,
       op = MAX(excluded.op, scores.op),
       time_achieved = CASE WHEN excluded.score > scores.score THEN excluded.time_achieved ELSE scores.time_achieved END
   `);
@@ -216,34 +219,56 @@ export async function syncPlayer(username: string, apiKey?: string) {
   const getChart = db.prepare(`SELECT id, constant FROM charts WHERE song_id = ? AND difficulty = ?`);
 
   // Aggregate best scores
-  type AggregatedScore = { songId: number; diff: string; score: number; lamp: LampType; timeAchieved: number };
+  type AggregatedScore = { songId: number; diff: string; score: number; lamp: LampType; clearLamp: string; timeAchieved: number };
   const bestScores = new Map<string, AggregatedScore>();
 
   for (const score of rawScores) {
     const diff = chartInfoMap.get(score.chartID);
     if (!diff) continue;
 
-    // Resolve string ID to title, then to Beerpsi integer ID
-    const kamaiTitle = kamaiSongMap.get(score.songID);
-    if (!kamaiTitle) continue;
+    // Use chart.data.inGameID to perfectly match Kamaitachi charts with Beerpsi's DB
+    // Fall back to title matching only if inGameID is missing or 0
+    let localSongId = 0;
+    
+    // Kamaitachi includes chart info in the root `body.charts` array.
+    // We can look it up by chartID to find the inGameID.
+    const kamaiChart = rawCharts.find((c: any) => c.chartID === score.chartID);
+    if (kamaiChart && kamaiChart.data && kamaiChart.data.inGameID) {
+      localSongId = kamaiChart.data.inGameID;
+    } else {
+      const kamaiTitle = kamaiSongMap.get(score.songID);
+      if (kamaiTitle) {
+        localSongId = localSongTitleMap.get(kamaiTitle.toLowerCase().trim()) || 0;
+      }
+    }
 
-    const localSongId = localSongTitleMap.get(kamaiTitle.toLowerCase().trim());
     if (!localSongId) {
-      console.warn(`Could not find local DB match for Kamaitachi song: ${kamaiTitle}`);
+      console.warn(`Could not find local DB match for Kamaitachi chart: ${score.chartID}`);
       continue;
     }
 
     const songId = localSongId;
+    
+    // Check if the song is active in our local database
+    const localSong = db.prepare('SELECT id FROM songs WHERE id = ?').get(songId);
+    if (!localSong) {
+      console.log(`Skipping unknown chart for song ID: ${songId}`);
+      continue;
+    }
     const scoreVal = score.scoreData.score;
     const lampStr = score.scoreData.noteLamp;
-    const lamp: LampType = KAMAITACHI_LAMP_MAP[lampStr] || 'FAILED';
+    let lamp: LampType = KAMAITACHI_LAMP_MAP[lampStr] || 'CLEAR';
+    const clearLamp = score.scoreData.clearLamp || 'CLEAR';
+    if (lamp === 'CLEAR' && clearLamp === 'FAILED') {
+      lamp = 'FAILED';
+    }
     const timeAchieved = score.timeAchieved || score.timeAdded || Date.now();
 
     const key = `${songId}-${diff}`;
     const existing = bestScores.get(key);
 
     if (!existing) {
-      bestScores.set(key, { songId, diff, score: scoreVal, lamp, timeAchieved });
+      bestScores.set(key, { songId, diff, score: scoreVal, lamp, clearLamp, timeAchieved });
     } else {
       const newMaxScore = Math.max(existing.score, scoreVal);
       const existingLampVal = LAMP_VALUES[existing.lamp];
@@ -255,6 +280,7 @@ export async function syncPlayer(username: string, apiKey?: string) {
         diff,
         score: newMaxScore,
         lamp: newMaxLamp,
+        clearLamp: newMaxScore === scoreVal ? clearLamp : existing.clearLamp,
         timeAchieved: newMaxScore === scoreVal ? timeAchieved : existing.timeAchieved
       });
     }
@@ -273,6 +299,7 @@ export async function syncPlayer(username: string, apiKey?: string) {
         chart_id: chart.id,
         score: score.score,
         lamp: score.lamp,
+        clear_lamp: score.clearLamp,
         op: op,
         time_achieved: score.timeAchieved
       });

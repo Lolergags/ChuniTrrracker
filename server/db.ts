@@ -17,7 +17,9 @@ db.exec(`
     artist TEXT NOT NULL,
     genre TEXT NOT NULL DEFAULT '',
     version TEXT NOT NULL DEFAULT '',
-    jacket_url TEXT NOT NULL DEFAULT ''
+    jacket_url TEXT NOT NULL DEFAULT '',
+    is_jp_active INTEGER NOT NULL DEFAULT 1,
+    is_intl_active INTEGER NOT NULL DEFAULT 1
   );
 
   CREATE TABLE IF NOT EXISTS charts (
@@ -44,6 +46,7 @@ db.exec(`
     chart_id INTEGER NOT NULL REFERENCES charts(id),
     score INTEGER NOT NULL,
     lamp TEXT NOT NULL,
+    clear_lamp TEXT NOT NULL DEFAULT 'CLEAR',
     op INTEGER NOT NULL,
     time_achieved INTEGER NOT NULL DEFAULT 0,
     UNIQUE(player_id, chart_id)
@@ -53,5 +56,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_chart ON scores(chart_id);
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
 `);
+
+// Simple migration for existing databases
+try {
+  db.exec(`ALTER TABLE scores ADD COLUMN clear_lamp TEXT NOT NULL DEFAULT 'CLEAR'`);
+} catch (e: any) {
+  // Ignore error if column already exists
+  if (!e.message.includes('duplicate column name')) {
+    console.error('Migration error:', e.message);
+  }
+}
 
 export default db;

@@ -14,11 +14,12 @@ const SongAnalytics: React.FC = () => {
   const [diffFilters, setDiffFilters] = useState<string[]>([]);
   const [minConst, setMinConst] = useState<string>('');
   const [maxConst, setMaxConst] = useState<string>('');
+  const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
   useEffect(() => {
     setChartPage(1);
-  }, [searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
+  }, [searchFilter, diffFilters, minConst, maxConst, versionFilter, sortType, sortOrder]);
 
   const toggleDiff = (diff: string) => {
     setDiffFilters(prev => 
@@ -85,6 +86,7 @@ const SongAnalytics: React.FC = () => {
           constant: chart.constant,
           level: chart.level,
           noteCount: chart.noteCount || 0,
+          version: song.version,
           uniqueId: `${song.id}-${chart.difficulty}`
         });
       });
@@ -115,6 +117,11 @@ const SongAnalytics: React.FC = () => {
       result = result.filter(c => c.title.toLowerCase().includes(lower) || c.level.includes(lower));
     }
 
+    // Filter by Version (Strict, not cumulative)
+    if (versionFilter !== 'ALL') {
+      result = result.filter(c => c.version === versionFilter);
+    }
+
     // Sort
     result = [...result].sort((a, b) => {
       let comparison = 0;
@@ -129,7 +136,7 @@ const SongAnalytics: React.FC = () => {
     });
 
     return result;
-  }, [allCharts, searchFilter, diffFilters, minConst, maxConst, sortType, sortOrder]);
+  }, [allCharts, searchFilter, diffFilters, minConst, maxConst, versionFilter, sortType, sortOrder]);
 
   const paginatedCharts = useMemo(() => {
     const startIndex = (chartPage - 1) * 50;
@@ -211,6 +218,35 @@ const SongAnalytics: React.FC = () => {
               <option value="constant">Sort: Constant</option>
               <option value="title">Sort: Name</option>
               <option value="notes">Sort: Note Count</option>
+            </select>
+
+            <select 
+              value={versionFilter}
+              onChange={(e) => setVersionFilter(e.target.value)}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="ALL">All Versions</option>
+              <option value="X-VERSE-X">X-VERSE-X</option>
+              <option value="X-VERSE">X-VERSE</option>
+              <option value="VERSE">VERSE</option>
+              <option value="LUMINOUS PLUS">LUMINOUS PLUS</option>
+              <option value="LUMINOUS">LUMINOUS</option>
+              <option value="SUN PLUS">SUN PLUS</option>
+              <option value="SUN">SUN</option>
+              <option value="NEW PLUS">NEW PLUS</option>
+              <option value="NEW">NEW</option>
+              <option value="PARADISE LOST">PARADISE LOST</option>
+              <option value="PARADISE">PARADISE</option>
+              <option value="CRYSTAL PLUS">CRYSTAL PLUS</option>
+              <option value="CRYSTAL">CRYSTAL</option>
+              <option value="AMAZON PLUS">AMAZON PLUS</option>
+              <option value="AMAZON">AMAZON</option>
+              <option value="STAR PLUS">STAR PLUS</option>
+              <option value="STAR">STAR</option>
+              <option value="AIR PLUS">AIR PLUS</option>
+              <option value="AIR">AIR</option>
+              <option value="CHUNITHM PLUS">CHUNITHM PLUS</option>
+              <option value="CHUNITHM">CHUNITHM</option>
             </select>
 
             <button 

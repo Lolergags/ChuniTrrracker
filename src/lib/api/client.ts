@@ -22,19 +22,37 @@ export const api = {
     return res.json();
   },
 
-  getPlayer: async (username: string): Promise<ApiPlayerStats> => {
-    const res = await fetch(`${API_BASE}/players/${username}`);
+  getPlayer: async (username: string, filters?: any): Promise<ApiPlayerStats> => {
+    let url = `${API_BASE}/players/${username}`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Player not found');
     return res.json();
   },
 
-  getPlayerScores: async (username: string, limit = 500): Promise<ApiProcessedScore[]> => {
-    const res = await fetch(`${API_BASE}/players/${username}/scores?limit=${limit}`);
+  getPlayerScores: async (username: string, limit = 500, filters?: any): Promise<ApiProcessedScore[]> => {
+    let url = `${API_BASE}/players/${username}/scores?limit=${limit}`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `&${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 
-  getLeaderboard: async (page = 1, limit = 50): Promise<import('../types/index.js').PaginatedResponse<import('../types/index.js').ApiPlayer>> => {
-    const res = await fetch(`${API_BASE}/leaderboard?page=${page}&limit=${limit}`);
+  getLeaderboard: async (page = 1, limit = 50, server = 'jp', version = 'all'): Promise<import('../types/index.js').PaginatedResponse<import('../types/index.js').ApiPlayer>> => {
+    const res = await fetch(`${API_BASE}/leaderboard?page=${page}&limit=${limit}&server=${server}&version=${encodeURIComponent(version)}`);
     return res.json();
   },
 

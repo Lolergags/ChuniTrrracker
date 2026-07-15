@@ -8,6 +8,8 @@ const Leaderboard: React.FC = () => {
   const [players, setPlayers] = useState<ApiPlayer[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [server, setServer] = useState('jp');
+  const [version, setVersion] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   
   const { setActivePlayer } = useContext(GlobalContext);
@@ -15,19 +17,44 @@ const Leaderboard: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    api.getLeaderboard(page, 50)
+    api.getLeaderboard(page, 50, server, version)
       .then(response => {
         setPlayers(response.data);
         setTotalPages(response.totalPages || 1);
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
-  }, [page]);
+  }, [page, server, version]);
 
   const handleRowClick = (username: string) => {
     setActivePlayer(username);
     navigate('/');
   };
+
+  const VERSIONS = [
+    'all',
+    'X-VERSE-X',
+    'X-VERSE',
+    'VERSE',
+    'LUMINOUS PLUS',
+    'LUMINOUS',
+    'SUN PLUS',
+    'SUN',
+    'NEW PLUS',
+    'NEW',
+    'PARADISE LOST',
+    'PARADISE',
+    'CRYSTAL PLUS',
+    'CRYSTAL',
+    'AMAZON PLUS',
+    'AMAZON',
+    'STAR PLUS',
+    'STAR',
+    'AIR PLUS',
+    'AIR',
+    'CHUNITHM PLUS',
+    'CHUNITHM'
+  ];
 
   return (
     <div className="glass-panel">
@@ -35,6 +62,34 @@ const Leaderboard: React.FC = () => {
       <p style={{ color: 'var(--text-secondary)' }}>
         Compare Overpower among all imported players.
       </p>
+
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Server</label>
+          <select 
+            value={server} 
+            onChange={e => setServer(e.target.value)}
+            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'white' }}
+          >
+            <option value="jp">Japan (JP)</option>
+            <option value="intl">International (Intl)</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Track List (up to version)</label>
+          <select 
+            value={version} 
+            onChange={e => setVersion(e.target.value)}
+            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'white' }}
+          >
+            <option value="all">All Versions</option>
+            {VERSIONS.filter(v => v !== 'all').map(v => (
+              <option key={v} value={v}>Up to {v}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       
       {isLoading ? (
         <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>

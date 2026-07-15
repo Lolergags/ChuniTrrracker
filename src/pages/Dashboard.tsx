@@ -1,30 +1,33 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
-import { GlobalContext } from '../lib/context/GlobalContext.js';
-import { api } from '../lib/api/client.js';
-import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
+import { useGlobal } from '../lib/context/useGlobal.js';
+import { api, type ApiPlayerStats, type ApiProcessedScore } from '../lib/api/client.js';
+import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 
-const Dashboard: React.FC = () => {
-  const { playersList, activePlayer } = useContext(GlobalContext);
+export function Dashboard() {
+  const { activePlayer, playersList, filters } = useGlobal();
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
   const [scores, setScores] = useState<ApiProcessedScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activePlayer) return;
     setIsLoading(true);
+    setError(null);
     Promise.all([
-      api.getPlayer(activePlayer),
-      api.getPlayerScores(activePlayer, 500)
+      api.getPlayer(activePlayer, filters),
+      api.getPlayerScores(activePlayer, 500, filters)
     ]).then(([playerStats, playerScores]) => {
       setStats(playerStats);
       setScores(playerScores);
     }).catch(err => {
       console.error(err);
+      setError(err.message || 'Failed to load player data');
     }).finally(() => {
       setIsLoading(false);
     });
-  }, [activePlayer]);
+  }, [activePlayer, filters]);
 
   if (playersList.length === 0) {
     return (
@@ -35,14 +38,24 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem' }}>
+        <h2 className="text-gradient" style={{ color: 'var(--rank-failed)' }}>Error</h2>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>{error}</p>
+      </div>
+    );
+  }
+
   if (isLoading || !stats) {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Loading player data...</div>;
   }
 
   return (
     <div className="glass-panel">
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="text-gradient">Player Dashboard</h1>
+        <GlobalFilterBar />
       </div>
       
       <p style={{ color: 'var(--text-secondary)' }}>
@@ -80,7 +93,15 @@ const Dashboard: React.FC = () => {
               margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
               stackOffset="expand"
             >
-              <XAxis dataKey="level" stroke="var(--text-secondary)" />
+              <XAxis 
+                dataKey="level" 
+                stroke="var(--text-secondary)" 
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                tick={{ fontSize: 12 }}
+              />
               <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
               <Tooltip 
                 contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
@@ -89,13 +110,19 @@ const Dashboard: React.FC = () => {
                   return [value, undefined];
                 }}
               />
-              <Legend />
+              <Legend payload={[
+                { value: 'All Justice Critical', type: 'rect', color: 'var(--rank-ajc)' },
+                { value: 'All Justice', type: 'rect', color: 'var(--rank-aj)' },
+                { value: 'Full Combo', type: 'rect', color: 'var(--rank-fc)' },
+                { value: 'Clear', type: 'rect', color: 'var(--rank-clear)' },
+                { value: 'Failed', type: 'rect', color: 'var(--rank-failed)' }
+              ]} />
               <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
               <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
               <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
               <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
               <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
-              <Bar dataKey="UNPLAYED" stackId="a" fill="transparent" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
+              <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -53,6 +53,7 @@ export interface ApiSong {
   title: string;
   artist: string;
   genre: string;
+  version: string;
   charts: Array<{
     difficulty: string;
     constant: number;

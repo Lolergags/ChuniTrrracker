@@ -336,7 +336,7 @@ router.get('/players/:username/scores', (req, res) => {
 // 5. Get Songs List
 router.get('/songs', (req, res) => {
   // Fetch all songs
-  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url FROM songs`).all() as any[];
+  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active FROM songs`).all() as any[];
   
   // Fetch all charts and attach to songs
   const charts = db.prepare(`SELECT song_id, difficulty, constant, level, note_count FROM charts`).all() as any[];

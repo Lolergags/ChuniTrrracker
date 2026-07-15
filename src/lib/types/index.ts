@@ -55,6 +55,8 @@ export interface ApiSong {
   artist: string;
   genre: string;
   version: string;
+  is_jp_active: number;
+  is_intl_active: number;
   charts: Array<{
     difficulty: string;
     constant: number;

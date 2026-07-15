@@ -73,6 +73,7 @@ const Leaderboard: React.FC = () => {
           >
             <option value="jp">Japan (JP)</option>
             <option value="intl">International (Intl)</option>
+            <option value="omni">Omnimix (All)</option>
           </select>
         </div>
 

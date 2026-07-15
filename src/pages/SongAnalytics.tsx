@@ -14,6 +14,7 @@ const SongAnalytics: React.FC = () => {
   const [diffFilters, setDiffFilters] = useState<string[]>([]);
   const [minConst, setMinConst] = useState<string>('');
   const [maxConst, setMaxConst] = useState<string>('');
+  const [serverFilter, setServerFilter] = useState<string>('JP');
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
@@ -76,8 +77,11 @@ const SongAnalytics: React.FC = () => {
 
   // Get a flat list of all charts (song + difficulty)
   const allCharts = useMemo(() => {
-    const list: { id: number; title: string; difficulty: string; constant: number; level: string; noteCount: number; uniqueId: string }[] = [];
+    const list: { id: number; title: string; difficulty: string; constant: number; level: string; noteCount: number; version: string; is_jp_active: number; is_intl_active: number; uniqueId: string }[] = [];
     songs.forEach(song => {
+      if (serverFilter === 'JP' && song.is_jp_active !== 1) return;
+      if (serverFilter === 'INT' && song.is_intl_active !== 1) return;
+      
       song.charts.forEach(chart => {
         list.push({
           id: song.id,
@@ -87,13 +91,15 @@ const SongAnalytics: React.FC = () => {
           level: chart.level,
           noteCount: chart.noteCount || 0,
           version: song.version,
+          is_jp_active: song.is_jp_active,
+          is_intl_active: song.is_intl_active,
           uniqueId: `${song.id}-${chart.difficulty}`
         });
       });
     });
     // Sort alphabetically, then by difficulty constant
     return list.sort((a, b) => a.title.localeCompare(b.title) || b.constant - a.constant);
-  }, [songs]);
+  }, [songs, serverFilter]);
 
   const filteredCharts = useMemo(() => {
     let result = allCharts;
@@ -193,6 +199,16 @@ const SongAnalytics: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <select 
+              value={serverFilter}
+              onChange={e => setServerFilter(e.target.value)}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none' }}
+            >
+              <option value="JP">Japan (JP)</option>
+              <option value="INT">International (Intl)</option>
+              <option value="OMNI">Omnimix (All)</option>
+            </select>
+
             <input 
               type="number"
               placeholder="Min CC"

@@ -445,12 +445,12 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 // 5. Get Aggregate Performance Heatmap Data
 router.get('/performance/heatmap', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
-  conditions.push("c.constant >= 10");
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
 
   const data = db.prepare(`
     SELECT 
-      c.constant,
+      ${groupByCol} as constant,
       CASE 
         WHEN s.score >= 1009000 THEN 'SSS+'
         WHEN s.score >= 1007500 THEN 'SSS'
@@ -465,7 +465,7 @@ router.get('/performance/heatmap', (req, res) => {
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
-    GROUP BY c.constant, grade
+    GROUP BY ${groupByCol}, grade
   `).all(...bindings);
   res.json(data);
 });
@@ -473,7 +473,6 @@ router.get('/performance/heatmap', (req, res) => {
 // 6. Get Aggregate Global Chart Meta (Popularity vs Average Score)
 router.get('/performance/meta', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c');
-  conditions.push("c.constant >= 10");
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const data = db.prepare(`
@@ -496,12 +495,12 @@ router.get('/performance/meta', (req, res) => {
 // 7. Get Global Server Lamp Distribution by Constant
 router.get('/performance/lamps', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
-  conditions.push("c.constant >= 10");
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
 
   const data = db.prepare(`
     SELECT 
-      c.constant,
+      ${groupByCol} as constant,
       SUM(CASE WHEN s.lamp = 'AJC' THEN 1 ELSE 0 END) as ajc,
       SUM(CASE WHEN s.lamp = 'AJ' THEN 1 ELSE 0 END) as aj,
       SUM(CASE WHEN s.lamp = 'FC' THEN 1 ELSE 0 END) as fc,
@@ -512,7 +511,7 @@ router.get('/performance/lamps', (req, res) => {
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
-    GROUP BY c.constant
+    GROUP BY ${groupByCol}
   `).all(...bindings);
   res.json(data);
 });
@@ -520,19 +519,19 @@ router.get('/performance/lamps', (req, res) => {
 // 8. Get Average OP Yield by Constant
 router.get('/performance/op', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
-  conditions.push("c.constant >= 10");
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
 
   const data = db.prepare(`
     SELECT 
-      c.constant,
-      (AVG(s.op) / (c.constant * 5000 + 15000)) * 100 as avgOp,
+      ${groupByCol} as constant,
+      AVG(s.op * 100.0 / (c.constant * 5000 + 15000)) as avgOp,
       COUNT(s.op) as count
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
-    GROUP BY c.constant
+    GROUP BY ${groupByCol}
   `).all(...bindings);
   res.json(data);
 });

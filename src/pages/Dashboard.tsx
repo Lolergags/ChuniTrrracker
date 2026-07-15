@@ -12,7 +12,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: keyof ApiProcessedScore | 'lampValue', direction: 'asc' | 'desc' } | null>({ key: 'op', direction: 'desc' });
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (!activePlayer) return;

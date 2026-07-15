@@ -11,6 +11,7 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ApiProcessedScore | 'lampValue', direction: 'asc' | 'desc' } | null>({ key: 'op', direction: 'desc' });
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -45,6 +46,42 @@ export function Dashboard() {
       }, new Map<number, ApiProcessedScore>()).values()
     );
   }, [scores]);
+
+  const sortedScores = useMemo(() => {
+    let sortableItems = [...uniqueScores];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let valA: any, valB: any;
+        if (sortConfig.key === 'lampValue') {
+          const lampOrder: Record<string, number> = { FAILED: 0, CLEAR: 1, FC: 2, AJ: 3, AJC: 4 };
+          valA = lampOrder[a.lamp] ?? 0;
+          valB = lampOrder[b.lamp] ?? 0;
+        } else if (sortConfig.key === 'songTitle') {
+          valA = a.songTitle.toLowerCase();
+          valB = b.songTitle.toLowerCase();
+        } else if (sortConfig.key === 'constant') {
+          valA = a.constant;
+          valB = b.constant;
+        } else {
+          valA = a[sortConfig.key as keyof ApiProcessedScore];
+          valB = b[sortConfig.key as keyof ApiProcessedScore];
+        }
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [uniqueScores, sortConfig]);
+
+  const requestSort = (key: keyof ApiProcessedScore | 'lampValue') => {
+    let direction: 'asc' | 'desc' = 'desc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+    setPage(1);
+  };
 
   if (playersList.length === 0) {
     return (
@@ -198,15 +235,25 @@ export function Dashboard() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <th style={{ padding: '1rem' }}>Song</th>
-              <th style={{ padding: '1rem' }}>Level</th>
-              <th style={{ padding: '1rem' }}>Score</th>
-              <th style={{ padding: '1rem' }}>Lamp</th>
-              <th style={{ padding: '1rem' }}>OP</th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('songTitle')}>
+                Song {sortConfig?.key === 'songTitle' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('constant')}>
+                Level {sortConfig?.key === 'constant' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('score')}>
+                Score {sortConfig?.key === 'score' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('lampValue')}>
+                Lamp {sortConfig?.key === 'lampValue' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('op')}>
+                OP {sortConfig?.key === 'op' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {uniqueScores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
+            {sortedScores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>

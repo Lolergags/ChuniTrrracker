@@ -255,11 +255,11 @@ const PerformanceAnalysis: React.FC = () => {
                     { value: 'Clear', type: 'rect', id: 'clear', color: 'var(--rank-clear)' },
                     { value: 'Failed', type: 'rect', id: 'failed', color: 'var(--rank-failed)' }
                   ]} />
-                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" />
-                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
-                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
                   <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
+                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
+                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
+                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
+                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

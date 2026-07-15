@@ -326,13 +326,13 @@ const PerformanceAnalysis: React.FC = () => {
                     type="number" 
                     dataKey="avgScore" 
                     name="Avg Score" 
-                    domain={[975000, 1010000]}
+                    domain={[975000, 1020000]}
                     allowDataOverflow={true}
                     stroke="var(--text-secondary)" 
                     tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'}
                     label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
                   />
-                  <ZAxis type="number" dataKey="playCount" range={[20, 400]} name="Plays" />
+                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                   <Tooltip content={<CustomTooltip />} />
                   <Scatter name="Charts" data={metaData} fill="#ff66ff" fillOpacity={0.6} />
                 </ScatterChart>

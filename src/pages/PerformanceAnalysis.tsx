@@ -308,7 +308,7 @@ const PerformanceAnalysis: React.FC = () => {
           <div className="glass-panel">
             <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Global Chart Meta</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Popularity (Play Count) vs Average Score. Bubble size represents Chart Constant. Identifies highly played "farm" charts vs avoided charts.
+              Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
             </p>
             <div style={{ height: '500px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -316,10 +316,11 @@ const PerformanceAnalysis: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis 
                     type="number" 
-                    dataKey="playCount" 
-                    name="Play Count" 
+                    dataKey="constant" 
+                    name="Chart Constant" 
                     stroke="var(--text-secondary)"
-                    label={{ value: 'Play Count (Popularity)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
+                    domain={['dataMin', 'dataMax']}
+                    label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
                   />
                   <YAxis 
                     type="number" 
@@ -331,7 +332,7 @@ const PerformanceAnalysis: React.FC = () => {
                     tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'}
                     label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
                   />
-                  <ZAxis type="number" dataKey="constant" range={[20, 200]} name="Constant" />
+                  <ZAxis type="number" dataKey="playCount" range={[20, 400]} name="Plays" />
                   <Tooltip content={<CustomTooltip />} />
                   <Scatter name="Charts" data={metaData} fill="#ff66ff" fillOpacity={0.6} />
                 </ScatterChart>

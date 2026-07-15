@@ -446,7 +446,7 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 router.get('/performance/heatmap', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
 
   const data = db.prepare(`
     SELECT 
@@ -496,7 +496,7 @@ router.get('/performance/meta', (req, res) => {
 router.get('/performance/lamps', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
 
   const data = db.prepare(`
     SELECT 
@@ -520,7 +520,7 @@ router.get('/performance/lamps', (req, res) => {
 router.get('/performance/op', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST(c.constant AS INTEGER)';
+  const groupByCol = req.query.diff === 'MAS_ULT' ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
 
   const data = db.prepare(`
     SELECT 

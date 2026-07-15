@@ -39,6 +39,12 @@ const PerformanceAnalysis: React.FC = () => {
     });
   }, [filters]);
 
+  const getConstantLabel = (constant: number) => {
+    if (filters.diff === 'MAS_ULT') return constant.toFixed(1);
+    if (constant % 1 === 0.5) return `${Math.floor(constant)}+`;
+    return `${Math.floor(constant)}`;
+  };
+
   // Process Heatmap Data
   const { constants, grid } = useMemo(() => {
     if (!heatmapData.length) return { constants: [], grid: {} };
@@ -72,7 +78,7 @@ const PerformanceAnalysis: React.FC = () => {
 
   const survivalData = useMemo(() => {
     return lampData.sort((a, b) => a.constant - b.constant).map(d => ({
-      constant: d.constant.toFixed(1),
+      constant: getConstantLabel(d.constant),
       ajRate: d.total > 0 ? ((d.ajc + d.aj) / d.total) * 100 : 0,
       fcRate: d.total > 0 ? ((d.ajc + d.aj + d.fc) / d.total) * 100 : 0,
     }));
@@ -81,14 +87,14 @@ const PerformanceAnalysis: React.FC = () => {
   const sortedLampData = useMemo(() => {
     return lampData.map(d => ({
       ...d,
-      constantLabel: d.constant.toFixed(1)
+      constantLabel: getConstantLabel(d.constant)
     })).sort((a, b) => a.constant - b.constant);
   }, [lampData]);
 
   const sortedOpYield = useMemo(() => {
     return opYieldData.map(d => ({
       ...d,
-      constantLabel: d.constant.toFixed(1)
+      constantLabel: getConstantLabel(d.constant)
     })).sort((a, b) => a.constant - b.constant);
   }, [opYieldData]);
 
@@ -172,7 +178,7 @@ const PerformanceAnalysis: React.FC = () => {
               <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}></div>
               {constants.map(c => (
                 <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)', writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}>
-                  {c.toFixed(1)}
+                  {getConstantLabel(c)}
                 </div>
               ))}
 

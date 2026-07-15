@@ -26,22 +26,26 @@ function getTotalPossibleOp() {
 
 // 1. Import Player
 router.post('/players/import', async (req, res) => {
-  const { username } = req.body;
-  if (!username || typeof username !== 'string') {
-    return res.status(400).json({ error: 'Username is required' });
+  const { username, apiKey } = req.body;
+  if (!username && !apiKey) {
+    return res.status(400).json({ error: 'Username or API Key is required' });
   }
 
   try {
-    // Basic rate limit (5 mins)
-    const player = db.prepare(`SELECT last_synced_at FROM players WHERE username = ?`).get(username) as { last_synced_at: number } | undefined;
-    if (player && Date.now() - player.last_synced_at < 5 * 60 * 1000) {
-      console.log(`Skipping sync for ${username} (rate limited)`);
-    } else {
-      await syncPlayer(username);
+    const targetUser = username || 'me';
+    // Basic rate limit (5 mins) if no api key (api key implies explicit sync)
+    if (!apiKey) {
+      const player = db.prepare(`SELECT last_synced_at FROM players WHERE username = ?`).get(targetUser) as { last_synced_at: number } | undefined;
+      if (player && Date.now() - player.last_synced_at < 5 * 60 * 1000) {
+        console.log(`Skipping sync for ${targetUser} (rate limited)`);
+        return res.json({ success: true });
+      }
     }
+    
+    await syncPlayer(targetUser, apiKey);
     res.json({ success: true });
   } catch (err: any) {
-    console.error(`Failed to import player ${username}:`, err);
+    console.error(`Failed to import player:`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -91,11 +95,10 @@ router.get('/leaderboard', (req, res) => {
         SUM(CASE WHEN max_score >= 990000 THEN 1 ELSE 0 END) as s_plus_count,
         SUM(CASE WHEN max_score >= 975000 THEN 1 ELSE 0 END) as s_count
       FROM (
-        SELECT s.player_id, c.id as chart_id, MAX(s.score) as max_score
+        SELECT s.player_id, c.id as chart_id, s.score as max_score
         FROM scores s
         JOIN charts c ON s.chart_id = c.id
         WHERE c.difficulty IN ('MAS', 'ULT')
-        GROUP BY s.player_id, c.id
       )
       GROUP BY player_id
     ) lamp_counts ON p.id = lamp_counts.player_id
@@ -292,21 +295,19 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
   // Fetch all scores for calculating accurate distributions
   const allScoresQuery = db.prepare(`
-    SELECT MAX(s.score) as score
+    SELECT s.score
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-    GROUP BY s.player_id
   `).all(songId, difficulty) as { score: number }[];
 
   const leaderboard = db.prepare(`
-    SELECT p.username, MAX(s.score) as score, s.lamp, s.op, MIN(s.time_achieved) as timeAchieved
+    SELECT p.username, s.score, s.lamp, s.op, s.time_achieved as timeAchieved
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-    GROUP BY p.id
-    ORDER BY score DESC, timeAchieved ASC
+    ORDER BY s.score DESC, s.time_achieved ASC
     LIMIT ? OFFSET ?
   `).all(songId, difficulty, limit, offset);
 
@@ -380,11 +381,7 @@ router.get('/performance/heatmap', (req, res) => {
         ELSE '< S'
       END as grade,
       COUNT(*) as count
-    FROM (
-      SELECT player_id, chart_id, MAX(score) as score 
-      FROM scores 
-      GROUP BY player_id, chart_id
-    ) s
+    FROM scores s
     JOIN charts c ON s.chart_id = c.id
     WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant, grade
@@ -402,11 +399,7 @@ router.get('/performance/meta', (req, res) => {
       so.title,
       COUNT(s.player_id) as playCount,
       AVG(s.score) as avgScore
-    FROM (
-      SELECT player_id, chart_id, MAX(score) as score
-      FROM scores
-      GROUP BY player_id, chart_id
-    ) s
+    FROM scores s
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
     WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
@@ -426,11 +419,7 @@ router.get('/performance/lamps', (req, res) => {
       SUM(CASE WHEN s.lamp = 'CLEAR' THEN 1 ELSE 0 END) as clear,
       SUM(CASE WHEN s.lamp = 'FAILED' THEN 1 ELSE 0 END) as failed,
       COUNT(*) as total
-    FROM (
-      SELECT player_id, chart_id, MAX(score) as score, lamp
-      FROM scores
-      GROUP BY player_id, chart_id
-    ) s
+    FROM scores s
     JOIN charts c ON s.chart_id = c.id
     WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant
@@ -445,11 +434,7 @@ router.get('/performance/op', (req, res) => {
       c.constant,
       AVG(s.op) as avgOp,
       COUNT(s.op) as count
-    FROM (
-      SELECT player_id, chart_id, MAX(score) as score, op
-      FROM scores
-      GROUP BY player_id, chart_id
-    ) s
+    FROM scores s
     JOIN charts c ON s.chart_id = c.id
     WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
     GROUP BY c.constant
@@ -462,13 +447,14 @@ router.get('/performance/players', (req, res) => {
   const rawData = db.prepare(`
     SELECT 
       p.username,
-      SUM(s.op) as totalOp
+      SUM(song_max.max_op) as totalOp
     FROM players p
     JOIN (
-      SELECT player_id, chart_id, MAX(score) as score, op
-      FROM scores
-      GROUP BY player_id, chart_id
-    ) s ON s.player_id = p.id
+      SELECT s.player_id, c.song_id, MAX(s.op) as max_op
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      GROUP BY s.player_id, c.song_id
+    ) song_max ON song_max.player_id = p.id
     GROUP BY p.id
   `).all() as any[];
 

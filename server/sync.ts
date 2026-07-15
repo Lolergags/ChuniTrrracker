@@ -12,6 +12,22 @@ const KAMAITACHI_LAMP_MAP: Record<string, LampType> = {
   'ALL JUSTICE CRITICAL': 'AJC',
 };
 
+const LAMP_VALUES: Record<LampType, number> = {
+  'FAILED': 0,
+  'CLEAR': 1,
+  'FC': 2,
+  'AJ': 3,
+  'AJC': 4
+};
+
+const KAMAITACHI_DIFF_MAP: Record<string, string> = {
+  'BASIC': 'BAS',
+  'ADVANCED': 'ADV',
+  'EXPERT': 'EXP',
+  'MASTER': 'MAS',
+  'ULTIMA': 'ULT'
+};
+
 export async function syncSongs() {
   console.log('Fetching songs from Beerpsi...');
   const res = await fetch('https://chunithm.beerpsi.cc/songs');
@@ -81,83 +97,116 @@ export async function syncSongs() {
   return { songCount, chartCount };
 }
 
-export async function syncPlayer(username: string) {
+export async function syncPlayer(username: string, apiKey?: string) {
   console.log(`Syncing player: ${username}`);
 
-  // Fetch or create player
+  let targetUserId = username;
+  let headers: Record<string, string> = {};
+
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+    const meRes = await fetch('https://kamai.tachi.ac/api/v1/users/me', { headers });
+    if (!meRes.ok) throw new Error('Invalid API Key or unable to authenticate');
+    const meData = await meRes.json();
+    targetUserId = meData.body.id.toString();
+    username = meData.body.username; // Use actual username
+  }
+
+  // Fetch or create player (now that we potentially resolved username from API key)
   const insertPlayer = db.prepare(`
-    INSERT INTO players (username, last_synced_at)
-    VALUES (@username, @now)
-    ON CONFLICT(username) DO UPDATE SET last_synced_at=@now
+    INSERT INTO players (username, kamaitachi_id, last_synced_at)
+    VALUES (@username, @kamaitachi_id, @now)
+    ON CONFLICT(username) DO UPDATE SET
+      kamaitachi_id=COALESCE(excluded.kamaitachi_id, players.kamaitachi_id),
+      last_synced_at=@now
   `);
-  
-  insertPlayer.run({ username, now: Date.now() });
+  insertPlayer.run({ username, kamaitachi_id: apiKey ? parseInt(targetUserId) || null : null, now: Date.now() });
   const player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
 
-  // Fetch scores (using Mock for now, since Kamaitachi v1 scores/all is returning 404)
-  const scoresData = await fetchMockScores(username);
+  const scoresUrl = `https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}/games/chunithm/Single/scores/all`;
+  const scoresRes = await fetch(scoresUrl, { headers });
+  if (!scoresRes.ok) throw new Error(`Failed to fetch scores: ${scoresRes.statusText}`);
+  const scoresDataJson = await scoresRes.json();
+  const rawScores = scoresDataJson.body.scores || [];
+  const rawCharts = scoresDataJson.body.charts || [];
+
+  // Create chart lookup map
+  const chartInfoMap = new Map<string, string>();
+  for (const c of rawCharts) {
+    if (KAMAITACHI_DIFF_MAP[c.difficulty]) {
+      chartInfoMap.set(c.chartID, KAMAITACHI_DIFF_MAP[c.difficulty]);
+    }
+  }
 
   const insertScore = db.prepare(`
     INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved)
     VALUES (@player_id, @chart_id, @score, @lamp, @op, @time_achieved)
-    ON CONFLICT(player_id, chart_id, score, lamp) DO NOTHING
+    ON CONFLICT(player_id, chart_id) DO UPDATE SET
+      score = MAX(excluded.score, scores.score),
+      lamp = CASE WHEN excluded.op > scores.op THEN excluded.lamp ELSE scores.lamp END,
+      op = MAX(excluded.op, scores.op),
+      time_achieved = CASE WHEN excluded.score > scores.score THEN excluded.time_achieved ELSE scores.time_achieved END
   `);
 
   const getChart = db.prepare(`SELECT id, constant FROM charts WHERE song_id = ? AND difficulty = ?`);
 
-  let scoreCount = 0;
-  const transaction = db.transaction((scores: any[]) => {
-    for (const score of scores) {
-      const chart = getChart.get(score.songId, score.chartType) as { id: number, constant: number } | undefined;
-      if (!chart) continue; // Chart not found (e.g., filtered out or not JP)
+  // Aggregate best scores
+  type AggregatedScore = { songId: number; diff: string; score: number; lamp: LampType; timeAchieved: number };
+  const bestScores = new Map<string, AggregatedScore>();
 
-      const lamp = KAMAITACHI_LAMP_MAP[score.lamp] || 'FAILED';
-      const op = calculateOp(score.score, chart.constant, lamp);
+  for (const score of rawScores) {
+    const diff = chartInfoMap.get(score.chartID);
+    if (!diff) continue;
+
+    const songId = score.songID;
+    const scoreVal = score.scoreData.score;
+    const lampStr = score.scoreData.noteLamp;
+    const lamp: LampType = KAMAITACHI_LAMP_MAP[lampStr] || 'FAILED';
+    const timeAchieved = score.timeAchieved || score.timeAdded || Date.now();
+
+    const key = `${songId}-${diff}`;
+    const existing = bestScores.get(key);
+
+    if (!existing) {
+      bestScores.set(key, { songId, diff, score: scoreVal, lamp, timeAchieved });
+    } else {
+      const newMaxScore = Math.max(existing.score, scoreVal);
+      const existingLampVal = LAMP_VALUES[existing.lamp];
+      const newLampVal = LAMP_VALUES[lamp];
+      const newMaxLamp = newLampVal > existingLampVal ? lamp : existing.lamp;
+      
+      bestScores.set(key, {
+        songId,
+        diff,
+        score: newMaxScore,
+        lamp: newMaxLamp,
+        timeAchieved: newMaxScore === scoreVal ? timeAchieved : existing.timeAchieved
+      });
+    }
+  }
+
+  let scoreCount = 0;
+  const transaction = db.transaction((scores: IterableIterator<AggregatedScore>) => {
+    for (const score of scores) {
+      const chart = getChart.get(score.songId, score.diff) as { id: number, constant: number } | undefined;
+      if (!chart) continue; // Chart not found
+
+      const op = calculateOp(score.score, chart.constant, score.lamp);
 
       const result = insertScore.run({
         player_id: player.id,
         chart_id: chart.id,
         score: score.score,
-        lamp: lamp,
+        lamp: score.lamp,
         op: op,
-        time_achieved: score.timeAchieved || Date.now()
+        time_achieved: score.timeAchieved
       });
 
       if (result.changes > 0) scoreCount++;
     }
   });
 
-  transaction(scoresData);
-  console.log(`Synced ${scoreCount} new scores for ${username}`);
+  transaction(bestScores.values());
+  console.log(`Synced ${scoreCount} scores for ${username}`);
   return { scoreCount };
-}
-
-// Generates pseudo-random deterministic scores based on username (for testing)
-async function fetchMockScores(username: string) {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-
-  // Get some valid song IDs and difficulties from our DB so the foreign keys actually match
-  const validCharts = db.prepare(`
-    SELECT song_id, difficulty FROM charts 
-    WHERE difficulty IN ('EXP', 'MAS', 'ULT')
-    ORDER BY random() 
-    LIMIT 200
-  `).all() as { song_id: number, difficulty: string }[];
-
-  const seed = username.length * 1000;
-  const lamps = ['NONE', 'CLEAR', 'FULL COMBO', 'ALL JUSTICE', 'ALL JUSTICE CRITICAL'];
-
-  const scores = validCharts.map((chart, i) => {
-    const rawScore = 950000 + ((seed * (i+1)) % 60000); // 950k to 1.01M
-    return {
-      score: rawScore,
-      lamp: lamps[(seed + i) % lamps.length],
-      songId: chart.song_id,
-      chartType: chart.difficulty,
-      timeAchieved: Date.now() - (i * 1000 * 60 * 60) // recent hours
-    };
-  });
-
-  return scores;
 }

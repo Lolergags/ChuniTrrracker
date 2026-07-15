@@ -1,10 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Activity, BarChart2, Trophy, Search } from 'lucide-react';
+import { Activity, BarChart2, Trophy, Search, DownloadCloud } from 'lucide-react';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
 import SongAnalytics from './pages/SongAnalytics.js';
 import PerformanceAnalysis from './pages/PerformanceAnalysis.js';
+import { ImportDataForm } from './components/ImportDataForm.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 const AppContent = () => {
@@ -51,6 +52,9 @@ const AppContent = () => {
           </NavLink>
           <NavLink to="/performance" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Activity size={18} /> Performance</span>
+          </NavLink>
+          <NavLink to="/import" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><DownloadCloud size={18} /> Import Data</span>
           </NavLink>
         </div>
 
@@ -127,6 +131,7 @@ const AppContent = () => {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/analytics" element={<SongAnalytics />} />
           <Route path="/performance" element={<PerformanceAnalysis />} />
+          <Route path="/import" element={<ImportDataForm />} />
         </Routes>
       </main>
     </>

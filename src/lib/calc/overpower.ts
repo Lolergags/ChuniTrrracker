@@ -30,15 +30,17 @@ export function calculateOp(score: number, constant: number, lamp: LampType): nu
   if (lamp === 'FC') lampBonus = 500;
   if (lamp === 'AJ') lampBonus = 1000;
   if (lamp === 'AJC') lampBonus = 1250;
-  
-  const totalOp = baseOp + lampBonus;
 
-  // Rounding:
-  // For scores >= 975,000, floored to nearest 5
-  // For scores < 975,000, floored to nearest 50
+  // Rounding (applied to base OP only, matching the Python reference):
+  // 1. Floor the base
+  // 2. Round to nearest 5 (>= 975k) or 50 (< 975k)
+  // 3. Add lamp bonus after rounding
+  let flooredBase = Math.floor(baseOp);
   if (score >= 975000) {
-    return Math.floor(totalOp / 5) * 5;
+    flooredBase = Math.floor(flooredBase / 5) * 5;
   } else {
-    return Math.floor(totalOp / 50) * 50;
+    flooredBase = Math.floor(flooredBase / 50) * 50;
   }
+
+  return flooredBase + lampBonus;
 }

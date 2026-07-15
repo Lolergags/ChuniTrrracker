@@ -46,7 +46,7 @@ db.exec(`
     lamp TEXT NOT NULL,
     op INTEGER NOT NULL,
     time_achieved INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(player_id, chart_id, score, lamp)
+    UNIQUE(player_id, chart_id)
   );
 
   CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id);

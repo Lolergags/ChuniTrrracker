@@ -11,7 +11,7 @@ import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 const AppContent = () => {
-  const { playersList, setActivePlayer } = useContext(GlobalContext);
+  const { playersList, activePlayer, setActivePlayer } = useContext(GlobalContext);
   const [searchInput, setSearchInput] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();

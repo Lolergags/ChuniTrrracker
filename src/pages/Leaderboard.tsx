@@ -69,7 +69,7 @@ const Leaderboard: React.FC = () => {
           <select 
             value={server} 
             onChange={e => setServer(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'white' }}
+            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
           >
             <option value="jp">Japan (JP)</option>
             <option value="intl">International (Intl)</option>
@@ -81,7 +81,7 @@ const Leaderboard: React.FC = () => {
           <select 
             value={version} 
             onChange={e => setVersion(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'white' }}
+            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
           >
             <option value="all">All Versions</option>
             {VERSIONS.filter(v => v !== 'all').map(v => (

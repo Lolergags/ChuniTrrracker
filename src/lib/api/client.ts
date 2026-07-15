@@ -66,28 +66,73 @@ export const api = {
     return res.json();
   },
 
-  getHeatmap: async (): Promise<import('../types/index.js').ApiHeatmapData[]> => {
-    const res = await fetch(`${API_BASE}/performance/heatmap`);
+  getHeatmap: async (filters?: any): Promise<import('../types/index.js').ApiHeatmapData[]> => {
+    let url = `${API_BASE}/performance/heatmap`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 
-  getChartMeta: async (): Promise<import('../types/index.js').ApiChartMeta[]> => {
-    const res = await fetch(`${API_BASE}/performance/meta`);
+  getChartMeta: async (filters?: any): Promise<import('../types/index.js').ApiChartMeta[]> => {
+    let url = `${API_BASE}/performance/meta`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 
-  getLampDistribution: async (): Promise<import('../types/index.js').ApiLampDistribution[]> => {
-    const res = await fetch(`${API_BASE}/performance/lamps`);
+  getLampDistribution: async (filters?: any): Promise<import('../types/index.js').ApiLampDistribution[]> => {
+    let url = `${API_BASE}/performance/lamps`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 
-  getOpYield: async (): Promise<import('../types/index.js').ApiOpYield[]> => {
-    const res = await fetch(`${API_BASE}/performance/op`);
+  getOpYield: async (filters?: any): Promise<import('../types/index.js').ApiOpYield[]> => {
+    let url = `${API_BASE}/performance/op`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 
-  getPlayerOpDistribution: async (): Promise<import('../types/index.js').ApiPlayerOpDistribution[]> => {
-    const res = await fetch(`${API_BASE}/performance/players`);
+  getPlayerOpDistribution: async (filters?: any): Promise<import('../types/index.js').ApiPlayerOpDistribution[]> => {
+    let url = `${API_BASE}/performance/players`;
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.server) params.append('server', filters.server);
+      if (filters.diff) params.append('diff', filters.diff);
+      if (filters.version) params.append('version', filters.version);
+      const q = params.toString();
+      if (q) url += `?${q}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 

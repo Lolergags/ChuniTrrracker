@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line } from 'recharts';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
+import { useGlobal } from '../lib/context/GlobalContext.js';
+import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -12,16 +14,18 @@ const PerformanceAnalysis: React.FC = () => {
   const [opYieldData, setOpYieldData] = useState<ApiOpYield[]>([]);
   const [playerOpData, setPlayerOpData] = useState<ApiPlayerOpDistribution[]>([]);
   
+  const { filters } = useGlobal();
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   useEffect(() => {
+    setIsLoadingGlobal(true);
     // Fetch global data
     Promise.all([
-      api.getHeatmap(),
-      api.getChartMeta(),
-      api.getLampDistribution(),
-      api.getOpYield(),
-      api.getPlayerOpDistribution()
+      api.getHeatmap(filters),
+      api.getChartMeta(filters),
+      api.getLampDistribution(filters),
+      api.getOpYield(filters),
+      api.getPlayerOpDistribution(filters)
     ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
       setHeatmapData(heatmap);
       setMetaData(meta);
@@ -33,7 +37,7 @@ const PerformanceAnalysis: React.FC = () => {
       console.error(err);
       setIsLoadingGlobal(false);
     });
-  }, []);
+  }, [filters]);
 
   // Process Heatmap Data
   const { constants, grid } = useMemo(() => {
@@ -141,10 +145,15 @@ const PerformanceAnalysis: React.FC = () => {
     <div className="container animate-fade-in" style={{ padding: '2rem 0' }}>
       
       {/* Global Meta Section */}
-      <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Global Meta</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-        Universal statistics aggregated across all players and songs on the server.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Global Meta</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Universal statistics aggregated across all players and songs on the server.
+          </p>
+        </div>
+        <GlobalFilterBar />
+      </div>
 
       {isLoadingGlobal ? (
         <p style={{ color: 'var(--text-secondary)' }}>Loading global statistics...</p>

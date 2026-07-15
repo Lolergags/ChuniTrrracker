@@ -444,6 +444,10 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
 // 5. Get Aggregate Performance Heatmap Data
 router.get('/performance/heatmap', (req, res) => {
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
+  conditions.push("c.constant >= 10");
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const data = db.prepare(`
     SELECT 
       c.constant,
@@ -459,14 +463,19 @@ router.get('/performance/heatmap', (req, res) => {
       COUNT(*) as count
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
     GROUP BY c.constant, grade
-  `).all();
+  `).all(...bindings);
   res.json(data);
 });
 
 // 6. Get Aggregate Global Chart Meta (Popularity vs Average Score)
 router.get('/performance/meta', (req, res) => {
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c');
+  conditions.push("c.constant >= 10");
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const data = db.prepare(`
     SELECT 
       c.song_id,
@@ -478,14 +487,18 @@ router.get('/performance/meta', (req, res) => {
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
-    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
+    ${whereClause}
     GROUP BY c.id
-  `).all();
+  `).all(...bindings);
   res.json(data);
 });
 
 // 7. Get Global Server Lamp Distribution by Constant
 router.get('/performance/lamps', (req, res) => {
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
+  conditions.push("c.constant >= 10");
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const data = db.prepare(`
     SELECT 
       c.constant,
@@ -497,14 +510,19 @@ router.get('/performance/lamps', (req, res) => {
       COUNT(*) as total
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
     GROUP BY c.constant
-  `).all();
+  `).all(...bindings);
   res.json(data);
 });
 
 // 8. Get Average OP Yield by Constant
 router.get('/performance/op', (req, res) => {
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
+  conditions.push("c.constant >= 10");
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const data = db.prepare(`
     SELECT 
       c.constant,
@@ -512,9 +530,10 @@ router.get('/performance/op', (req, res) => {
       COUNT(s.op) as count
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
-    WHERE c.difficulty IN ('MAS', 'ULT') AND c.constant >= 10
+    JOIN songs ON c.song_id = songs.id
+    ${whereClause}
     GROUP BY c.constant
-  `).all();
+  `).all(...bindings);
   res.json(data);
 });
 

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { router } from './routes.js';
 import { syncSongs } from './sync.js';
+import { initScheduler } from './scheduler.js';
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ async function startServer() {
 
   app.listen(PORT, () => {
     console.log(`ChuniTrrracker API server running on port ${PORT}`);
+    initScheduler();
   });
 }
 

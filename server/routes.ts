@@ -613,7 +613,7 @@ router.get('/performance/players', (req, res) => {
 });
 
 // 10. Admin & Scraper Controls
-import { runGlobalScrape, stopGlobalScrape, getScraperStatus } from './scraper.js';
+import { runGlobalScrape, stopGlobalScrape, getScraperStatus, runGlobalSync, getSyncAllStatus, globalSyncState } from './scraper.js';
 
 const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
@@ -660,57 +660,20 @@ router.get('/admin/backup', adminAuth, async (req, res) => {
   }
 });
 
-let globalSyncState = {
-  isSyncing: false,
-  total: 0,
-  current: 0,
-  currentUser: ''
-};
-
 router.get('/admin/sync-all/status', adminAuth, (req, res) => {
-  res.json(globalSyncState);
+  res.json(getSyncAllStatus());
 });
 
 router.post('/admin/sync-all', adminAuth, async (req, res) => {
-  try {
-    if (globalSyncState.isSyncing) {
-      return res.status(400).json({ error: 'A global sync is already in progress.' });
-    }
-
-    const players = db.prepare(`SELECT username FROM players`).all() as { username: string }[];
-    
-    globalSyncState = {
-      isSyncing: true,
-      total: players.length,
-      current: 0,
-      currentUser: ''
-    };
-
-    res.json({ success: true, message: `Started background sync for ${players.length} players.` });
-    
-    // Background sync process
-    (async () => {
-      for (const p of players) {
-        try {
-          globalSyncState.currentUser = p.username;
-          console.log(`[Sync-All] Syncing ${p.username}...`);
-          await syncPlayer(p.username);
-        } catch (e: any) {
-          console.error(`[Sync-All] Failed to sync ${p.username}: ${e.message}`);
-        }
-        globalSyncState.current++;
-        // 1.5s delay between players to respect Kamaitachi's rate limits
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-      console.log(`[Sync-All] Finished syncing all players.`);
-      globalSyncState.isSyncing = false;
-      globalSyncState.currentUser = '';
-    })();
-    
-  } catch (err: any) {
-    globalSyncState.isSyncing = false;
-    res.status(500).json({ error: err.message });
+  if (globalSyncState.isSyncing) {
+    return res.status(400).json({ error: 'A global sync is already in progress.' });
   }
+
+  const players = db.prepare(`SELECT COUNT(*) as count FROM players`).get() as { count: number };
+  res.json({ success: true, message: `Started background sync for ${players.count} players.` });
+  
+  // Fire and forget
+  runGlobalSync().catch(err => console.error("Global sync error:", err));
 });
 
 router.post('/scraper/start', adminAuth, (req, res) => {

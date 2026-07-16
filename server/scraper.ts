@@ -65,3 +65,46 @@ export function stopGlobalScrape() {
 export function getScraperStatus() {
   return { isScraping, currentScrapeId };
 }
+
+export let globalSyncState = {
+  isSyncing: false,
+  total: 0,
+  current: 0,
+  currentUser: ''
+};
+
+export async function runGlobalSync() {
+  if (globalSyncState.isSyncing) return;
+
+  const players = db.prepare(`SELECT username FROM players`).all() as { username: string }[];
+  
+  globalSyncState.isSyncing = true;
+  globalSyncState.total = players.length;
+  globalSyncState.current = 0;
+  globalSyncState.currentUser = '';
+
+  console.log(`[Sync-All] Started background sync for ${players.length} players.`);
+  
+  try {
+    for (const p of players) {
+      if (!globalSyncState.isSyncing) break;
+      try {
+        globalSyncState.currentUser = p.username;
+        console.log(`[Sync-All] Syncing ${p.username}...`);
+        await syncPlayer(p.username);
+      } catch (e: any) {
+        console.error(`[Sync-All] Failed to sync ${p.username}: ${e.message}`);
+      }
+      globalSyncState.current++;
+      await delay(DELAY_MS);
+    }
+  } finally {
+    console.log(`[Sync-All] Finished syncing all players.`);
+    globalSyncState.isSyncing = false;
+    globalSyncState.currentUser = '';
+  }
+}
+
+export function getSyncAllStatus() {
+  return globalSyncState;
+}

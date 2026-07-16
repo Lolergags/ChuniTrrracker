@@ -169,18 +169,21 @@ export function Admin() {
           {/* Delete Player */}
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
             <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Delete Player</h3>
-            <select 
+            <input 
+              type="text"
+              list="admin-players-list"
+              placeholder="Search or select a player..."
               value={playerToDelete}
               onChange={(e) => setPlayerToDelete(e.target.value)}
               style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-            >
-              <option value="">Select a player...</option>
-              {playersList.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            />
+            <datalist id="admin-players-list">
+              {playersList.map(p => <option key={p} value={p} />)}
+            </datalist>
             <button 
               onClick={handleDeletePlayer}
-              disabled={!playerToDelete}
-              style={{ padding: '0.5rem 1rem', background: 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: playerToDelete ? 'pointer' : 'not-allowed', width: '100%' }}
+              disabled={!playersList.includes(playerToDelete)}
+              style={{ padding: '0.5rem 1rem', background: 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: playersList.includes(playerToDelete) ? 'pointer' : 'not-allowed', width: '100%' }}
             >
               Delete Player Data
             </button>

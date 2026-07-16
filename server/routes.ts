@@ -1,4 +1,6 @@
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
+import path from 'node:path';
+import fs from 'node:fs';
 import db from './db.js';
 import { syncPlayer } from './sync.js';
 import { getChartFilterConditions } from './utils/filters.js';
@@ -610,22 +612,89 @@ router.get('/performance/players', (req, res) => {
   res.json(data);
 });
 
-// 10. Scraper Controls
+// 10. Admin & Scraper Controls
 import { runGlobalScrape, stopGlobalScrape, getScraperStatus } from './scraper.js';
 
-router.post('/scraper/start', (req, res) => {
+const adminAuth = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization;
+  if (!process.env.ADMIN_API_KEY) {
+    res.status(500).json({ error: 'Server missing ADMIN_API_KEY configuration.' });
+    return;
+  }
+  if (token !== process.env.ADMIN_API_KEY) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  next();
+};
+
+router.get('/admin/verify', adminAuth, (req, res) => {
+  res.json({ success: true });
+});
+
+router.delete('/admin/players/:username', adminAuth, (req, res) => {
+  const { username } = req.params;
+  try {
+    const player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number } | undefined;
+    if (!player) {
+      res.status(404).json({ error: 'Player not found' });
+      return;
+    }
+    db.prepare(`DELETE FROM scores WHERE player_id = ?`).run(player.id);
+    db.prepare(`DELETE FROM players WHERE id = ?`).run(player.id);
+    res.json({ success: true, message: `Deleted ${username} and all their scores.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/admin/backup', adminAuth, async (req, res) => {
+  try {
+    const backupPath = path.join(process.cwd(), 'data', `backup-${Date.now()}.sqlite`);
+    await db.backup(backupPath);
+    res.download(backupPath, 'chunitrrracker_backup.sqlite', (err) => {
+      if (!err && fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/sync-all', adminAuth, async (req, res) => {
+  try {
+    const players = db.prepare(`SELECT username FROM players`).all() as { username: string }[];
+    res.json({ success: true, message: `Started background sync for ${players.length} players.` });
+    
+    // Background sync process
+    (async () => {
+      for (const p of players) {
+        try {
+          console.log(`[Sync-All] Syncing ${p.username}...`);
+          await syncPlayer(p.username);
+        } catch (e: any) {
+          console.error(`[Sync-All] Failed to sync ${p.username}: ${e.message}`);
+        }
+      }
+      console.log(`[Sync-All] Finished syncing all players.`);
+    })();
+    
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/scraper/start', adminAuth, (req, res) => {
   const { startId = 1, testMode = false } = req.body;
-  // Kick off asynchronously
   runGlobalScrape(startId, testMode);
   res.json({ success: true, message: 'Scraper started from ID ' + startId });
 });
 
-router.post('/scraper/stop', (req, res) => {
+router.post('/scraper/stop', adminAuth, (req, res) => {
   stopGlobalScrape();
   res.json({ success: true, message: 'Scraper stopping.' });
 });
 
-router.get('/scraper/status', (req, res) => {
+router.get('/scraper/status', adminAuth, (req, res) => {
   res.json(getScraperStatus());
 });
 

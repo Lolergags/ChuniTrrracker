@@ -11,6 +11,10 @@ app.use('/api', router);
 const PORT = process.env.PORT || 3001;
 
 async function startServer() {
+  if (!process.env.ADMIN_API_KEY) {
+    console.warn("WARNING: ADMIN_API_KEY is not set. Admin panel access will be blocked!");
+  }
+  
   try {
     // Sync song database on startup
     await syncSongs();

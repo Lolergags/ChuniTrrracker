@@ -2,6 +2,11 @@ import type { ApiPlayerStats, ApiProcessedScore, ApiSong } from '../types/index.
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': localStorage.getItem('adminKey') || ''
+});
+
 export const api = {
   importPlayer: async (username: string) => {
     const res = await fetch(`${API_BASE}/players/import`, {
@@ -138,7 +143,7 @@ export const api = {
   startScraper: async (startId: number, testMode: boolean) => {
     const res = await fetch(`${API_BASE}/scraper/start`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ startId, testMode }),
     });
     if (!res.ok) throw new Error('Failed to start scraper');
@@ -146,8 +151,70 @@ export const api = {
   },
 
   stopScraper: async () => {
-    const res = await fetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/scraper/stop`, { 
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error('Failed to stop scraper');
     return res.json();
+  },
+
+  getScraperStatus: async () => {
+    const res = await fetch(`${API_BASE}/scraper/status`, {
+      headers: getAuthHeaders()
+    });
+    return res.json();
+  },
+
+  verifyAdmin: async (key: string) => {
+    const res = await fetch(`${API_BASE}/admin/verify`, {
+      headers: { 'Authorization': key }
+    });
+    if (!res.ok) throw new Error('Invalid API Key');
+    return res.json();
+  },
+
+  deletePlayer: async (username: string) => {
+    const res = await fetch(`${API_BASE}/admin/players/${encodeURIComponent(username)}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to delete player');
+    }
+    return res.json();
+  },
+
+  syncAllPlayers: async () => {
+    const res = await fetch(`${API_BASE}/admin/sync-all`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to trigger full sync');
+    }
+    return res.json();
+  },
+
+  downloadBackup: () => {
+    const key = localStorage.getItem('adminKey') || '';
+    // Fetch API to handle the download response
+    return fetch(`${API_BASE}/admin/backup`, {
+      headers: { 'Authorization': key }
+    }).then(res => {
+      if (!res.ok) throw new Error('Failed to download backup');
+      return res.blob();
+    }).then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'chunitrrracker_backup.sqlite';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    });
   }
 };

@@ -21,12 +21,17 @@ function getNextDate(cronString: string) {
   try {
     let interval;
     const cp = parser as any;
+    
     if (typeof cp.parseExpression === 'function') {
       interval = cp.parseExpression(cronString);
     } else if (typeof cp.parse === 'function') {
       interval = cp.parse(cronString);
+    } else if (cp.CronExpressionParser && typeof cp.CronExpressionParser.parse === 'function') {
+      interval = cp.CronExpressionParser.parse(cronString);
     } else if (typeof cp.default?.parseExpression === 'function') {
       interval = cp.default.parseExpression(cronString);
+    } else if (typeof cp.default?.parse === 'function') {
+      interval = cp.default.parse(cronString);
     } else {
       throw new Error("Could not find parse method on cron-parser");
     }

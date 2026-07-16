@@ -25,8 +25,8 @@ export function Admin() {
 
   // Scheduler state
   const [schedulerStatus, setSchedulerStatus] = useState<any>(null);
-  const [syncIntervalHours, setSyncIntervalHours] = useState<number>(12);
-  const [scrapeIntervalHours, setScrapeIntervalHours] = useState<number>(24);
+  const [syncCron, setSyncCron] = useState<string>('0 12 * * *');
+  const [scrapeCron, setScrapeCron] = useState<string>('0 0 * * *');
   const [schedulerScrapeStartId, setSchedulerScrapeStartId] = useState<number>(1);
   const [schedulerScrapeEndId, setSchedulerScrapeEndId] = useState<number>(5000);
 
@@ -80,8 +80,8 @@ export function Admin() {
         const schedData = await api.getSchedulerStatus();
         setSchedulerStatus((prev: any) => {
           if (!prev) {
-            setSyncIntervalHours(schedData.syncIntervalMs / (1000 * 60 * 60));
-            setScrapeIntervalHours(schedData.scrapeIntervalMs / (1000 * 60 * 60));
+            setSyncCron(schedData.syncCronString || '0 12 * * *');
+            setScrapeCron(schedData.scrapeCronString || '0 0 * * *');
             setSchedulerScrapeStartId(schedData.scrapeStartId);
             setSchedulerScrapeEndId(schedData.scrapeEndId);
           }
@@ -170,8 +170,8 @@ export function Admin() {
   const handleStartScheduler = async () => {
     try {
       const res = await api.startScheduler(
-        syncIntervalHours * 60 * 60 * 1000,
-        scrapeIntervalHours * 60 * 60 * 1000,
+        syncCron,
+        scrapeCron,
         schedulerScrapeStartId,
         schedulerScrapeEndId
       );
@@ -217,9 +217,118 @@ export function Admin() {
   return (
     <div style={{ maxWidth: '800px', margin: '2rem auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
+      {/* 1. Unified System Automation Hub */}
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>System Automation & Worker Status</h2>
+        
+        {schedulerStatus ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ marginBottom: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
+              <strong>Scheduler Engine:</strong> 
+              <span style={{ color: schedulerStatus.isEnabled ? 'var(--rank-rainbow)' : 'var(--rank-failed)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
+                {schedulerStatus.isEnabled ? 'RUNNING' : 'STOPPED'}
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: isSyncingAll ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)' }}>
+                <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Global Sync Worker</h3>
+                <div style={{ color: isSyncingAll ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                  {isSyncingAll ? `Syncing (${syncAllProgress.current} / ${syncAllProgress.total})` : 'Idle'}
+                </div>
+                {schedulerStatus.isEnabled && (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    Next Run: {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: isScraping ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)' }}>
+                <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Discovery Scraper</h3>
+                <div style={{ color: isScraping ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                  {isScraping ? `Scraping ID: ${status.split(': ')[1] || 'Running'}` : 'Idle'}
+                </div>
+                {schedulerStatus.isEnabled && (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    Next Run: {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {!schedulerStatus.isEnabled && (
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', marginTop: '1rem' }}>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Schedule Configuration</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                  Define schedules using standard Cron expressions. For help generating cron strings, use <a href="https://crontab.guru/" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>crontab.guru</a>.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    Sync Cron (e.g. 0 12 * * *):
+                    <input 
+                      type="text" 
+                      value={syncCron} 
+                      onChange={(e) => setSyncCron(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    />
+                  </label>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    Scrape Cron (e.g. 0 0 * * *):
+                    <input 
+                      type="text" 
+                      value={scrapeCron} 
+                      onChange={(e) => setScrapeCron(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    />
+                  </label>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    Scrape Start ID:
+                    <input 
+                      type="number" 
+                      value={schedulerScrapeStartId} 
+                      onChange={(e) => setSchedulerScrapeStartId(parseInt(e.target.value) || 1)}
+                      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    />
+                  </label>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    Scrape End ID:
+                    <input 
+                      type="number" 
+                      value={schedulerScrapeEndId} 
+                      onChange={(e) => setSchedulerScrapeEndId(parseInt(e.target.value) || 5000)}
+                      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button 
+                onClick={handleStartScheduler}
+                disabled={schedulerStatus.isEnabled}
+                style={{ padding: '0.75rem 1.5rem', backgroundColor: schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              >
+                Apply Schedules & Start
+              </button>
+              <button 
+                onClick={handleStopScheduler}
+                disabled={!schedulerStatus.isEnabled}
+                style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              >
+                Stop Scheduler
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ color: 'var(--text-secondary)' }}>Loading scheduler state...</div>
+        )}
+      </div>
+
+      {/* 2. Manual Controls */}
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 className="text-gradient">Database Controls</h2>
+          <h2 className="text-gradient">Manual Overrides & Database Controls</h2>
           <button 
             onClick={handleBackup}
             style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
@@ -315,107 +424,8 @@ export function Admin() {
           </button>
         </div>
 
-        <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', color: 'var(--text-secondary)' }}>
-          <strong>Status:</strong> {status}
-        </div>
       </div>
       
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Background Scheduler</h2>
-        
-        {schedulerStatus ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <strong>Status:</strong> 
-              <span style={{ color: schedulerStatus.isEnabled ? 'var(--rank-rainbow)' : 'var(--rank-failed)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
-                {schedulerStatus.isEnabled ? 'RUNNING' : 'STOPPED'}
-              </span>
-            </div>
-            
-            {schedulerStatus.isEnabled && (
-              <>
-                <div style={{ color: 'var(--text-secondary)' }}>
-                  <strong>Current Task:</strong>{' '}
-                  {isSyncingAll ? (
-                    <span style={{ color: 'var(--accent-primary)' }}>Global Sync in Progress ({syncAllProgress.current} / {syncAllProgress.total})</span>
-                  ) : isScraping ? (
-                    <span style={{ color: 'var(--accent-primary)' }}>Discovery in Progress...</span>
-                  ) : (
-                    <span>Idle (Waiting for schedule)</span>
-                  )}
-                </div>
-                <div style={{ color: 'var(--text-secondary)' }}>
-                  <strong>Next Global Sync:</strong> {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
-                </div>
-                <div style={{ color: 'var(--text-secondary)' }}>
-                  <strong>Next Global Scrape:</strong> {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
-                </div>
-              </>
-            )}
-
-            {!schedulerStatus.isEnabled && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  Sync Interval (Hours):
-                  <input 
-                    type="number" 
-                    value={syncIntervalHours} 
-                    onChange={(e) => setSyncIntervalHours(parseFloat(e.target.value) || 12)}
-                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                  />
-                </label>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  Scrape Interval (Hours):
-                  <input 
-                    type="number" 
-                    value={scrapeIntervalHours} 
-                    onChange={(e) => setScrapeIntervalHours(parseFloat(e.target.value) || 24)}
-                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                  />
-                </label>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  Scrape Start ID:
-                  <input 
-                    type="number" 
-                    value={schedulerScrapeStartId} 
-                    onChange={(e) => setSchedulerScrapeStartId(parseInt(e.target.value) || 1)}
-                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                  />
-                </label>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  Scrape End ID:
-                  <input 
-                    type="number" 
-                    value={schedulerScrapeEndId} 
-                    onChange={(e) => setSchedulerScrapeEndId(parseInt(e.target.value) || 5000)}
-                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                  />
-                </label>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button 
-                onClick={handleStartScheduler}
-                disabled={schedulerStatus.isEnabled}
-                style={{ padding: '0.75rem 1.5rem', backgroundColor: schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-              >
-                Start Scheduler
-              </button>
-              <button 
-                onClick={handleStopScheduler}
-                disabled={!schedulerStatus.isEnabled}
-                style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-              >
-                Stop Scheduler
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ color: 'var(--text-secondary)' }}>Loading scheduler state...</div>
-        )}
-      </div>
-
       <div style={{ textAlign: 'center' }}>
         <button 
           onClick={() => {

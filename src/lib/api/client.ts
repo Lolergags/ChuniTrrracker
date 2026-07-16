@@ -174,11 +174,11 @@ export const api = {
     return res.json();
   },
 
-  startScheduler: async (syncIntervalMs?: number, scrapeIntervalMs?: number, scrapeStartId?: number, scrapeEndId?: number) => {
+  startScheduler: async (syncCron?: string, scrapeCron?: string, scrapeStartId?: number, scrapeEndId?: number) => {
     const res = await fetch(`${API_BASE}/admin/scheduler/start`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ syncIntervalMs, scrapeIntervalMs, scrapeStartId, scrapeEndId })
+      body: JSON.stringify({ syncCron, scrapeCron, scrapeStartId, scrapeEndId })
     });
     if (!res.ok) throw new Error('Failed to start scheduler');
     return res.json();

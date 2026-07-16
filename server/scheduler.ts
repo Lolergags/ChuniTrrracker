@@ -1,43 +1,49 @@
+import cron from 'node-cron';
+import parser from 'cron-parser';
 import { runGlobalScrape, runGlobalSync, getScraperStatus, getSyncAllStatus } from './scraper.js';
 
-let syncIntervalId: ReturnType<typeof setInterval> | null = null;
-let scrapeIntervalId: ReturnType<typeof setInterval> | null = null;
+let syncTask: cron.ScheduledTask | null = null;
+let scrapeTask: cron.ScheduledTask | null = null;
 
 let isSchedulerEnabled = false;
-let syncIntervalMs = 12 * 60 * 60 * 1000; // 12 hours
-let scrapeIntervalMs = 24 * 60 * 60 * 1000; // 24 hours
+let syncCronString = '0 12 * * *'; // Default: every day at 12:00 PM
+let scrapeCronString = '0 0 * * *'; // Default: every day at 12:00 AM
 let scrapeStartId = 1;
 let scrapeEndId = 5000;
-let nextSyncTime: number | null = null;
-let nextScrapeTime: number | null = null;
+
+function getNextDate(cronString: string) {
+  try {
+    const interval = parser.parseExpression(cronString);
+    return interval.next().getTime();
+  } catch (e) {
+    return null;
+  }
+}
 
 export function getSchedulerStatus() {
   return {
     isEnabled: isSchedulerEnabled,
-    syncIntervalMs,
-    scrapeIntervalMs,
+    syncCronString,
+    scrapeCronString,
     scrapeStartId,
     scrapeEndId,
-    nextSyncTime,
-    nextScrapeTime,
+    nextSyncTime: isSchedulerEnabled ? getNextDate(syncCronString) : null,
+    nextScrapeTime: isSchedulerEnabled ? getNextDate(scrapeCronString) : null,
   };
 }
 
-export function startScheduler(syncMs?: number, scrapeMs?: number, startId?: number, endId?: number) {
-  if (syncMs) syncIntervalMs = syncMs;
-  if (scrapeMs) scrapeIntervalMs = scrapeMs;
+export function startScheduler(syncCron?: string, scrapeCron?: string, startId?: number, endId?: number) {
+  if (syncCron) syncCronString = syncCron;
+  if (scrapeCron) scrapeCronString = scrapeCron;
   if (startId) scrapeStartId = startId;
   if (endId) scrapeEndId = endId;
 
-  stopScheduler(); // clear old intervals
+  stopScheduler(); // clear old tasks
   isSchedulerEnabled = true;
-  console.log('[Scheduler] Starting background tasks...');
+  console.log('[Scheduler] Starting background cron tasks...');
 
   // Setup Sync
-  nextSyncTime = Date.now() + syncIntervalMs;
-  syncIntervalId = setInterval(() => {
-    nextSyncTime = Date.now() + syncIntervalMs; // update next run time
-    
+  syncTask = cron.schedule(syncCronString, () => {
     const scrapeStatus = getScraperStatus();
     const syncStatus = getSyncAllStatus();
     if (scrapeStatus.isScraping || syncStatus.isSyncing) {
@@ -46,13 +52,10 @@ export function startScheduler(syncMs?: number, scrapeMs?: number, startId?: num
     }
     console.log('[Scheduler] Triggering scheduled Global Sync.');
     runGlobalSync().catch(err => console.error('[Scheduler] Global Sync Error:', err));
-  }, syncIntervalMs);
+  });
 
   // Setup Scrape
-  nextScrapeTime = Date.now() + scrapeIntervalMs;
-  scrapeIntervalId = setInterval(() => {
-    nextScrapeTime = Date.now() + scrapeIntervalMs; // update next run time
-    
+  scrapeTask = cron.schedule(scrapeCronString, () => {
     const scrapeStatus = getScraperStatus();
     const syncStatus = getSyncAllStatus();
     if (scrapeStatus.isScraping || syncStatus.isSyncing) {
@@ -61,16 +64,14 @@ export function startScheduler(syncMs?: number, scrapeMs?: number, startId?: num
     }
     console.log(`[Scheduler] Triggering scheduled Global Scrape (${scrapeStartId} to ${scrapeEndId}).`);
     runGlobalScrape(scrapeStartId, scrapeEndId).catch(err => console.error('[Scheduler] Global Scrape Error:', err));
-  }, scrapeIntervalMs);
+  });
 }
 
 export function stopScheduler() {
-  if (syncIntervalId) clearInterval(syncIntervalId);
-  if (scrapeIntervalId) clearInterval(scrapeIntervalId);
-  syncIntervalId = null;
-  scrapeIntervalId = null;
-  nextSyncTime = null;
-  nextScrapeTime = null;
+  if (syncTask) syncTask.stop();
+  if (scrapeTask) scrapeTask.stop();
+  syncTask = null;
+  scrapeTask = null;
   isSchedulerEnabled = false;
   console.log('[Scheduler] Stopped.');
 }

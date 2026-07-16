@@ -668,18 +668,27 @@ router.post('/admin/restore', adminAuth, upload.single('database'), (req, res) =
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   
   try {
-    // 1. Close current DB
+    // 1. Force checkpoint and truncate WAL before closing so it doesn't corrupt the restored DB
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (e) {
+      console.error('Failed to checkpoint WAL:', e);
+    }
+
+    // 2. Close current DB
     db.close();
     
-    // 2. Overwrite file
+    // 3. Overwrite file
     fs.copyFileSync(req.file.path, DB_PATH);
     
-    // 3. Delete WAL and SHM to prevent corruption if they exist
-    if (fs.existsSync(DB_PATH + '-wal')) fs.unlinkSync(DB_PATH + '-wal');
-    if (fs.existsSync(DB_PATH + '-shm')) fs.unlinkSync(DB_PATH + '-shm');
+    // 4. Delete WAL and SHM to prevent corruption if they exist
+    // On Windows, these files may remain locked by the OS for a few milliseconds after closing.
+    // If we checkpointed successfully, it is safe if they fail to delete because they are 0 bytes.
+    try { if (fs.existsSync(DB_PATH + '-wal')) fs.unlinkSync(DB_PATH + '-wal'); } catch (e) { console.warn('Could not delete WAL', e); }
+    try { if (fs.existsSync(DB_PATH + '-shm')) fs.unlinkSync(DB_PATH + '-shm'); } catch (e) { console.warn('Could not delete SHM', e); }
     
-    // 4. Delete temp file
-    fs.unlinkSync(req.file.path);
+    // 5. Delete temp file
+    try { fs.unlinkSync(req.file.path); } catch (e) {}
     
     res.json({ success: true, message: 'Database restored successfully. Server is restarting...' });
     

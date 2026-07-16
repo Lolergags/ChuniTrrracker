@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { CronBuilder } from '../components/CronBuilder.js';
+import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 
 export function Admin() {
   const { playersList, refreshPlayers, isAdmin, setIsAdmin } = useContext(GlobalContext);
@@ -396,17 +397,14 @@ export function Admin() {
           {/* Delete Player */}
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
             <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Delete Player</h3>
-            <input 
-              type="text"
-              list="admin-players-list"
-              placeholder="Search or select a player..."
-              value={playerToDelete}
-              onChange={(e) => setPlayerToDelete(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-            />
-            <datalist id="admin-players-list">
-              {playersList.map(p => <option key={p} value={p} />)}
-            </datalist>
+            <div style={{ marginBottom: '1rem' }}>
+              <PlayerAutocomplete
+                value={playerToDelete}
+                onChange={setPlayerToDelete}
+                placeholder="Search or select a player..."
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+              />
+            </div>
             <button 
               onClick={handleDeletePlayer}
               disabled={!playersList.includes(playerToDelete)}
@@ -498,18 +496,11 @@ export function Admin() {
               Prevent specific Kamaitachi users from being imported by the scraper or manual sync. Blacklisting a user will also permanently delete any of their existing scores from this tracker.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-              <input 
-                type="text" 
-                list="admin-players-list"
-                placeholder="Kamaitachi User ID or Username" 
-                value={blacklistInput} 
-                onChange={e => setBlacklistInput(e.target.value)}
-                data-1p-ignore="true"
-                data-bwignore="true"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck="false"
-                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+              <PlayerAutocomplete
+                value={blacklistInput}
+                onChange={setBlacklistInput}
+                placeholder="Kamaitachi User ID or Username"
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
               />
               <button 
                 onClick={handleAddBlacklist}

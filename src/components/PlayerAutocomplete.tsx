@@ -55,7 +55,7 @@ export function PlayerAutocomplete({ value, onChange, placeholder, className, st
         autoCorrect="off"
         spellCheck="false"
       />
-      {showDropdown && deferredValue && (
+      {showDropdown && deferredValue.trim().length > 0 && (
         <ul style={{
           position: 'absolute',
           top: '100%',

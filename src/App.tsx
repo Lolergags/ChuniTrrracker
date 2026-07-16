@@ -115,7 +115,7 @@ const AppContent = () => {
                 width: '250px'
               }}
             />
-            {showDropdown && deferredSearchInput && (
+            {showDropdown && deferredSearchInput.trim().length > 0 && (
               <ul style={{
                 position: 'absolute',
                 top: '100%',

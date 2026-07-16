@@ -170,16 +170,14 @@ export function Admin() {
   };
 
   const handleAddBlacklist = async () => {
-    if (!blacklistInput) return;
-    const kamaitachiId = parseInt(blacklistInput, 10);
-    if (isNaN(kamaitachiId)) {
-      setBlacklistMessage('ID must be a number.');
+    if (!blacklistInput.trim()) {
+      setBlacklistMessage('Input is required.');
       return;
     }
     
     setBlacklistMessage('Adding to blacklist...');
     try {
-      const data = await api.addToBlacklist(kamaitachiId);
+      const data = await api.addToBlacklist(blacklistInput.trim());
       setBlacklistMessage(data.message || 'Added successfully.');
       setBlacklistInput('');
       fetchBlacklist();
@@ -500,9 +498,14 @@ export function Admin() {
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
               <input 
                 type="text" 
-                placeholder="Kamaitachi User ID" 
+                placeholder="Kamaitachi User ID or Username" 
                 value={blacklistInput} 
                 onChange={e => setBlacklistInput(e.target.value)}
+                data-1p-ignore="true"
+                data-bwignore="true"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
                 style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
               />
               <button 

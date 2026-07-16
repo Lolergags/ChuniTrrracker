@@ -259,11 +259,11 @@ export const api = {
     return res.json();
   },
 
-  addToBlacklist: async (kamaitachiId: number) => {
+  addToBlacklist: async (identifier: string) => {
     const res = await fetch(`${API_BASE}/admin/blacklist`, {
       method: 'POST',
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kamaitachiId })
+      body: JSON.stringify({ identifier })
     });
     if (!res.ok) {
       const err = await res.json();

@@ -10,6 +10,8 @@ export function Admin() {
   const [apiKey, setApiKey] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  
+  const [schedulerMessage, setSchedulerMessage] = useState('');
 
   // Scraper state
   const [status, setStatus] = useState<string>('Idle');
@@ -177,6 +179,8 @@ export function Admin() {
         schedulerScrapeEndId
       );
       setSchedulerStatus(res.status);
+      setSchedulerMessage('Schedules applied successfully!');
+      setTimeout(() => setSchedulerMessage(''), 3000);
     } catch (err) {
       alert("Failed to start scheduler");
     }
@@ -293,21 +297,22 @@ export function Admin() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button 
-                onClick={handleStartScheduler}
-                style={{ padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                Apply Schedules & Start
-              </button>
-              <button 
-                onClick={handleStopScheduler}
-                disabled={!schedulerStatus.isEnabled}
-                style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-              >
-                Stop Scheduler
-              </button>
-            </div>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                <button 
+                  onClick={handleStartScheduler}
+                  style={{ padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Apply Schedules & Start
+                </button>
+                <button 
+                  onClick={handleStopScheduler}
+                  disabled={!schedulerStatus.isEnabled}
+                  style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                >
+                  Stop Engine
+                </button>
+                {schedulerMessage && <span style={{ color: 'var(--rank-ajc)', fontSize: '0.9rem' }}>{schedulerMessage}</span>}
+              </div>
           </div>
         ) : (
           <div style={{ color: 'var(--text-secondary)' }}>Loading scheduler state...</div>

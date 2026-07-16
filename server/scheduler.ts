@@ -19,9 +19,10 @@ export function updateScrapeBounds(lastValidId: number) {
 
 function getNextDate(cronString: string) {
   try {
-    const interval = parser.parseExpression(cronString);
+    const interval = parser.parse(cronString);
     return interval.next().getTime();
   } catch (e) {
+    console.error("Cron parser error:", e);
     return null;
   }
 }

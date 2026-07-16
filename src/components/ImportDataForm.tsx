@@ -45,7 +45,8 @@ export function ImportDataForm() {
           placeholder="Kamaitachi Username" 
           value={input} 
           onChange={(e) => setInput(e.target.value)} 
-          autoComplete="off"
+          autoComplete="on"
+          data-bwignore="true"
           data-lpignore="true"
           data-1p-ignore
           data-form-type="other"

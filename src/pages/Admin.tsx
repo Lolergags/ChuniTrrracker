@@ -38,6 +38,8 @@ export function Admin() {
   const [blacklist, setBlacklist] = useState<any[]>([]);
   const [blacklistInput, setBlacklistInput] = useState('');
   const [blacklistMessage, setBlacklistMessage] = useState('');
+  const [blacklistPage, setBlacklistPage] = useState(1);
+  const BLACKLIST_PER_PAGE = 5;
 
   const fetchBlacklist = async () => {
     try {
@@ -525,7 +527,7 @@ export function Admin() {
               {blacklist.length === 0 ? (
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>No blacklisted users.</div>
               ) : (
-                blacklist.map((b: any) => (
+                blacklist.slice((blacklistPage - 1) * BLACKLIST_PER_PAGE, blacklistPage * BLACKLIST_PER_PAGE).map((b: any) => (
                   <div key={b.kamaitachi_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
                     <div>
                       <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>{b.username}</span>
@@ -541,6 +543,28 @@ export function Admin() {
                 ))
               )}
             </div>
+            
+            {blacklist.length > BLACKLIST_PER_PAGE && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', fontSize: '0.9rem' }}>
+                <button
+                  onClick={() => setBlacklistPage(p => Math.max(1, p - 1))}
+                  disabled={blacklistPage === 1}
+                  style={{ padding: '0.25rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', cursor: blacklistPage === 1 ? 'not-allowed' : 'pointer', opacity: blacklistPage === 1 ? 0.5 : 1 }}
+                >
+                  Previous
+                </button>
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  Page {blacklistPage} of {Math.ceil(blacklist.length / BLACKLIST_PER_PAGE)}
+                </span>
+                <button
+                  onClick={() => setBlacklistPage(p => Math.min(Math.ceil(blacklist.length / BLACKLIST_PER_PAGE), p + 1))}
+                  disabled={blacklistPage === Math.ceil(blacklist.length / BLACKLIST_PER_PAGE)}
+                  style={{ padding: '0.25rem 0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', cursor: blacklistPage === Math.ceil(blacklist.length / BLACKLIST_PER_PAGE) ? 'not-allowed' : 'pointer', opacity: blacklistPage === Math.ceil(blacklist.length / BLACKLIST_PER_PAGE) ? 0.5 : 1 }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
 
         </div>

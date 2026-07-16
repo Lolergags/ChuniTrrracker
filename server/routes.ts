@@ -699,6 +699,8 @@ router.post('/admin/sync-all', adminAuth, async (req, res) => {
           console.error(`[Sync-All] Failed to sync ${p.username}: ${e.message}`);
         }
         globalSyncState.current++;
+        // 1.5s delay between players to respect Kamaitachi's rate limits
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
       console.log(`[Sync-All] Finished syncing all players.`);
       globalSyncState.isSyncing = false;

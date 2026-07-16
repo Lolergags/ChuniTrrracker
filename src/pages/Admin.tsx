@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { CronBuilder } from '../components/CronBuilder.js';
@@ -32,7 +32,7 @@ export function Admin() {
   const [scrapeCron, setScrapeCron] = useState<string>('0 0 * * *');
   const [schedulerScrapeStartId, setSchedulerScrapeStartId] = useState<number>(1);
   const [schedulerScrapeEndId, setSchedulerScrapeEndId] = useState<number>(5000);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
     // Check initial auth on mount
@@ -49,30 +49,46 @@ export function Admin() {
 
   useEffect(() => {
     if (!isAdmin) return;
+
+    let isMounted = true;
     
-    // Poll scraper status only if logged in
+    // Initial fetch for progress
+    api.getSyncAllStatus().then(data => {
+      if (!isMounted) return;
+      setIsSyncingAll(data.isSyncing);
+      setSyncAllProgress(data.progress || { current: 0, total: 0, currentUser: '' });
+    }).catch(() => {});
+
+    api.getScraperStatus().then(data => {
+      if (!isMounted) return;
+      setIsScraping(data.isScraping);
+      if (data.isScraping) {
+        setStatus(`Running: ${data.currentId}`);
+      }
+    }).catch(() => {});
+
+    // Polling interval
     const interval = setInterval(async () => {
+      if (!isMounted) return;
+      
       try {
         const data = await api.getScraperStatus();
         setIsScraping(data.isScraping);
         if (data.isScraping) {
-          setStatus(`Scraping... Current ID: ${data.currentScrapeId}`);
-        } else if (status.startsWith('Scraping')) {
-          setStatus('Stopped.');
+          setStatus(`Running: ${data.currentId}`);
+        } else {
+          setStatus('Idle');
         }
       } catch (err) {
-        // ignore fetch errors
+        // ignore
       }
 
-      // Poll sync-all status
       try {
-        const syncData = await api.getSyncAllStatus();
-        setIsSyncingAll(syncData.isSyncing);
-        if (syncData.isSyncing) {
-          setSyncAllProgress(syncData);
-          setSyncAllMessage(`Syncing ${syncData.current} / ${syncData.total}...`);
+        const data = await api.getSyncAllStatus();
+        setIsSyncingAll(data.isSyncing);
+        if (data.isSyncing) {
+          setSyncAllProgress(data.progress || { current: 0, total: 0, currentUser: '' });
         } else {
-          setSyncAllMessage((prev) => prev.startsWith('Syncing') ? 'Sync complete.' : prev);
           setSyncAllProgress({ current: 0, total: 0, currentUser: '' });
         }
       } catch (err) {
@@ -84,14 +100,14 @@ export function Admin() {
         const schedData = await api.getSchedulerStatus();
         setSchedulerStatus(schedData);
         
-        if (!isInitialized) {
+        if (!isInitialized.current) {
           setSyncCron(schedData.syncCronString || '0 12 * * *');
           setScrapeCron(schedData.scrapeCronString || '0 0 * * *');
           setSchedulerScrapeStartId(schedData.scrapeStartId || 1);
           setSchedulerScrapeEndId(schedData.scrapeEndId || 5000);
           setStartId(schedData.scrapeStartId || 1);
           setEndId(schedData.scrapeEndId || 5000);
-          setIsInitialized(true);
+          isInitialized.current = true;
         }
       } catch (err) {
         // ignore
@@ -229,7 +245,7 @@ export function Admin() {
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>System Automation & Worker Status</h2>
         
-        {schedulerStatus && isInitialized ? (
+        {schedulerStatus && isInitialized.current ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ marginBottom: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
               <strong>Scheduler Engine:</strong> 

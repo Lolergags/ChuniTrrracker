@@ -614,7 +614,7 @@ router.get('/performance/players', (req, res) => {
 
 // 10. Admin & Scraper Controls
 import { runGlobalScrape, stopGlobalScrape, getScraperStatus, runGlobalSync, getSyncAllStatus, globalSyncState } from './scraper.js';
-import { getSchedulerStatus, startScheduler, stopScheduler } from './scheduler.js';
+import { getSchedulerStatus, startScheduler, stopScheduler, updateScrapeBounds } from './scheduler.js';
 
 const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
@@ -679,7 +679,13 @@ router.post('/admin/sync-all', adminAuth, async (req, res) => {
 
 router.post('/scraper/start', adminAuth, (req, res) => {
   const { startId = 1, endId = 5000 } = req.body;
-  runGlobalScrape(startId, endId);
+  runGlobalScrape(startId, endId)
+    .then((lastValidId) => {
+      if (lastValidId !== undefined) {
+        updateScrapeBounds(lastValidId);
+      }
+    })
+    .catch(console.error);
   res.json({ success: true, message: `Scraper started from ID ${startId} to ${endId}` });
 });
 

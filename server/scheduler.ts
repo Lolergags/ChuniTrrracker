@@ -11,6 +11,12 @@ let scrapeCronString = '0 0 * * *'; // Default: every day at 12:00 AM
 let scrapeStartId = 1;
 let scrapeEndId = 5000;
 
+export function updateScrapeBounds(lastValidId: number) {
+  scrapeStartId = lastValidId;
+  scrapeEndId = Math.max(scrapeEndId, scrapeStartId + 1000);
+  console.log(`[Scheduler] Scrape bounds updated: ${scrapeStartId} to ${scrapeEndId}`);
+}
+
 function getNextDate(cronString: string) {
   try {
     const interval = parser.parseExpression(cronString);
@@ -63,7 +69,13 @@ export function startScheduler(syncCron?: string, scrapeCron?: string, startId?:
       return;
     }
     console.log(`[Scheduler] Triggering scheduled Global Scrape (${scrapeStartId} to ${scrapeEndId}).`);
-    runGlobalScrape(scrapeStartId, scrapeEndId).catch(err => console.error('[Scheduler] Global Scrape Error:', err));
+    runGlobalScrape(scrapeStartId, scrapeEndId)
+      .then((lastValidId) => {
+        if (lastValidId !== undefined) {
+          updateScrapeBounds(lastValidId);
+        }
+      })
+      .catch(err => console.error('[Scheduler] Global Scrape Error:', err));
   });
 }
 

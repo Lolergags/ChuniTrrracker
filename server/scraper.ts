@@ -8,10 +8,11 @@ const DELAY_MS = 1500; // 1.5s delay to stay under ~40 req/min
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export async function runGlobalScrape(startId: number = 1, endId: number = 5000) {
-  if (isScraping) return;
+export async function runGlobalScrape(startId: number = 1, endId: number = 5000): Promise<number | undefined> {
+  if (isScraping) return undefined;
   isScraping = true;
   currentScrapeId = startId;
+  let lastValidId = startId;
 
   console.log(`[Scraper] Starting global scrape from ID ${startId} to ${endId}`);
 
@@ -35,6 +36,7 @@ export async function runGlobalScrape(startId: number = 1, endId: number = 5000)
           // we are doing 2 requests per user here. We should increase the delay or just accept it.
           await syncPlayer(username);
           console.log(`[Scraper] Successfully imported user ID ${currentScrapeId} (${username})`);
+          lastValidId = currentScrapeId;
         }
       } catch (err: any) {
         if (err.message.includes('User not found') || err.message.includes('404')) {
@@ -52,9 +54,10 @@ export async function runGlobalScrape(startId: number = 1, endId: number = 5000)
       currentScrapeId++;
       await delay(DELAY_MS);
     }
+    return lastValidId;
   } finally {
     isScraping = false;
-    console.log(`[Scraper] Stopped.`);
+    console.log(`[Scraper] Stopped. Last valid ID: ${lastValidId}`);
   }
 }
 

@@ -287,9 +287,9 @@ export const api = {
 
     // Cannot use standard JSON getAuthHeaders because this is multipart/form-data
     // So we just set Authorization and omit Content-Type (fetch handles boundary)
-    const token = localStorage.getItem('chunitrrracker_admin_token');
+    const token = localStorage.getItem('adminKey');
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) headers['Authorization'] = token;
 
     const res = await fetch(`${API_BASE}/admin/restore`, {
       method: 'POST',

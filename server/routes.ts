@@ -697,8 +697,8 @@ router.get('/admin/scheduler', adminAuth, (req, res) => {
 });
 
 router.post('/admin/scheduler/start', adminAuth, (req, res) => {
-  const { syncIntervalMs, scrapeIntervalMs } = req.body;
-  startScheduler(syncIntervalMs, scrapeIntervalMs);
+  const { syncIntervalMs, scrapeIntervalMs, scrapeStartId, scrapeEndId } = req.body;
+  startScheduler(syncIntervalMs, scrapeIntervalMs, scrapeStartId, scrapeEndId);
   res.json({ success: true, message: 'Scheduler started.', status: getSchedulerStatus() });
 });
 

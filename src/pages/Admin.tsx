@@ -25,6 +25,10 @@ export function Admin() {
 
   // Scheduler state
   const [schedulerStatus, setSchedulerStatus] = useState<any>(null);
+  const [syncIntervalHours, setSyncIntervalHours] = useState<number>(12);
+  const [scrapeIntervalHours, setScrapeIntervalHours] = useState<number>(24);
+  const [schedulerScrapeStartId, setSchedulerScrapeStartId] = useState<number>(1);
+  const [schedulerScrapeEndId, setSchedulerScrapeEndId] = useState<number>(5000);
 
   useEffect(() => {
     // Check initial auth on mount
@@ -74,7 +78,15 @@ export function Admin() {
       // Poll scheduler status
       try {
         const schedData = await api.getSchedulerStatus();
-        setSchedulerStatus(schedData);
+        setSchedulerStatus((prev: any) => {
+          if (!prev) {
+            setSyncIntervalHours(schedData.syncIntervalMs / (1000 * 60 * 60));
+            setScrapeIntervalHours(schedData.scrapeIntervalMs / (1000 * 60 * 60));
+            setSchedulerScrapeStartId(schedData.scrapeStartId);
+            setSchedulerScrapeEndId(schedData.scrapeEndId);
+          }
+          return schedData;
+        });
       } catch (err) {
         // ignore
       }
@@ -157,7 +169,12 @@ export function Admin() {
 
   const handleStartScheduler = async () => {
     try {
-      const res = await api.startScheduler();
+      const res = await api.startScheduler(
+        syncIntervalHours * 60 * 60 * 1000,
+        scrapeIntervalHours * 60 * 60 * 1000,
+        schedulerScrapeStartId,
+        schedulerScrapeEndId
+      );
       setSchedulerStatus(res.status);
     } catch (err) {
       alert("Failed to start scheduler");
@@ -324,6 +341,47 @@ export function Admin() {
                   <strong>Next Global Scrape:</strong> {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
                 </div>
               </>
+            )}
+
+            {!schedulerStatus.isEnabled && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  Sync Interval (Hours):
+                  <input 
+                    type="number" 
+                    value={syncIntervalHours} 
+                    onChange={(e) => setSyncIntervalHours(parseFloat(e.target.value) || 12)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  />
+                </label>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  Scrape Interval (Hours):
+                  <input 
+                    type="number" 
+                    value={scrapeIntervalHours} 
+                    onChange={(e) => setScrapeIntervalHours(parseFloat(e.target.value) || 24)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  />
+                </label>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  Scrape Start ID:
+                  <input 
+                    type="number" 
+                    value={schedulerScrapeStartId} 
+                    onChange={(e) => setSchedulerScrapeStartId(parseInt(e.target.value) || 1)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  />
+                </label>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  Scrape End ID:
+                  <input 
+                    type="number" 
+                    value={schedulerScrapeEndId} 
+                    onChange={(e) => setSchedulerScrapeEndId(parseInt(e.target.value) || 5000)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  />
+                </label>
+              </div>
             )}
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

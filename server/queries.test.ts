@@ -46,6 +46,12 @@ describe('Database Queries (Production Schema)', () => {
         time_achieved INTEGER NOT NULL DEFAULT 0,
         UNIQUE(player_id, chart_id)
       );
+
+      CREATE TABLE blacklisted_users (
+        kamaitachi_id INTEGER PRIMARY KEY,
+        username TEXT NOT NULL,
+        added_at INTEGER NOT NULL
+      );
     `);
 
     // Seed data
@@ -217,5 +223,36 @@ describe('Database Queries (Production Schema)', () => {
     
     expect(query[1].groupedConstant).toBe(10.5);
     expect(query[1].count).toBe(2); // IDs 12 and 13
+  });
+
+  describe('Blacklist Purge Logic Regression', () => {
+    it('purges legacy players with NULL kamaitachi_id using their username', () => {
+      // Seed legacy player
+      db.prepare(`INSERT INTO players (username, kamaitachi_id) VALUES ('legacy_user', NULL)`).run();
+      const legacyPlayer = db.prepare(`SELECT id FROM players WHERE username = 'legacy_user'`).get() as any;
+      
+      // Give them a score
+      db.prepare(`INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (?, 1, 1000000, 'CLEAR', 100)`).run(legacyPlayer.id);
+
+      // Simulate blacklist purge logic (from routes.ts)
+      const resolvedKamaitachiId = 9999;
+      const targetUsername = 'legacy_user';
+      
+      // This query must match the one in routes.ts exactly: WHERE kamaitachi_id = ? OR username = ?
+      const existingPlayer = db.prepare('SELECT id FROM players WHERE kamaitachi_id = ? OR username = ?').get(resolvedKamaitachiId, targetUsername) as any;
+      
+      expect(existingPlayer).toBeDefined();
+      
+      if (existingPlayer) {
+        db.prepare('DELETE FROM scores WHERE player_id = ?').run(existingPlayer.id);
+        db.prepare('DELETE FROM players WHERE id = ?').run(existingPlayer.id);
+      }
+
+      const checkPlayer = db.prepare('SELECT * FROM players WHERE username = ?').get(targetUsername);
+      const checkScores = db.prepare('SELECT * FROM scores WHERE player_id = ?').all(legacyPlayer.id);
+
+      expect(checkPlayer).toBeUndefined();
+      expect(checkScores.length).toBe(0);
+    });
   });
 });

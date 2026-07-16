@@ -32,6 +32,7 @@ export function Admin() {
   const [scrapeCron, setScrapeCron] = useState<string>('0 0 * * *');
   const [schedulerScrapeStartId, setSchedulerScrapeStartId] = useState<number>(1);
   const [schedulerScrapeEndId, setSchedulerScrapeEndId] = useState<number>(5000);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     // Check initial auth on mount

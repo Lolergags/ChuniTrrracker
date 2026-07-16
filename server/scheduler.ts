@@ -33,8 +33,8 @@ export function getSchedulerStatus() {
     scrapeCronString,
     scrapeStartId,
     scrapeEndId,
-    nextSyncTime: isSchedulerEnabled ? getNextDate(syncCronString) : null,
-    nextScrapeTime: isSchedulerEnabled ? getNextDate(scrapeCronString) : null,
+    nextSyncTime: getNextDate(syncCronString),
+    nextScrapeTime: getNextDate(scrapeCronString),
   };
 }
 

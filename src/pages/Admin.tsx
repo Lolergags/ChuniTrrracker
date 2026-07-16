@@ -237,11 +237,10 @@ export function Admin() {
                 <div style={{ color: isSyncingAll ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                   {isSyncingAll ? `Syncing (${syncAllProgress.current} / ${syncAllProgress.total})` : 'Idle'}
                 </div>
-                {schedulerStatus.isEnabled && (
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                    Next Run: {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
-                  </div>
-                )}
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                  {schedulerStatus.isEnabled ? 'Next Run: ' : 'Projected Next Run: '}
+                  {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
+                </div>
               </div>
 
               <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: isScraping ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)' }}>
@@ -249,11 +248,10 @@ export function Admin() {
                 <div style={{ color: isScraping ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                   {isScraping ? `Scraping ID: ${status.split(': ')[1] || 'Running'}` : 'Idle'}
                 </div>
-                {schedulerStatus.isEnabled && (
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                    Next Run: {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
-                  </div>
-                )}
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                  {schedulerStatus.isEnabled ? 'Next Run: ' : 'Projected Next Run: '}
+                  {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
+                </div>
               </div>
             </div>
 

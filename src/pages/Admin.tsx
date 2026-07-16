@@ -38,6 +38,7 @@ export function Admin() {
   // Blacklist state
   const [blacklist, setBlacklist] = useState<any[]>([]);
   const [blacklistInput, setBlacklistInput] = useState('');
+  const [currentScrapeId, setCurrentScrapeId] = useState<number>(0);
   const [blacklistMessage, setBlacklistMessage] = useState('');
   const [blacklistPage, setBlacklistPage] = useState(1);
   const BLACKLIST_PER_PAGE = 5;
@@ -76,14 +77,15 @@ export function Admin() {
     api.getSyncAllStatus().then(data => {
       if (!isMounted) return;
       setIsSyncingAll(data.isSyncing);
-      setSyncAllProgress(data.progress || { current: 0, total: 0, currentUser: '' });
+      setSyncAllProgress(data);
     }).catch(() => {});
 
     api.getScraperStatus().then(data => {
       if (!isMounted) return;
       setIsScraping(data.isScraping);
       if (data.isScraping) {
-        setStatus(`Running: ${data.currentId}`);
+        setCurrentScrapeId(data.currentScrapeId);
+        setStatus(`Running: ${data.currentScrapeId}`);
       }
     }).catch(() => {});
 
@@ -95,7 +97,8 @@ export function Admin() {
         const data = await api.getScraperStatus();
         setIsScraping(data.isScraping);
         if (data.isScraping) {
-          setStatus(`Running: ${data.currentId}`);
+          setCurrentScrapeId(data.currentScrapeId);
+          setStatus(`Running: ${data.currentScrapeId}`);
         } else {
           setStatus('Idle');
         }
@@ -107,7 +110,7 @@ export function Admin() {
         const data = await api.getSyncAllStatus();
         setIsSyncingAll(data.isSyncing);
         if (data.isSyncing) {
-          setSyncAllProgress(data.progress || { current: 0, total: 0, currentUser: '' });
+          setSyncAllProgress(data);
         } else {
           setSyncAllProgress({ current: 0, total: 0, currentUser: '' });
         }
@@ -339,7 +342,7 @@ export function Admin() {
               <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: isScraping ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)' }}>
                 <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Discovery Scraper</h3>
                 <div style={{ color: isScraping ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
-                  {isScraping ? `Scraping ID: ${status.split(': ')[1] || 'Running'}` : 'Idle'}
+                  {isScraping ? `Scraping ID: ${currentScrapeId || 'Starting...'}` : 'Idle'}
                 </div>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
                   {schedulerStatus.isEnabled ? 'Next Run: ' : 'Projected Next Run: '}

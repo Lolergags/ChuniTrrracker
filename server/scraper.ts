@@ -19,6 +19,17 @@ export async function runGlobalScrape(startId: number = 1, endId: number = 5000)
   try {
     while (currentScrapeId <= endId && isScraping) {
       try {
+        const isBlacklisted = db.prepare('SELECT kamaitachi_id FROM blacklisted_users WHERE kamaitachi_id = ?').get(currentScrapeId);
+        if (isBlacklisted) {
+          console.log(`[Scraper] Skipping blacklisted user ID ${currentScrapeId}`);
+          if (currentScrapeId === endId) {
+            console.log(`[Scraper] Reached end ID ${endId}. Complete.`);
+            break;
+          }
+          currentScrapeId++;
+          continue; // No delay needed since no API request was made
+        }
+
         // First fetch the user profile to get the username and check if they exist
         const userRes = await fetch(`https://kamai.tachi.ac/api/v1/users/${currentScrapeId}`);
         if (!userRes.ok) {

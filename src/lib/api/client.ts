@@ -250,5 +250,34 @@ export const api = {
       a.remove();
       window.URL.revokeObjectURL(url);
     });
+  },
+
+  getBlacklist: async () => {
+    const res = await fetch(`${API_BASE}/admin/blacklist`, {
+      headers: getAuthHeaders()
+    });
+    return res.json();
+  },
+
+  addToBlacklist: async (kamaitachiId: number) => {
+    const res = await fetch(`${API_BASE}/admin/blacklist`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kamaitachiId })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add to blacklist');
+    }
+    return res.json();
+  },
+
+  removeFromBlacklist: async (id: number) => {
+    const res = await fetch(`${API_BASE}/admin/blacklist/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to remove from blacklist');
+    return res.json();
   }
 };

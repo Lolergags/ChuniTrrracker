@@ -713,4 +713,46 @@ router.post('/admin/scheduler/stop', adminAuth, (req, res) => {
   res.json({ success: true, message: 'Scheduler stopped.', status: getSchedulerStatus() });
 });
 
+router.get('/admin/blacklist', adminAuth, (req, res) => {
+  const users = db.prepare(`SELECT kamaitachi_id, username, added_at FROM blacklisted_users ORDER BY added_at DESC`).all();
+  res.json(users);
+});
+
+router.post('/admin/blacklist', adminAuth, async (req, res) => {
+  const { kamaitachiId } = req.body;
+  if (!kamaitachiId) return res.status(400).json({ error: 'kamaitachiId is required' });
+
+  try {
+    const response = await fetch(`https://kamai.tachi.ac/api/v1/users/${kamaitachiId}`);
+    if (!response.ok) {
+      if (response.status === 404) return res.status(404).json({ error: 'User not found on Kamaitachi.' });
+      throw new Error(`Kamaitachi API error: ${response.status}`);
+    }
+    const data = await response.json();
+    const username = data.body.username;
+
+    db.prepare(`INSERT OR REPLACE INTO blacklisted_users (kamaitachi_id, username, added_at) VALUES (?, ?, ?)`).run(
+      kamaitachiId, username, Date.now()
+    );
+
+    // Purge existing data
+    const existingPlayer = db.prepare('SELECT id FROM players WHERE kamaitachi_id = ?').get(kamaitachiId) as {id: number} | undefined;
+    if (existingPlayer) {
+      db.prepare('DELETE FROM scores WHERE player_id = ?').run(existingPlayer.id);
+      db.prepare('DELETE FROM players WHERE id = ?').run(existingPlayer.id);
+    }
+
+    res.json({ success: true, message: `Added ${username} to blacklist and purged their data.` });
+  } catch (err: any) {
+    console.error('Error adding to blacklist:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/admin/blacklist/:id', adminAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  db.prepare(`DELETE FROM blacklisted_users WHERE kamaitachi_id = ?`).run(id);
+  res.json({ success: true, message: 'Removed from blacklist.' });
+});
+
 export default router;

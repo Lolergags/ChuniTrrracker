@@ -38,6 +38,12 @@ db.exec(`
     value TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS blacklisted_users (
+    kamaitachi_id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL,
+    added_at INTEGER NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,

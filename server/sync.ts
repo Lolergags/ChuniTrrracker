@@ -111,7 +111,25 @@ export async function syncPlayer(username: string, apiKey?: string) {
     if (!meRes.ok) throw new Error('Invalid API Key or unable to authenticate');
     const meData = await meRes.json();
     targetUserId = meData.body.id.toString();
-    username = meData.body.username; // Use actual username
+    username = meData.body.username;
+  }
+
+  // Check blacklist before proceeding
+  try {
+    const userRes = await fetch(`https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}`);
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      const kamaitachiId = userData.body.id;
+      const isBlacklisted = db.prepare('SELECT kamaitachi_id FROM blacklisted_users WHERE kamaitachi_id = ?').get(kamaitachiId);
+      if (isBlacklisted) {
+        throw new Error(`User ${username} is blacklisted and cannot be synced.`);
+      }
+      targetUserId = kamaitachiId.toString();
+      username = userData.body.username;
+    }
+  } catch (err: any) {
+    if (err.message.includes('blacklisted')) throw err;
+    console.warn(`Could not verify blacklist status before syncing ${username}:`, err.message);
   }
 
   let rawScores: any[] = [];

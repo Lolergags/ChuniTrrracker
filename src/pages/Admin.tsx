@@ -34,12 +34,29 @@ export function Admin() {
   const [schedulerScrapeEndId, setSchedulerScrapeEndId] = useState<number>(5000);
   const isInitialized = useRef(false);
 
+  // Blacklist state
+  const [blacklist, setBlacklist] = useState<any[]>([]);
+  const [blacklistInput, setBlacklistInput] = useState('');
+  const [blacklistMessage, setBlacklistMessage] = useState('');
+
+  const fetchBlacklist = async () => {
+    try {
+      const data = await api.getBlacklist();
+      setBlacklist(data);
+    } catch (e) {
+      console.error('Failed to fetch blacklist', e);
+    }
+  };
+
   useEffect(() => {
     // Check initial auth on mount
     const savedKey = localStorage.getItem('adminKey');
     if (savedKey) {
       api.verifyAdmin(savedKey)
-        .then(() => setIsAdmin(true))
+        .then(() => {
+          setIsAdmin(true);
+          fetchBlacklist();
+        })
         .catch(() => {
           localStorage.removeItem('adminKey');
           setIsAdmin(false);
@@ -117,15 +134,17 @@ export function Admin() {
   }, [status, isAdmin]);
 
   const handleLogin = async () => {
-    if (!apiKey.trim()) return;
-    setAuthLoading(true);
     setAuthError('');
+    setAuthLoading(true);
     try {
-      await api.verifyAdmin(apiKey);
-      localStorage.setItem('adminKey', apiKey);
-      setIsAdmin(true);
+      const data = await api.verifyAdmin(apiKey);
+      if (data.success) {
+        setIsAdmin(true);
+        localStorage.setItem('adminKey', apiKey);
+        fetchBlacklist();
+      }
     } catch (err: any) {
-      setAuthError('Invalid API Key');
+      setAuthError('Invalid password');
     } finally {
       setAuthLoading(false);
     }
@@ -147,6 +166,35 @@ export function Admin() {
       setStatus(data.message || 'Stopped.');
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
+    }
+  };
+
+  const handleAddBlacklist = async () => {
+    if (!blacklistInput) return;
+    const kamaitachiId = parseInt(blacklistInput, 10);
+    if (isNaN(kamaitachiId)) {
+      setBlacklistMessage('ID must be a number.');
+      return;
+    }
+    
+    setBlacklistMessage('Adding to blacklist...');
+    try {
+      const data = await api.addToBlacklist(kamaitachiId);
+      setBlacklistMessage(data.message || 'Added successfully.');
+      setBlacklistInput('');
+      fetchBlacklist();
+      refreshPlayers(); // Might have deleted an existing player
+    } catch (err: any) {
+      setBlacklistMessage(`Error: ${err.message}`);
+    }
+  };
+
+  const handleRemoveBlacklist = async (id: number) => {
+    try {
+      await api.removeFromBlacklist(id);
+      fetchBlacklist();
+    } catch (err: any) {
+      console.error(err);
     }
   };
 
@@ -441,6 +489,55 @@ export function Admin() {
             >
               Download Backup (.sqlite)
             </button>
+          </div>
+
+          {/* User Blacklist */}
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', gridColumn: '1 / -1' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>User Blacklist</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Prevent specific Kamaitachi users from being imported by the scraper or manual sync. Blacklisting a user will also permanently delete any of their existing scores from this tracker.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input 
+                type="text" 
+                placeholder="Kamaitachi User ID" 
+                value={blacklistInput} 
+                onChange={e => setBlacklistInput(e.target.value)}
+                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+              />
+              <button 
+                onClick={handleAddBlacklist}
+                style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Blacklist User
+              </button>
+            </div>
+            {blacklistMessage && (
+              <p style={{ fontSize: '0.9rem', color: blacklistMessage.startsWith('Error') ? 'var(--accent-danger)' : 'var(--text-primary)', marginBottom: '1rem' }}>
+                {blacklistMessage}
+              </p>
+            )}
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {blacklist.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>No blacklisted users.</div>
+              ) : (
+                blacklist.map((b: any) => (
+                  <div key={b.kamaitachi_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                    <div>
+                      <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>{b.username}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>(ID: {b.kamaitachi_id})</span>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveBlacklist(b.kamaitachi_id)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.9rem' }}
+                    >
+                      Pardon
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
         </div>

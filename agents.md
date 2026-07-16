@@ -27,7 +27,7 @@ The project aims to provide a more detailed view of player progress than what is
 *   `README.md`: High-level project summary and goals.
 *   `Reference/`: Contains research and logic prototypes.
     *   `Overpower.ipynb`: A comprehensive Jupyter notebook containing the core OP calculation logic, data fetching scripts, and aggregation examples using Polars.
-*   `agents.md`: This file, providing instructional context for AI agents.
+*   `GEMINI.md` & `agents.md`: These files, providing instructional context for AI agents.
 
 ## OP Calculation Logic (from `Overpower.ipynb`)
 

@@ -8,15 +8,15 @@ const DELAY_MS = 1500; // 1.5s delay to stay under ~40 req/min
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export async function runGlobalScrape(startId: number = 1, testMode: boolean = false) {
+export async function runGlobalScrape(startId: number = 1, endId: number = 5000) {
   if (isScraping) return;
   isScraping = true;
   currentScrapeId = startId;
 
-  console.log(`[Scraper] Starting global scrape from ID ${startId} ${testMode ? '(Test Mode)' : ''}`);
+  console.log(`[Scraper] Starting global scrape from ID ${startId} to ${endId}`);
 
   try {
-    while (currentScrapeId <= MAX_USERS && isScraping) {
+    while (currentScrapeId <= endId && isScraping) {
       try {
         // First fetch the user profile to get the username and check if they exist
         const userRes = await fetch(`https://kamai.tachi.ac/api/v1/users/${currentScrapeId}`);
@@ -44,8 +44,8 @@ export async function runGlobalScrape(startId: number = 1, testMode: boolean = f
         }
       }
 
-      if (testMode && currentScrapeId === startId + 3) {
-        console.log(`[Scraper] Test mode complete (4 users processed).`);
+      if (currentScrapeId === endId) {
+        console.log(`[Scraper] Reached end ID ${endId}. Complete.`);
         break;
       }
 

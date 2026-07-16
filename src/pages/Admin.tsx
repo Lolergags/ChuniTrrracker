@@ -14,7 +14,7 @@ export function Admin() {
   // Scraper state
   const [status, setStatus] = useState<string>('Idle');
   const [startId, setStartId] = useState<number>(1);
-  const [isTestMode, setIsTestMode] = useState<boolean>(true);
+  const [endId, setEndId] = useState<number>(5000);
   const [isScraping, setIsScraping] = useState<boolean>(false);
 
   // New controls state
@@ -73,7 +73,7 @@ export function Admin() {
   const startScrape = async () => {
     setStatus('Starting...');
     try {
-      const data = await api.startScraper(startId, isTestMode);
+      const data = await api.startScraper(startId, endId);
       setStatus(data.message || 'Scraping...');
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
@@ -172,7 +172,7 @@ export function Admin() {
             <select 
               value={playerToDelete}
               onChange={(e) => setPlayerToDelete(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '4px', background: 'var(--bg-color)', color: 'white', border: '1px solid var(--border-color)' }}
+              style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
             >
               <option value="">Select a player...</option>
               {playersList.map(p => <option key={p} value={p}>{p}</option>)}
@@ -213,17 +213,18 @@ export function Admin() {
               type="number" 
               value={startId} 
               onChange={(e) => setStartId(parseInt(e.target.value) || 1)}
-              style={{ marginLeft: '1rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'white' }}
+              style={{ marginLeft: '1rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             />
           </label>
 
-          <label style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={{ color: 'var(--text-secondary)' }}>
+            End ID:
             <input 
-              type="checkbox" 
-              checked={isTestMode} 
-              onChange={(e) => setIsTestMode(e.target.checked)}
+              type="number" 
+              value={endId} 
+              onChange={(e) => setEndId(parseInt(e.target.value) || startId)}
+              style={{ marginLeft: '1.4rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             />
-            Test Mode (Stop after 4 users)
           </label>
         </div>
 

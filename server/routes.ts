@@ -684,9 +684,9 @@ router.post('/admin/sync-all', adminAuth, async (req, res) => {
 });
 
 router.post('/scraper/start', adminAuth, (req, res) => {
-  const { startId = 1, testMode = false } = req.body;
-  runGlobalScrape(startId, testMode);
-  res.json({ success: true, message: 'Scraper started from ID ' + startId });
+  const { startId = 1, endId = 5000 } = req.body;
+  runGlobalScrape(startId, endId);
+  res.json({ success: true, message: `Scraper started from ID ${startId} to ${endId}` });
 });
 
 router.post('/scraper/stop', adminAuth, (req, res) => {

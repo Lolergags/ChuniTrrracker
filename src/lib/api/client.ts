@@ -140,11 +140,11 @@ export const api = {
     return res.json();
   },
 
-  startScraper: async (startId: number, testMode: boolean) => {
+  startScraper: async (startId: number, endId: number) => {
     const res = await fetch(`${API_BASE}/scraper/start`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ startId, testMode }),
+      body: JSON.stringify({ startId, endId }),
     });
     if (!res.ok) throw new Error('Failed to start scraper');
     return res.json();

@@ -19,7 +19,17 @@ export function updateScrapeBounds(lastValidId: number) {
 
 function getNextDate(cronString: string) {
   try {
-    const interval = parser.parse(cronString);
+    let interval;
+    const cp = parser as any;
+    if (typeof cp.parseExpression === 'function') {
+      interval = cp.parseExpression(cronString);
+    } else if (typeof cp.parse === 'function') {
+      interval = cp.parse(cronString);
+    } else if (typeof cp.default?.parseExpression === 'function') {
+      interval = cp.default.parseExpression(cronString);
+    } else {
+      throw new Error("Could not find parse method on cron-parser");
+    }
     return interval.next().getTime();
   } catch (e) {
     console.error("Cron parser error:", e);

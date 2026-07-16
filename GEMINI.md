@@ -58,6 +58,7 @@ The OP calculation is a piecewise function based on the user's score relative to
     *   **Unit Tests:** Use `vitest` for all mathematical logic, utility functions, and backend queries. Place test files adjacent to the code they test or in dedicated backend directories (e.g., `server/queries.test.ts`).
     *   **Bug Regression:** Whenever an issue, logical flaw, or edge case is encountered and fixed (e.g., duplicate SQL records, negative UI bounds), **you must write an automated test case** to verify the fix and ensure the error does not repeat.
     *   **SQL & Backend Tests:** For database query logic, spin up an in-memory SQLite database (`new Database(':memory:')`), seed it with explicit edge-case data, and strictly verify the output.
+*   **Git Commits:** The development environment requires the `--no-gpg-sign` flag for all `git commit` commands to bypass GPG signing timeout errors (e.g., `git commit --no-gpg-sign -m "..."`).
 
 ## Kamaitachi Integration Quirks & Edge Cases
 

@@ -1,5 +1,5 @@
 import { syncPlayer } from './sync.js';
-import { db } from './db.js';
+import db from './db.js';
 
 let isScraping = false;
 let currentScrapeId = 1;

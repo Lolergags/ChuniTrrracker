@@ -1,14 +1,37 @@
 import { runGlobalScrape, runGlobalSync, getScraperStatus, getSyncAllStatus } from './scraper.js';
 
-// 12 hours for Sync, 24 hours for Scrape
-const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000;
-const SCRAPE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+let syncIntervalId: ReturnType<typeof setInterval> | null = null;
+let scrapeIntervalId: ReturnType<typeof setInterval> | null = null;
 
-export function initScheduler() {
-  console.log('[Scheduler] Initializing background tasks...');
-  
-  // Periodic Resync
-  setInterval(async () => {
+let isSchedulerEnabled = false;
+let syncIntervalMs = 12 * 60 * 60 * 1000; // 12 hours
+let scrapeIntervalMs = 24 * 60 * 60 * 1000; // 24 hours
+let nextSyncTime: number | null = null;
+let nextScrapeTime: number | null = null;
+
+export function getSchedulerStatus() {
+  return {
+    isEnabled: isSchedulerEnabled,
+    syncIntervalMs,
+    scrapeIntervalMs,
+    nextSyncTime,
+    nextScrapeTime,
+  };
+}
+
+export function startScheduler(syncMs?: number, scrapeMs?: number) {
+  if (syncMs) syncIntervalMs = syncMs;
+  if (scrapeMs) scrapeIntervalMs = scrapeMs;
+
+  stopScheduler(); // clear old intervals
+  isSchedulerEnabled = true;
+  console.log('[Scheduler] Starting background tasks...');
+
+  // Setup Sync
+  nextSyncTime = Date.now() + syncIntervalMs;
+  syncIntervalId = setInterval(() => {
+    nextSyncTime = Date.now() + syncIntervalMs; // update next run time
+    
     const scrapeStatus = getScraperStatus();
     const syncStatus = getSyncAllStatus();
     if (scrapeStatus.isScraping || syncStatus.isSyncing) {
@@ -17,10 +40,13 @@ export function initScheduler() {
     }
     console.log('[Scheduler] Triggering scheduled Global Sync.');
     runGlobalSync().catch(err => console.error('[Scheduler] Global Sync Error:', err));
-  }, SYNC_INTERVAL_MS);
+  }, syncIntervalMs);
 
-  // Periodic Scrape
-  setInterval(async () => {
+  // Setup Scrape
+  nextScrapeTime = Date.now() + scrapeIntervalMs;
+  scrapeIntervalId = setInterval(() => {
+    nextScrapeTime = Date.now() + scrapeIntervalMs; // update next run time
+    
     const scrapeStatus = getScraperStatus();
     const syncStatus = getSyncAllStatus();
     if (scrapeStatus.isScraping || syncStatus.isSyncing) {
@@ -29,5 +55,20 @@ export function initScheduler() {
     }
     console.log('[Scheduler] Triggering scheduled Global Scrape (Max 5000 users).');
     runGlobalScrape(1, 5000).catch(err => console.error('[Scheduler] Global Scrape Error:', err));
-  }, SCRAPE_INTERVAL_MS);
+  }, scrapeIntervalMs);
+}
+
+export function stopScheduler() {
+  if (syncIntervalId) clearInterval(syncIntervalId);
+  if (scrapeIntervalId) clearInterval(scrapeIntervalId);
+  syncIntervalId = null;
+  scrapeIntervalId = null;
+  nextSyncTime = null;
+  nextScrapeTime = null;
+  isSchedulerEnabled = false;
+  console.log('[Scheduler] Stopped.');
+}
+
+export function initScheduler() {
+  startScheduler();
 }

@@ -614,6 +614,7 @@ router.get('/performance/players', (req, res) => {
 
 // 10. Admin & Scraper Controls
 import { runGlobalScrape, stopGlobalScrape, getScraperStatus, runGlobalSync, getSyncAllStatus, globalSyncState } from './scraper.js';
+import { getSchedulerStatus, startScheduler, stopScheduler } from './scheduler.js';
 
 const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
@@ -689,6 +690,21 @@ router.post('/scraper/stop', adminAuth, (req, res) => {
 
 router.get('/scraper/status', adminAuth, (req, res) => {
   res.json(getScraperStatus());
+});
+
+router.get('/admin/scheduler', adminAuth, (req, res) => {
+  res.json(getSchedulerStatus());
+});
+
+router.post('/admin/scheduler/start', adminAuth, (req, res) => {
+  const { syncIntervalMs, scrapeIntervalMs } = req.body;
+  startScheduler(syncIntervalMs, scrapeIntervalMs);
+  res.json({ success: true, message: 'Scheduler started.', status: getSchedulerStatus() });
+});
+
+router.post('/admin/scheduler/stop', adminAuth, (req, res) => {
+  stopScheduler();
+  res.json({ success: true, message: 'Scheduler stopped.', status: getSchedulerStatus() });
 });
 
 export default router;

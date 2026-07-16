@@ -23,6 +23,9 @@ export function Admin() {
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [syncAllProgress, setSyncAllProgress] = useState({ current: 0, total: 0, currentUser: '' });
 
+  // Scheduler state
+  const [schedulerStatus, setSchedulerStatus] = useState<any>(null);
+
   useEffect(() => {
     // Check initial auth on mount
     const savedKey = localStorage.getItem('adminKey');
@@ -64,6 +67,14 @@ export function Admin() {
           setSyncAllMessage((prev) => prev.startsWith('Syncing') ? 'Sync complete.' : prev);
           setSyncAllProgress({ current: 0, total: 0, currentUser: '' });
         }
+      } catch (err) {
+        // ignore
+      }
+
+      // Poll scheduler status
+      try {
+        const schedData = await api.getSchedulerStatus();
+        setSchedulerStatus(schedData);
       } catch (err) {
         // ignore
       }
@@ -141,6 +152,24 @@ export function Admin() {
       api.downloadBackup();
     } catch (err: any) {
       alert('Failed to download backup: ' + err.message);
+    }
+  };
+
+  const handleStartScheduler = async () => {
+    try {
+      const res = await api.startScheduler();
+      setSchedulerStatus(res.status);
+    } catch (err) {
+      alert("Failed to start scheduler");
+    }
+  };
+
+  const handleStopScheduler = async () => {
+    try {
+      const res = await api.stopScheduler();
+      setSchedulerStatus(res.status);
+    } catch (err) {
+      alert("Failed to stop scheduler");
     }
   };
 
@@ -274,6 +303,51 @@ export function Admin() {
         </div>
       </div>
       
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Background Scheduler</h2>
+        
+        {schedulerStatus ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <strong>Status:</strong> 
+              <span style={{ color: schedulerStatus.isEnabled ? 'var(--rank-rainbow)' : 'var(--rank-failed)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
+                {schedulerStatus.isEnabled ? 'RUNNING' : 'STOPPED'}
+              </span>
+            </div>
+            
+            {schedulerStatus.isEnabled && (
+              <>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  <strong>Next Global Sync:</strong> {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  <strong>Next Global Scrape:</strong> {schedulerStatus.nextScrapeTime ? new Date(schedulerStatus.nextScrapeTime).toLocaleString() : 'N/A'}
+                </div>
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button 
+                onClick={handleStartScheduler}
+                disabled={schedulerStatus.isEnabled}
+                style={{ padding: '0.75rem 1.5rem', backgroundColor: schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              >
+                Start Scheduler
+              </button>
+              <button 
+                onClick={handleStopScheduler}
+                disabled={!schedulerStatus.isEnabled}
+                style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              >
+                Stop Scheduler
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ color: 'var(--text-secondary)' }}>Loading scheduler state...</div>
+        )}
+      </div>
+
       <div style={{ textAlign: 'center' }}>
         <button 
           onClick={() => {

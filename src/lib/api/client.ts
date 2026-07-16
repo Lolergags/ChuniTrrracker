@@ -166,6 +166,33 @@ export const api = {
     return res.json();
   },
 
+  getSchedulerStatus: async () => {
+    const res = await fetch(`${API_BASE}/admin/scheduler`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch scheduler status');
+    return res.json();
+  },
+
+  startScheduler: async (syncIntervalMs?: number, scrapeIntervalMs?: number) => {
+    const res = await fetch(`${API_BASE}/admin/scheduler/start`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ syncIntervalMs, scrapeIntervalMs })
+    });
+    if (!res.ok) throw new Error('Failed to start scheduler');
+    return res.json();
+  },
+
+  stopScheduler: async () => {
+    const res = await fetch(`${API_BASE}/admin/scheduler/stop`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to stop scheduler');
+    return res.json();
+  },
+
   verifyAdmin: async (key: string) => {
     const res = await fetch(`${API_BASE}/admin/verify`, {
       headers: { 'Authorization': key }

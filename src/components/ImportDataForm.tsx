@@ -45,6 +45,11 @@ export function ImportDataForm() {
           placeholder="Kamaitachi Username" 
           value={input} 
           onChange={(e) => setInput(e.target.value)} 
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore
+          data-form-type="other"
+          spellCheck="false"
           style={{
             padding: '0.75rem 1rem',
             borderRadius: 'var(--radius-md)',

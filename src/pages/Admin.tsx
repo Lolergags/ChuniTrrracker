@@ -335,6 +335,16 @@ export function Admin() {
             {schedulerStatus.isEnabled && (
               <>
                 <div style={{ color: 'var(--text-secondary)' }}>
+                  <strong>Current Task:</strong>{' '}
+                  {isSyncingAll ? (
+                    <span style={{ color: 'var(--accent-primary)' }}>Global Sync in Progress ({syncAllProgress.current} / {syncAllProgress.total})</span>
+                  ) : isScraping ? (
+                    <span style={{ color: 'var(--accent-primary)' }}>Discovery in Progress...</span>
+                  ) : (
+                    <span>Idle (Waiting for schedule)</span>
+                  )}
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
                   <strong>Next Global Sync:</strong> {schedulerStatus.nextSyncTime ? new Date(schedulerStatus.nextSyncTime).toLocaleString() : 'N/A'}
                 </div>
                 <div style={{ color: 'var(--text-secondary)' }}>

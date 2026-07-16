@@ -660,25 +660,53 @@ router.get('/admin/backup', adminAuth, async (req, res) => {
   }
 });
 
+let globalSyncState = {
+  isSyncing: false,
+  total: 0,
+  current: 0,
+  currentUser: ''
+};
+
+router.get('/admin/sync-all/status', adminAuth, (req, res) => {
+  res.json(globalSyncState);
+});
+
 router.post('/admin/sync-all', adminAuth, async (req, res) => {
   try {
+    if (globalSyncState.isSyncing) {
+      return res.status(400).json({ error: 'A global sync is already in progress.' });
+    }
+
     const players = db.prepare(`SELECT username FROM players`).all() as { username: string }[];
+    
+    globalSyncState = {
+      isSyncing: true,
+      total: players.length,
+      current: 0,
+      currentUser: ''
+    };
+
     res.json({ success: true, message: `Started background sync for ${players.length} players.` });
     
     // Background sync process
     (async () => {
       for (const p of players) {
         try {
+          globalSyncState.currentUser = p.username;
           console.log(`[Sync-All] Syncing ${p.username}...`);
           await syncPlayer(p.username);
         } catch (e: any) {
           console.error(`[Sync-All] Failed to sync ${p.username}: ${e.message}`);
         }
+        globalSyncState.current++;
       }
       console.log(`[Sync-All] Finished syncing all players.`);
+      globalSyncState.isSyncing = false;
+      globalSyncState.currentUser = '';
     })();
     
   } catch (err: any) {
+    globalSyncState.isSyncing = false;
     res.status(500).json({ error: err.message });
   }
 });

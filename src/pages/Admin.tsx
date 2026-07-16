@@ -21,6 +21,8 @@ export function Admin() {
   const [playerToDelete, setPlayerToDelete] = useState('');
   const [deleteMessage, setDeleteMessage] = useState('');
   const [syncAllMessage, setSyncAllMessage] = useState('');
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [syncAllProgress, setSyncAllProgress] = useState({ current: 0, total: 0, currentUser: '' });
 
   useEffect(() => {
     // Check initial auth on mount
@@ -50,6 +52,21 @@ export function Admin() {
         }
       } catch (err) {
         // ignore fetch errors
+      }
+
+      // Poll sync-all status
+      try {
+        const syncData = await api.getSyncAllStatus();
+        setIsSyncingAll(syncData.isSyncing);
+        if (syncData.isSyncing) {
+          setSyncAllProgress(syncData);
+          setSyncAllMessage(`Syncing ${syncData.current} / ${syncData.total}...`);
+        } else {
+          setSyncAllMessage((prev) => prev.startsWith('Syncing') ? 'Sync complete.' : prev);
+          setSyncAllProgress({ current: 0, total: 0, currentUser: '' });
+        }
+      } catch (err) {
+        // ignore
       }
     }, 1500);
     return () => clearInterval(interval);
@@ -114,6 +131,7 @@ export function Admin() {
     try {
       const data = await api.syncAllPlayers();
       setSyncAllMessage(data.message || 'Background sync started.');
+      setIsSyncingAll(true);
     } catch (err: any) {
       setSyncAllMessage(`Error: ${err.message}`);
     }
@@ -198,11 +216,15 @@ export function Admin() {
             </p>
             <button 
               onClick={handleSyncAll}
-              style={{ padding: '0.5rem 1rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', width: '100%' }}
+              disabled={isSyncingAll}
+              style={{ padding: '0.5rem 1rem', background: isSyncingAll ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isSyncingAll ? 'not-allowed' : 'pointer', width: '100%' }}
             >
-              Trigger Full Re-sync
+              {isSyncingAll ? 'Sync in Progress...' : 'Trigger Full Re-sync'}
             </button>
-            {syncAllMessage && <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{syncAllMessage}</div>}
+            {syncAllMessage && <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {syncAllMessage}
+              {isSyncingAll && syncAllProgress.currentUser && <div style={{ color: 'var(--text-primary)', marginTop: '0.25rem' }}>Currently syncing: {syncAllProgress.currentUser}</div>}
+            </div>}
           </div>
         </div>
       </div>

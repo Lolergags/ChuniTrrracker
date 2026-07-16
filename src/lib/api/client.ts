@@ -198,6 +198,13 @@ export const api = {
     return res.json();
   },
 
+  getSyncAllStatus: async () => {
+    const res = await fetch(`${API_BASE}/admin/sync-all/status`, {
+      headers: getAuthHeaders()
+    });
+    return res.json();
+  },
+
   downloadBackup: () => {
     const key = localStorage.getItem('adminKey') || '';
     // Fetch API to handle the download response

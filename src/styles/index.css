@@ -32,10 +32,14 @@ body {
   padding: var(--spacing-lg);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   transition: transform var(--transition-fast), border-color var(--transition-fast);
+  /* Fix for Chrome backdrop-filter edge rendering bug after CSS animations */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .glass-panel:hover {
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   border-color: rgba(255, 255, 255, 0.2);
 }
 

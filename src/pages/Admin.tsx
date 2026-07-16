@@ -81,15 +81,17 @@ export function Admin() {
       // Poll scheduler status
       try {
         const schedData = await api.getSchedulerStatus();
-        setSchedulerStatus((prev: any) => {
-          if (!prev) {
-            setSyncCron(schedData.syncCronString || '0 12 * * *');
-            setScrapeCron(schedData.scrapeCronString || '0 0 * * *');
-            setSchedulerScrapeStartId(schedData.scrapeStartId);
-            setSchedulerScrapeEndId(schedData.scrapeEndId);
-          }
-          return schedData;
-        });
+        setSchedulerStatus(schedData);
+        
+        if (!isInitialized) {
+          setSyncCron(schedData.syncCronString || '0 12 * * *');
+          setScrapeCron(schedData.scrapeCronString || '0 0 * * *');
+          setSchedulerScrapeStartId(schedData.scrapeStartId || 1);
+          setSchedulerScrapeEndId(schedData.scrapeEndId || 5000);
+          setStartId(schedData.scrapeStartId || 1);
+          setEndId(schedData.scrapeEndId || 5000);
+          setIsInitialized(true);
+        }
       } catch (err) {
         // ignore
       }
@@ -226,7 +228,7 @@ export function Admin() {
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>System Automation & Worker Status</h2>
         
-        {schedulerStatus ? (
+        {schedulerStatus && isInitialized ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ marginBottom: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
               <strong>Scheduler Engine:</strong> 

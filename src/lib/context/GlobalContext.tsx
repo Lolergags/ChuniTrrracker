@@ -20,6 +20,8 @@ interface GlobalContextType {
   filters: FilterOptions;
   setFilters: (filters: FilterOptions) => void;
   refreshPlayers: () => Promise<void>;
+  isAdmin: boolean;
+  setIsAdmin: (val: boolean) => void;
 }
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -28,7 +30,9 @@ export const GlobalContext = createContext<GlobalContextType>({
   setActivePlayer: () => {},
   filters: defaultFilters,
   setFilters: () => {},
-  refreshPlayers: async () => {}
+  refreshPlayers: async () => {},
+  isAdmin: false,
+  setIsAdmin: () => {}
 });
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -40,6 +44,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const saved = localStorage.getItem('globalFilters');
     return saved ? JSON.parse(saved) : defaultFilters;
   });
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => !!localStorage.getItem('adminKey'));
 
   const setActivePlayer = (username: string | null) => {
     if (username === null) {
@@ -80,7 +85,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   return (
-    <GlobalContext.Provider value={{ activePlayer, playersList, setActivePlayer, filters, setFilters, refreshPlayers }}>
+    <GlobalContext.Provider value={{ activePlayer, playersList, setActivePlayer, filters, setFilters, refreshPlayers, isAdmin, setIsAdmin }}>
       {children}
     </GlobalContext.Provider>
   );

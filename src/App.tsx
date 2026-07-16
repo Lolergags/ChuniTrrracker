@@ -1,6 +1,6 @@
 import React, { useContext, useState, useDeferredValue, useMemo } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { Activity, BarChart2, Trophy, Search, DownloadCloud, User } from 'lucide-react';
+import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
@@ -11,7 +11,7 @@ import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 const AppContent = () => {
-  const { playersList, setActivePlayer } = useContext(GlobalContext);
+  const { playersList, setActivePlayer, isAdmin } = useContext(GlobalContext);
   const [searchInput, setSearchInput] = useState('');
   const deferredSearchInput = useDeferredValue(searchInput);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -85,6 +85,11 @@ const AppContent = () => {
           <NavLink to="/import" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><DownloadCloud size={18} /> Import Data</span>
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/admin" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Settings size={18} /> Admin</span>
+            </NavLink>
+          )}
         </div>
 
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', position: 'relative' }}>

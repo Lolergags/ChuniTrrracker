@@ -3,11 +3,10 @@ import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 
 export function Admin() {
-  const { playersList, refreshPlayers } = useContext(GlobalContext);
+  const { playersList, refreshPlayers, isAdmin, setIsAdmin } = useContext(GlobalContext);
   
   // Auth state
   const [apiKey, setApiKey] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -29,16 +28,16 @@ export function Admin() {
     const savedKey = localStorage.getItem('adminKey');
     if (savedKey) {
       api.verifyAdmin(savedKey)
-        .then(() => setIsLoggedIn(true))
+        .then(() => setIsAdmin(true))
         .catch(() => {
           localStorage.removeItem('adminKey');
-          setIsLoggedIn(false);
+          setIsAdmin(false);
         });
     }
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isAdmin) return;
     
     // Poll scraper status only if logged in
     const interval = setInterval(async () => {
@@ -70,7 +69,7 @@ export function Admin() {
       }
     }, 1500);
     return () => clearInterval(interval);
-  }, [status, isLoggedIn]);
+  }, [status, isAdmin]);
 
   const handleLogin = async () => {
     if (!apiKey.trim()) return;
@@ -79,7 +78,7 @@ export function Admin() {
     try {
       await api.verifyAdmin(apiKey);
       localStorage.setItem('adminKey', apiKey);
-      setIsLoggedIn(true);
+      setIsAdmin(true);
     } catch (err: any) {
       setAuthError('Invalid API Key');
     } finally {
@@ -145,7 +144,7 @@ export function Admin() {
     }
   };
 
-  if (!isLoggedIn) {
+  if (!isAdmin) {
     return (
       <div className="glass-panel" style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', textAlign: 'center' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>Admin Login</h2>
@@ -279,7 +278,7 @@ export function Admin() {
         <button 
           onClick={() => {
             localStorage.removeItem('adminKey');
-            setIsLoggedIn(false);
+            setIsAdmin(false);
           }}
           style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
         >

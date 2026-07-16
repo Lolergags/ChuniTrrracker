@@ -73,6 +73,12 @@ The OP calculation is a piecewise function based on the user's score relative to
 *   **Scatter Plot Deduplication:** When plotting player scores across the entire track list, ensure the backend endpoint returns `songId`. Use `reduce` (within a `useMemo` hook) on the frontend to deduplicate charts per song, ensuring only the chart yielding the maximum OP is plotted. Also apply limits and dynamic domains (`Math.max()`) to keep axes from flattening out due to low-scoring attempts.
 *   **Recharts Stacked Bars:** Recharts renders the first `<Bar>` element at the bottom of the visual stack. When building progression charts (e.g. Fail -> Clear -> AJC), define the lowest achievements first in the JSX. If a specific legend order is required, use a custom `<Legend payload={...}>` rather than reordering the bars.
 *   **Recharts Stack Transparency:** When using `stackOffset="expand"`, do not use `fill="transparent"` for empty/unplayed padding bars. It creates an optical illusion of 100% completion against dark backgrounds. Use a faint color like `rgba(255,255,255,0.05)` instead.
+
+## Frontend & Backend State Conventions
+
+*   **React Polling & Closures:** When implementing background polling (e.g., `setInterval` inside `useEffect`), NEVER use `useState` for initialization flags or trackers that must be read inside the loop. The state will get trapped in a stale closure, leading to infinite loops or overridden inputs. Always use `useRef` (e.g., `isInitialized.current`) to bypass the closure and maintain accurate mutable state across polling ticks.
+*   **Configuration Persistence:** Do not rely on in-memory Node.js variables for configuration settings (like cron schedules, scraper bounds, or UI toggles). Always persist these settings to the SQLite `config` table (`db.prepare('INSERT INTO config ...')`) to ensure they survive server restarts, hot-reloads, and deployments.
+
 ## Build and Run
 
 As the project is currently in the research/prototype phase:

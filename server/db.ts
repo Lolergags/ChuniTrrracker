@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 
 // Store DB in the project root's /data directory
-const DB_PATH = process.env.DB_PATH || path.join(import.meta.dirname, '..', 'data', 'chunitrrracker.db');
+export const DB_PATH = process.env.DB_PATH || path.join(import.meta.dirname, '..', 'data', 'chunitrrracker.db');
 
 const db = new Database(DB_PATH);
 

@@ -238,6 +238,27 @@ export function Admin() {
     }
   };
 
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm('WARNING: Restoring the database will overwrite all current data and immediately restart the backend server. Are you sure you want to proceed?')) {
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    try {
+      const res = await api.restoreDatabase(file);
+      alert(res.message);
+      // Optional: reload the page after a brief delay since backend restarts
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err: any) {
+      alert('Failed to restore backup: ' + err.message);
+    } finally {
+      e.target.value = ''; // Reset input
+    }
+  };
+
   const handleStartScheduler = async () => {
     try {
       const res = await api.startScheduler(
@@ -481,12 +502,30 @@ export function Admin() {
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Download a full SQLite database snapshot instantly without interrupting server operations.
             </p>
-            <button 
-              onClick={handleBackup}
-              style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
-            >
-              Download Backup (.sqlite)
-            </button>
+            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+              <button 
+                onClick={handleBackup}
+                style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
+              >
+                Download Backup (.sqlite)
+              </button>
+              
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  type="file"
+                  accept=".sqlite,.db"
+                  onChange={handleRestore}
+                  id="restore-upload"
+                  style={{ position: 'absolute', width: '0.1px', height: '0.1px', opacity: 0, overflow: 'hidden', zIndex: -1 }}
+                />
+                <label 
+                  htmlFor="restore-upload"
+                  style={{ display: 'block', padding: '0.5rem 1rem', background: 'var(--rank-failed)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}
+                >
+                  Restore from Backup
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* User Blacklist */}

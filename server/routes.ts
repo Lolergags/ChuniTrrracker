@@ -1,9 +1,12 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import db from './db.js';
+import multer from 'multer';
+import { default as db, DB_PATH } from './db.js';
 import { syncPlayer } from './sync.js';
 import { getChartFilterConditions } from './utils/filters.js';
+
+const upload = multer({ dest: path.join(process.cwd(), 'data', 'temp') });
 
 export const router = Router();
 
@@ -661,6 +664,35 @@ router.get('/admin/backup', adminAuth, async (req, res) => {
   }
 });
 
+router.post('/admin/restore', adminAuth, upload.single('database'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  
+  try {
+    // 1. Close current DB
+    db.close();
+    
+    // 2. Overwrite file
+    fs.copyFileSync(req.file.path, DB_PATH);
+    
+    // 3. Delete WAL and SHM to prevent corruption if they exist
+    if (fs.existsSync(DB_PATH + '-wal')) fs.unlinkSync(DB_PATH + '-wal');
+    if (fs.existsSync(DB_PATH + '-shm')) fs.unlinkSync(DB_PATH + '-shm');
+    
+    // 4. Delete temp file
+    fs.unlinkSync(req.file.path);
+    
+    res.json({ success: true, message: 'Database restored successfully. Server is restarting...' });
+    
+    // 5. Force restart the server
+    setTimeout(() => {
+      process.exit(0); 
+    }, 1000);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 router.get('/admin/sync-all/status', adminAuth, (req, res) => {
   res.json(getSyncAllStatus());
 });
@@ -737,7 +769,7 @@ router.post('/admin/blacklist', adminAuth, async (req, res) => {
     );
 
     // Purge existing data
-    const existingPlayer = db.prepare('SELECT id FROM players WHERE kamaitachi_id = ?').get(resolvedKamaitachiId) as {id: number} | undefined;
+    const existingPlayer = db.prepare('SELECT id FROM players WHERE kamaitachi_id = ? OR username = ?').get(resolvedKamaitachiId, username) as {id: number} | undefined;
     if (existingPlayer) {
       db.prepare('DELETE FROM scores WHERE player_id = ?').run(existingPlayer.id);
       db.prepare('DELETE FROM players WHERE id = ?').run(existingPlayer.id);

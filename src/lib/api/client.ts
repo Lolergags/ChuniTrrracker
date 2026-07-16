@@ -279,5 +279,28 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to remove from blacklist');
     return res.json();
+  },
+
+  restoreDatabase: async (file: File) => {
+    const formData = new FormData();
+    formData.append('database', file);
+
+    // Cannot use standard JSON getAuthHeaders because this is multipart/form-data
+    // So we just set Authorization and omit Content-Type (fetch handles boundary)
+    const token = localStorage.getItem('chunitrrracker_admin_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/admin/restore`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to restore database');
+    }
+    return res.json();
   }
 };

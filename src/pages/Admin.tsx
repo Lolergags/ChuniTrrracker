@@ -3,7 +3,7 @@ import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 
 export function Admin() {
-  const { playersList } = useContext(GlobalContext);
+  const { playersList, refreshPlayers } = useContext(GlobalContext);
   
   // Auth state
   const [apiKey, setApiKey] = useState('');
@@ -101,7 +101,7 @@ export function Admin() {
       setDeleteMessage(data.message || 'Deleted successfully.');
       setPlayerToDelete('');
       // Force refresh of the global players list after deletion
-      setTimeout(() => window.location.reload(), 1500);
+      await refreshPlayers();
     } catch (err: any) {
       setDeleteMessage(`Error: ${err.message}`);
     }

@@ -19,6 +19,7 @@ interface GlobalContextType {
   setActivePlayer: (username: string | null) => void;
   filters: FilterOptions;
   setFilters: (filters: FilterOptions) => void;
+  refreshPlayers: () => Promise<void>;
 }
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -26,7 +27,8 @@ export const GlobalContext = createContext<GlobalContextType>({
   playersList: [],
   setActivePlayer: () => {},
   filters: defaultFilters,
-  setFilters: () => {}
+  setFilters: () => {},
+  refreshPlayers: async () => {}
 });
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -53,23 +55,32 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setFiltersState(newFilters);
   };
 
-  // Fetch initial list of players on mount
-  useEffect(() => {
-    api.getPlayers().then(players => {
+  const refreshPlayers = async () => {
+    try {
+      const players = await api.getPlayers();
       const usernames = players.map((p: any) => p.username);
       setPlayersList(usernames);
       if (usernames.length > 0) {
         if (localStorage.getItem('activePlayer') && !usernames.includes(localStorage.getItem('activePlayer')!)) {
-          // If the stored player was deleted from the database
           localStorage.removeItem('activePlayer');
           setActivePlayerState(null);
         }
+      } else {
+        localStorage.removeItem('activePlayer');
+        setActivePlayerState(null);
       }
-    }).catch(err => console.error("Failed to load players list", err));
+    } catch (err) {
+      console.error("Failed to load players list", err);
+    }
+  };
+
+  // Fetch initial list of players on mount
+  useEffect(() => {
+    refreshPlayers();
   }, []);
 
   return (
-    <GlobalContext.Provider value={{ activePlayer, playersList, setActivePlayer, filters, setFilters }}>
+    <GlobalContext.Provider value={{ activePlayer, playersList, setActivePlayer, filters, setFilters, refreshPlayers }}>
       {children}
     </GlobalContext.Provider>
   );

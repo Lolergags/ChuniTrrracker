@@ -1,12 +1,36 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useDeferredValue } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
+import { Search, ChevronRight } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api, type ApiPlayerStats, type ApiProcessedScore } from '../lib/api/client.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 
 export function Dashboard() {
-  const { activePlayer, playersList, filters } = useGlobal();
+  const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  
+  const filteredPlayers = useMemo(() => {
+    if (!deferredSearchQuery.trim()) return [];
+    const lowerQuery = deferredSearchQuery.toLowerCase();
+    const exactMatches = [];
+    const startsWithMatches = [];
+    const containsMatches = [];
+    
+    for (let i = 0; i < playersList.length; i++) {
+      const lowerPlayer = playersList[i].toLowerCase();
+      if (lowerPlayer === lowerQuery) {
+        exactMatches.push(playersList[i]);
+      } else if (lowerPlayer.startsWith(lowerQuery)) {
+        startsWithMatches.push(playersList[i]);
+      } else if (lowerPlayer.includes(lowerQuery)) {
+        containsMatches.push(playersList[i]);
+      }
+    }
+    
+    return [...exactMatches, ...startsWithMatches, ...containsMatches].slice(0, 50);
+  }, [playersList, deferredSearchQuery]);
   const [scores, setScores] = useState<ApiProcessedScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +126,79 @@ export function Dashboard() {
   }
 
   if (!activePlayer) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Please search for and select a player to view their dashboard.</div>;
+    return (
+      <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem', maxWidth: '600px', margin: '0 auto' }}>
+        <h2 className="text-gradient">No Player Selected</h2>
+        <p style={{ color: 'var(--text-secondary)', margin: '1.5rem 0' }}>
+          Search for a player below to view their dashboard.
+        </p>
+        
+        <div style={{ 
+          position: 'relative', 
+          maxWidth: '400px', 
+          margin: '0 auto 2rem auto' 
+        }}>
+          <Search style={{ 
+            position: 'absolute', 
+            left: '1rem', 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            color: 'var(--text-secondary)' 
+          }} size={20} />
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && filteredPlayers.length > 0 && searchQuery.trim().length > 0) {
+                setActivePlayer(filteredPlayers[0]);
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem 0.75rem 3rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'var(--text-primary)',
+              fontSize: '1rem',
+              outline: 'none'
+            }}
+          />
+        </div>
+
+        {deferredSearchQuery.trim().length > 0 ? (
+          filteredPlayers.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
+              {filteredPlayers.map(player => (
+                <button 
+                  key={player}
+                  onClick={() => setActivePlayer(player)}
+                  className="hover-card"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: 'var(--radius-full)',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '1.1rem'
+                  }}
+                >
+                  {player} <ChevronRight size={16} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: 'var(--text-secondary)' }}>No players match your search.</p>
+          )
+        ) : null}
+      </div>
+    );
   }
 
   if (isLoading || !stats) {
@@ -116,9 +212,29 @@ export function Dashboard() {
         <GlobalFilterBar />
       </div>
       
-      <p style={{ color: 'var(--text-secondary)' }}>
-        Showing statistics for <strong style={{ color: 'var(--text-primary)' }}>{stats.username}</strong> based on {stats.scoreCount.toLocaleString()} logged scores.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Showing statistics for <strong style={{ color: 'var(--text-primary)' }}>{stats.username}</strong> based on {stats.scoreCount.toLocaleString()} logged scores.
+        </p>
+        <button
+          onClick={() => setActivePlayer(null)}
+          className="hover-card"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: 'var(--text-secondary)',
+            padding: '0.5rem 1rem',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+        >
+          Clear Selected User
+        </button>
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '2rem' }}>
         <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center' }}>

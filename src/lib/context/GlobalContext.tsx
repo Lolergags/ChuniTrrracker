@@ -16,7 +16,7 @@ const defaultFilters: FilterOptions = {
 interface GlobalContextType {
   activePlayer: string | null;
   playersList: string[];
-  setActivePlayer: (username: string) => void;
+  setActivePlayer: (username: string | null) => void;
   filters: FilterOptions;
   setFilters: (filters: FilterOptions) => void;
 }
@@ -39,8 +39,12 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return saved ? JSON.parse(saved) : defaultFilters;
   });
 
-  const setActivePlayer = (username: string) => {
-    localStorage.setItem('activePlayer', username);
+  const setActivePlayer = (username: string | null) => {
+    if (username === null) {
+      localStorage.removeItem('activePlayer');
+    } else {
+      localStorage.setItem('activePlayer', username);
+    }
     setActivePlayerState(username);
   };
 
@@ -55,11 +59,10 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const usernames = players.map((p: any) => p.username);
       setPlayersList(usernames);
       if (usernames.length > 0) {
-        if (!localStorage.getItem('activePlayer')) {
-          setActivePlayer(usernames[0]);
-        } else if (!usernames.includes(localStorage.getItem('activePlayer')!)) {
+        if (localStorage.getItem('activePlayer') && !usernames.includes(localStorage.getItem('activePlayer')!)) {
           // If the stored player was deleted from the database
-          setActivePlayer(usernames[0]);
+          localStorage.removeItem('activePlayer');
+          setActivePlayerState(null);
         }
       }
     }).catch(err => console.error("Failed to load players list", err));

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useDeferredValue, useMemo } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import { Activity, BarChart2, Trophy, Search, DownloadCloud, User } from 'lucide-react';
 import { Landing } from './pages/Landing.js';
@@ -13,8 +13,30 @@ import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 const AppContent = () => {
   const { playersList, activePlayer, setActivePlayer } = useContext(GlobalContext);
   const [searchInput, setSearchInput] = useState('');
+  const deferredSearchInput = useDeferredValue(searchInput);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+
+  const searchResults = useMemo(() => {
+    if (!deferredSearchInput.trim()) return [];
+    const lowerQuery = deferredSearchInput.toLowerCase();
+    const exactMatches = [];
+    const startsWithMatches = [];
+    const containsMatches = [];
+    
+    for (let i = 0; i < playersList.length; i++) {
+      const lowerPlayer = playersList[i].toLowerCase();
+      if (lowerPlayer === lowerQuery) {
+        exactMatches.push(playersList[i]);
+      } else if (lowerPlayer.startsWith(lowerQuery)) {
+        startsWithMatches.push(playersList[i]);
+      } else if (lowerPlayer.includes(lowerQuery)) {
+        containsMatches.push(playersList[i]);
+      }
+    }
+    
+    return [...exactMatches, ...startsWithMatches, ...containsMatches].slice(0, 51);
+  }, [playersList, deferredSearchInput]);
 
   const handleSelectPlayer = (username: string) => {
     setActivePlayer(username);
@@ -48,11 +70,9 @@ const AppContent = () => {
         </div>
         
         <div className="nav-links">
-          {activePlayer && (
-            <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><User size={18} /> Dashboard</span>
-            </NavLink>
-          )}
+          <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><User size={18} /> Dashboard</span>
+          </NavLink>
           <NavLink to="/leaderboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Trophy size={18} /> Leaderboard</span>
           </NavLink>
@@ -90,7 +110,7 @@ const AppContent = () => {
                 width: '250px'
               }}
             />
-            {showDropdown && searchInput && (
+            {showDropdown && deferredSearchInput && (
               <ul style={{
                 position: 'absolute',
                 top: '100%',
@@ -107,11 +127,9 @@ const AppContent = () => {
                 overflowY: 'auto',
                 boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
               }}>
-                {playersList
-                  .filter(p => p.toLowerCase().includes(searchInput.toLowerCase()))
-                  .map(player => (
-                    <li 
-                      key={player}
+                {searchResults.slice(0, 50).map(player => (
+                  <li 
+                    key={player}
                       onClick={() => handleSelectPlayer(player)}
                       style={{
                         padding: '0.5rem 1rem',
@@ -123,10 +141,13 @@ const AppContent = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       {player}
-                    </li>
-                  ))}
-                {playersList.filter(p => p.toLowerCase().includes(searchInput.toLowerCase())).length === 0 && (
+                  </li>
+                ))}
+                {searchResults.length === 0 && (
                   <li style={{ padding: '0.5rem 1rem', color: 'var(--text-secondary)' }}>No matches</li>
+                )}
+                {searchResults.length > 50 && (
+                  <li style={{ padding: '0.5rem 1rem', color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>Keep typing to refine...</li>
                 )}
               </ul>
             )}

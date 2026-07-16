@@ -317,18 +317,12 @@ export function Admin() {
       </div>
 
       {/* 2. Manual Controls */}
+      {/* 2. Manual Controls */}
       <div className="glass-panel" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 className="text-gradient">Manual Overrides & Database Controls</h2>
-          <button 
-            onClick={handleBackup}
-            style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            Download DB Backup (.sqlite)
-          </button>
-        </div>
+        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Manual Overrides & Database Controls</h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+          
           {/* Delete Player */}
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
             <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Delete Player</h3>
@@ -371,50 +365,63 @@ export function Admin() {
               {isSyncingAll && syncAllProgress.currentUser && <div style={{ color: 'var(--text-primary)', marginTop: '0.25rem' }}>Currently syncing: {syncAllProgress.currentUser}</div>}
             </div>}
           </div>
+
+          {/* Discovery Scraper */}
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Kamaitachi Scraper</h3>
+            <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                Start ID:
+                <input 
+                  type="number" 
+                  value={startId} 
+                  onChange={(e) => setStartId(parseInt(e.target.value) || 1)}
+                  style={{ width: '60%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                />
+              </label>
+              <label style={{ color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                End ID:
+                <input 
+                  type="number" 
+                  value={endId} 
+                  onChange={(e) => setEndId(parseInt(e.target.value) || startId)}
+                  style={{ width: '60%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                />
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                onClick={startScrape}
+                disabled={isScraping}
+                style={{ flex: 1, padding: '0.5rem', backgroundColor: isScraping ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
+              >
+                Start
+              </button>
+              <button 
+                onClick={stopScrape}
+                disabled={!isScraping}
+                style={{ flex: 1, padding: '0.5rem', backgroundColor: !isScraping ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
+              >
+                Stop
+              </button>
+            </div>
+          </div>
+
+          {/* DB Backup */}
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Database Backup</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Download a full SQLite database snapshot instantly without interrupting server operations.
+            </p>
+            <button 
+              onClick={handleBackup}
+              style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
+            >
+              Download Backup (.sqlite)
+            </button>
+          </div>
+
         </div>
-      </div>
-
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Kamaitachi Scraper (Discovery)</h2>
-        <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ color: 'var(--text-secondary)' }}>
-            Start ID:
-            <input 
-              type="number" 
-              value={startId} 
-              onChange={(e) => setStartId(parseInt(e.target.value) || 1)}
-              style={{ marginLeft: '1rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-            />
-          </label>
-
-          <label style={{ color: 'var(--text-secondary)' }}>
-            End ID:
-            <input 
-              type="number" 
-              value={endId} 
-              onChange={(e) => setEndId(parseInt(e.target.value) || startId)}
-              style={{ marginLeft: '1.4rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-            />
-          </label>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-          <button 
-            onClick={startScrape}
-            disabled={isScraping}
-            style={{ padding: '0.75rem 1.5rem', backgroundColor: isScraping ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            Start Global Discovery
-          </button>
-          <button 
-            onClick={stopScrape}
-            disabled={!isScraping}
-            style={{ padding: '0.75rem 1.5rem', backgroundColor: !isScraping ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            Stop Scraper
-          </button>
-        </div>
-
       </div>
       
       <div style={{ textAlign: 'center' }}>

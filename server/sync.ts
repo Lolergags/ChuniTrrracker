@@ -161,7 +161,7 @@ export async function syncPlayer(username: string, apiKey?: string) {
         kamaitachi_id=COALESCE(excluded.kamaitachi_id, players.kamaitachi_id),
         last_synced_at=@now
     `);
-    insertPlayer.run({ username, kamaitachi_id: apiKey ? parseInt(targetUserId) || null : null, now: Date.now() });
+    insertPlayer.run({ username, kamaitachi_id: parseInt(targetUserId) || null, now: Date.now() });
     player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
   } catch (err: any) {
     if (username.toLowerCase() === 'mock') {

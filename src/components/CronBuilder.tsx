@@ -95,10 +95,22 @@ export function CronBuilder({ value, onChange, disabled }: CronBuilderProps) {
     updateCron(frequency, time, dayOfWeek, dayOfMonth, hi, minute);
   };
 
-  const handleDayOfWeekChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const dow = e.target.value;
-    setDayOfWeek(dow);
-    updateCron(frequency, time, dow, dayOfMonth, hourInterval, minute);
+  const toggleDayOfWeek = (day: string) => {
+    let days = dayOfWeek.split(',').filter(Boolean);
+    if (days.includes(day)) {
+      days = days.filter(d => d !== day);
+    } else {
+      days.push(day);
+      days.sort((a, b) => parseInt(a) - parseInt(b));
+    }
+    
+    if (days.length === 0) {
+      days = ['0'];
+    }
+    
+    const newDow = days.join(',');
+    setDayOfWeek(newDow);
+    updateCron(frequency, time, newDow, dayOfMonth, hourInterval, minute);
   };
 
   const handleDayOfMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -147,20 +159,35 @@ export function CronBuilder({ value, onChange, disabled }: CronBuilderProps) {
       )}
       
       {frequency === 'weekly' && (
-        <select 
-          value={dayOfWeek} 
-          onChange={handleDayOfWeekChange} 
-          disabled={disabled}
-          style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-        >
-          <option value="0">Sunday</option>
-          <option value="1">Monday</option>
-          <option value="2">Tuesday</option>
-          <option value="3">Wednesday</option>
-          <option value="4">Thursday</option>
-          <option value="5">Friday</option>
-          <option value="6">Saturday</option>
-        </select>
+        <div style={{ display: 'flex', gap: '0.25rem' }}>
+          {[
+            { v: '0', l: 'Sun' },
+            { v: '1', l: 'Mon' },
+            { v: '2', l: 'Tue' },
+            { v: '3', l: 'Wed' },
+            { v: '4', l: 'Thu' },
+            { v: '5', l: 'Fri' },
+            { v: '6', l: 'Sat' }
+          ].map(d => (
+            <button
+              key={d.v}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleDayOfWeek(d.v)}
+              style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                border: '1px solid',
+                borderColor: dayOfWeek.split(',').includes(d.v) ? 'var(--accent-primary)' : 'var(--border-color)',
+                backgroundColor: dayOfWeek.split(',').includes(d.v) ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                color: dayOfWeek.split(',').includes(d.v) ? 'white' : 'var(--text-primary)',
+                cursor: disabled ? 'default' : 'pointer'
+              }}
+            >
+              {d.l}
+            </button>
+          ))}
+        </div>
       )}
 
       {frequency === 'monthly' && (

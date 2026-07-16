@@ -3,13 +3,12 @@ import { api } from '../lib/api/client.js';
 
 export function ImportDataForm() {
   const [input, setInput] = useState('');
-  const [isApiKey, setIsApiKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   const handleAction = async () => {
     if (!input.trim()) {
-      setError(isApiKey ? 'API Key is required' : 'Username is required');
+      setError('Username is required');
       return;
     }
     
@@ -17,7 +16,7 @@ export function ImportDataForm() {
     setError('');
     
     try {
-      await api.importPlayer(input.trim(), isApiKey ? input.trim() : undefined);
+      await api.importPlayer(input.trim());
       
       // Force a full page reload so GlobalContext re-fetches the player list
       window.location.href = '/leaderboard';
@@ -33,19 +32,17 @@ export function ImportDataForm() {
   return (
     <div className="glass-panel" style={{ padding: '2rem', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
       <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>
-        {isApiKey ? "Login / Sync Private Data" : "Import Public Profile"}
+        Import Public Profile
       </h2>
       
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-        {isApiKey 
-          ? "Enter your Kamaitachi API Key to securely sync your scores, even if your profile is private." 
-          : "Enter a public Kamaitachi username to add their scores to the global leaderboard."}
+        Enter a public Kamaitachi username to add their scores to the global leaderboard.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <input 
-          type={isApiKey ? "password" : "text"}
-          placeholder={isApiKey ? "Kamaitachi API Key" : "Kamaitachi Username"} 
+          type="text"
+          placeholder="Kamaitachi Username" 
           value={input} 
           onChange={(e) => setInput(e.target.value)} 
           style={{
@@ -75,26 +72,7 @@ export function ImportDataForm() {
             opacity: loading ? 0.7 : 1
           }}
         >
-          {loading ? "Syncing..." : (isApiKey ? "Sync & Login" : "Import")}
-        </button>
-        
-        <button 
-          onClick={() => {
-            setIsApiKey(!isApiKey);
-            setInput('');
-            setError('');
-          }} 
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            textDecoration: 'underline',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            marginTop: '0.5rem'
-          }}
-        >
-          {isApiKey ? "Switch to Public Import (Username)" : "Use API Key instead (Private Profile)"}
+          {loading ? "Syncing..." : "Import"}
         </button>
       </div>
     </div>

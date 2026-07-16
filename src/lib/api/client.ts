@@ -3,12 +3,11 @@ import type { ApiPlayerStats, ApiProcessedScore, ApiSong } from '../types/index.
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const api = {
-  importPlayer: async (username: string, apiKey?: string) => {
-    const payload = apiKey ? { apiKey } : { username };
+  importPlayer: async (username: string) => {
     const res = await fetch(`${API_BASE}/players/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ username }),
     });
     if (!res.ok) {
       const err = await res.json();

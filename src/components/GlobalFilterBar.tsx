@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 
 export function GlobalFilterBar() {

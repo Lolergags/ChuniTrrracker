@@ -1,4 +1,4 @@
-import React, { useContext, useState, useDeferredValue, useMemo } from 'react';
+import { useContext, useState, useDeferredValue, useMemo } from 'react';
 import { Activity, Trophy, BarChart2, DownloadCloud, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalContext } from '../lib/context/GlobalContext.js';

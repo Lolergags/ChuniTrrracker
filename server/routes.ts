@@ -7,29 +7,54 @@ export const router = Router();
 
 
 
+const MAX_CONCURRENT_IMPORTS = 5;
+let activeImports = 0;
+
+const IP_RL_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_IP = 5;
+const ipRequests = new Map<string, number[]>();
+
+function checkIpRateLimit(ip: string): boolean {
+  const now = Date.now();
+  let timestamps = ipRequests.get(ip) || [];
+  timestamps = timestamps.filter(t => now - t < IP_RL_WINDOW_MS);
+  if (timestamps.length >= MAX_REQUESTS_PER_IP) return false;
+  timestamps.push(now);
+  ipRequests.set(ip, timestamps);
+  return true;
+}
+
 // 1. Import Player
 router.post('/players/import', async (req, res) => {
-  const { username, apiKey } = req.body;
-  if (!username && !apiKey) {
-    return res.status(400).json({ error: 'Username or API Key is required' });
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+
+  if (!checkIpRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests from this IP. Please try again later.' });
+  }
+
+  if (activeImports >= MAX_CONCURRENT_IMPORTS) {
+    return res.status(429).json({ error: 'Server is currently busy importing other users. Please try again in a moment.' });
   }
 
   try {
-    const targetUser = username || 'me';
-    // Basic rate limit (5 mins) if no api key (api key implies explicit sync)
-    if (!apiKey) {
-      const player = db.prepare(`SELECT last_synced_at FROM players WHERE username = ?`).get(targetUser) as { last_synced_at: number } | undefined;
-      if (player && Date.now() - player.last_synced_at < 5 * 60 * 1000) {
-        console.log(`Skipping sync for ${targetUser} (rate limited)`);
-        return res.json({ success: true });
-      }
+    const player = db.prepare(`SELECT last_synced_at FROM players WHERE username = ?`).get(username) as { last_synced_at: number } | undefined;
+    if (player && Date.now() - player.last_synced_at < 5 * 60 * 1000) {
+      return res.status(429).json({ error: `User ${username} was synced recently. Please wait 5 minutes between imports.` });
     }
     
-    await syncPlayer(targetUser, apiKey);
+    activeImports++;
+    await syncPlayer(username);
     res.json({ success: true });
   } catch (err: any) {
     console.error(`Failed to import player:`, err);
     res.status(500).json({ error: err.message });
+  } finally {
+    activeImports--;
   }
 });
 

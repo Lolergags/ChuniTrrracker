@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo, useDeferredValue } from 'react';
+import { useEffect, useState, useMemo, useDeferredValue } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { Search, ChevronRight } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
-import { api, type ApiPlayerStats, type ApiProcessedScore } from '../lib/api/client.js';
+import { api } from '../lib/api/client.js';
+import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 
 export function Dashboard() {

@@ -362,6 +362,7 @@ const SongAnalytics: React.FC = () => {
                       <th style={{ padding: '1rem' }}>Score</th>
                       <th style={{ padding: '1rem' }}>Lamp</th>
                       <th style={{ padding: '1rem' }}>OP</th>
+                      <th style={{ padding: '1rem' }}>OP%</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -378,6 +379,7 @@ const SongAnalytics: React.FC = () => {
                         <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
                         <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
                         <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
                       </tr>
                     ))}
                   </tbody>
@@ -443,7 +445,7 @@ const SongAnalytics: React.FC = () => {
                           itemStyle={{ color: 'var(--text-primary)' }}
                           cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                         />
-                        <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

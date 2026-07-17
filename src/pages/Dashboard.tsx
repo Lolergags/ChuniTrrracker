@@ -302,11 +302,11 @@ export function Dashboard() {
                   </ul>
                 );
               }} />
-              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
-              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" />
-              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" />
-              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" />
+              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
               <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
             </BarChart>
           </ResponsiveContainer>

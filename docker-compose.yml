@@ -1,0 +1,19 @@
+services:
+  chunitrrracker:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: chunitrrracker
+    ports:
+      - "3001:3001"
+    volumes:
+      # Map the database directory to Unraid AppData for persistent storage
+      - /mnt/user/appdata/chunitrrracker/data:/app/server/data
+      # Map the project directory as a volume to support in-place updates via Update Manager
+      - /mnt/user/appdata/chunitrrracker/app:/app
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      # Uncomment and set an admin key to enable the Admin Panel and Update Manager
+      # - ADMIN_API_KEY=your_secure_random_key_here
+    restart: unless-stopped

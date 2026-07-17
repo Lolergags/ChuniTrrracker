@@ -3,6 +3,18 @@ import { useGlobal } from '../lib/context/useGlobal.js';
 export function GlobalFilterBar() {
   const { filters, setFilters } = useGlobal();
 
+  const toggleDiff = (diff: string) => {
+    const current = Array.isArray(filters.diff) ? filters.diff : ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'];
+    if (current.includes(diff)) {
+      if (current.length === 1) return; // Prevent unselecting all
+      setFilters({ ...filters, diff: current.filter(d => d !== diff) });
+    } else {
+      setFilters({ ...filters, diff: [...current, diff] });
+    }
+  };
+
+  const currentDiffs = Array.isArray(filters.diff) ? filters.diff : ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'];
+
   return (
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
       <select 
@@ -15,21 +27,33 @@ export function GlobalFilterBar() {
         <option value="OMNI">Omnimix (All Charts)</option>
       </select>
 
-      <select 
-        value={filters.diff}
-        onChange={(e) => setFilters({ ...filters, diff: e.target.value })}
-        style={selectStyle}
-      >
-        <option value="ALL">All Difficulties</option>
-        <option value="MAS_ULT">Master & Ultima Only</option>
-      </select>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
+          <button
+            key={diff}
+            onClick={() => toggleDiff(diff)}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: 'var(--radius-full)',
+              background: currentDiffs.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
+              color: '#fff',
+              border: currentDiffs.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit'
+            }}
+          >
+            {diff}
+          </button>
+        ))}
+      </div>
 
       <select 
         value={filters.version}
         onChange={(e) => setFilters({ ...filters, version: e.target.value })}
         style={selectStyle}
       >
-        <option value="ALL">All Versions</option>
         <option value="X-VERSE-X">X-VERSE-X</option>
         <option value="X-VERSE">X-VERSE</option>
         <option value="VERSE">VERSE</option>
@@ -61,5 +85,6 @@ const selectStyle = {
   borderRadius: 'var(--radius-md)',
   background: 'var(--bg-secondary)',
   color: 'var(--text-primary)',
-  border: '1px solid rgba(255,255,255,0.1)'
+  border: '1px solid rgba(255,255,255,0.1)',
+  fontFamily: 'inherit'
 };

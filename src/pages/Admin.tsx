@@ -43,6 +43,11 @@ export function Admin() {
   const [blacklistPage, setBlacklistPage] = useState(1);
   const BLACKLIST_PER_PAGE = 5;
 
+  // Update Manager state
+  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string, currentCommit: string, url: string } | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
+
   const fetchBlacklist = async () => {
     try {
       const data = await api.getBlacklist();
@@ -87,6 +92,11 @@ export function Admin() {
         setCurrentScrapeId(data.currentScrapeId);
         setStatus(`Running: ${data.currentScrapeId}`);
       }
+    }).catch(() => {});
+
+    api.checkUpdate().then(data => {
+      if (!isMounted) return;
+      setUpdateInfo(data);
     }).catch(() => {});
 
     // Polling interval
@@ -284,6 +294,20 @@ export function Admin() {
       setSchedulerStatus(res.status);
     } catch (err) {
       alert("Failed to stop scheduler");
+    }
+  };
+
+  const handleApplyUpdate = async () => {
+    if (!window.confirm('Are you sure you want to apply the latest update? The server will download the update, rebuild the frontend, and restart.')) return;
+    setIsUpdating(true);
+    setUpdateMessage('Applying update... Please wait a few moments for the server to restart.');
+    try {
+      const data = await api.applyUpdate();
+      setUpdateMessage(data.message || 'Update started.');
+      setTimeout(() => window.location.reload(), 30000); // Reload after 30s
+    } catch (err: any) {
+      setUpdateMessage(`Error: ${err.message}`);
+      setIsUpdating(false);
     }
   };
 
@@ -529,6 +553,40 @@ export function Admin() {
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Update Manager */}
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Update Manager</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Check for and apply updates from the GitHub repository.
+            </p>
+            
+            <div style={{ background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Current Commit:</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{updateInfo ? updateInfo.currentCommit : 'Loading...'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Latest Release:</span>
+                <span style={{ fontWeight: 'bold', color: updateInfo?.latestVersion && updateInfo.latestVersion !== updateInfo.currentCommit ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                  {updateInfo ? updateInfo.latestVersion : 'Loading...'}
+                </span>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleApplyUpdate}
+              disabled={isUpdating || !updateInfo}
+              style={{ padding: '0.5rem 1rem', background: isUpdating ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isUpdating || !updateInfo ? 'not-allowed' : 'pointer', width: '100%', fontWeight: 'bold' }}
+            >
+              {isUpdating ? 'Applying Update...' : 'Apply Update'}
+            </button>
+            {updateMessage && (
+              <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: updateMessage.startsWith('Error') ? 'var(--accent-danger)' : 'var(--rank-ajc)', textAlign: 'center' }}>
+                {updateMessage}
+              </div>
+            )}
           </div>
 
           {/* User Blacklist */}

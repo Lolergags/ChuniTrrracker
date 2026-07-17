@@ -50,6 +50,16 @@ The OP calculation is a piecewise function based on the user's score relative to
     *   AJC (All Justice Critical): +1250
 *   **Rounding:** For scores >= 975,000, the result is floored to the nearest 5. For scores < 975,000, it is floored to the nearest 50.
 
+### Possession Plate Requirements
+Players can earn a possession plate based on a combination of their OP% and their minimum score rank across **all** Master and Ultima charts for a given version. The requirements are calculated cumulatively (including all charts released up to that version):
+
+| Possession Rank | Minimum OP% | Minimum Grade on ALL Master/Ultima |
+| :--- | :--- | :--- |
+| **Rainbow** | 99.5% | SSS (1,007,500+) |
+| **Platinum** | 99.0% | SS (1,000,000+) |
+| **Gold** | 97.5% | S+ (990,000+) |
+| **Silver** | (None) | S (975,000+) |
+
 ## Development Conventions
 
 *   **TypeScript:** Use strict mode.

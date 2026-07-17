@@ -3,14 +3,14 @@ import { api } from '../api/client.js';
 
 export interface FilterOptions {
   server: string;
-  diff: string;
+  diff: string[];
   version: string;
 }
 
 const defaultFilters: FilterOptions = {
   server: 'JP',
-  diff: 'ALL',
-  version: 'ALL'
+  diff: ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'],
+  version: 'LUMINOUS PLUS'
 };
 
 interface GlobalContextType {

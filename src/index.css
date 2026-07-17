@@ -109,3 +109,34 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.dual-slider-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 2px solid var(--accent-primary);
+  margin-top: -6px;
+}
+.dual-slider-thumb::-webkit-slider-runnable-track {
+  appearance: none;
+  background: transparent;
+  border: none;
+}
+.dual-slider-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 2px solid var(--accent-primary);
+}
+.dual-slider-thumb::-moz-range-track {
+  appearance: none;
+  background: transparent;
+  border: none;
+}

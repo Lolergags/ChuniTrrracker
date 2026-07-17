@@ -77,6 +77,8 @@ export const api = {
       if (filters.server) params.append('server', filters.server);
       if (filters.diff) params.append('diff', filters.diff);
       if (filters.version) params.append('version', filters.version);
+      if (filters.ratingMin) params.append('ratingMin', filters.ratingMin);
+      if (filters.ratingMax) params.append('ratingMax', filters.ratingMax);
       const q = params.toString();
       if (q) url += `?${q}`;
     }
@@ -91,6 +93,8 @@ export const api = {
       if (filters.server) params.append('server', filters.server);
       if (filters.diff) params.append('diff', filters.diff);
       if (filters.version) params.append('version', filters.version);
+      if (filters.ratingMin) params.append('ratingMin', filters.ratingMin);
+      if (filters.ratingMax) params.append('ratingMax', filters.ratingMax);
       const q = params.toString();
       if (q) url += `?${q}`;
     }
@@ -105,6 +109,8 @@ export const api = {
       if (filters.server) params.append('server', filters.server);
       if (filters.diff) params.append('diff', filters.diff);
       if (filters.version) params.append('version', filters.version);
+      if (filters.ratingMin) params.append('ratingMin', filters.ratingMin);
+      if (filters.ratingMax) params.append('ratingMax', filters.ratingMax);
       const q = params.toString();
       if (q) url += `?${q}`;
     }
@@ -119,6 +125,8 @@ export const api = {
       if (filters.server) params.append('server', filters.server);
       if (filters.diff) params.append('diff', filters.diff);
       if (filters.version) params.append('version', filters.version);
+      if (filters.ratingMin) params.append('ratingMin', filters.ratingMin);
+      if (filters.ratingMax) params.append('ratingMax', filters.ratingMax);
       const q = params.toString();
       if (q) url += `?${q}`;
     }
@@ -133,6 +141,8 @@ export const api = {
       if (filters.server) params.append('server', filters.server);
       if (filters.diff) params.append('diff', filters.diff);
       if (filters.version) params.append('version', filters.version);
+      if (filters.ratingMin) params.append('ratingMin', filters.ratingMin);
+      if (filters.ratingMax) params.append('ratingMax', filters.ratingMax);
       const q = params.toString();
       if (q) url += `?${q}`;
     }
@@ -300,6 +310,26 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed to restore database');
+    }
+    return res.json();
+  },
+
+  checkUpdate: async () => {
+    const res = await fetch(`${API_BASE}/admin/update/check`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to check for updates');
+    return res.json();
+  },
+
+  applyUpdate: async () => {
+    const res = await fetch(`${API_BASE}/admin/update/apply`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to apply update');
     }
     return res.json();
   }

@@ -154,14 +154,27 @@ export async function syncPlayer(username: string, apiKey?: string) {
     rawSongs = scoresDataJson.body.songs || [];
 
     // Fetch or create player only after we've confirmed they exist and have scores
+    let kamaitachiRating = 0;
+    try {
+      const statsUrl = `https://kamai.tachi.ac/api/v1/users/${encodeURIComponent(targetUserId)}/games/chunithm`;
+      const statsRes = await fetch(statsUrl, { headers });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        kamaitachiRating = statsData.body?.gameStats?.ratings?.naiveRating || 0;
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch kamaitachi rating for user ${targetUserId}`, e);
+    }
+
     const insertPlayer = db.prepare(`
-      INSERT INTO players (username, kamaitachi_id, last_synced_at)
-      VALUES (@username, @kamaitachi_id, @now)
+      INSERT INTO players (username, kamaitachi_id, kamaitachi_rating, last_synced_at)
+      VALUES (@username, @kamaitachi_id, @kamaitachi_rating, @now)
       ON CONFLICT(username) DO UPDATE SET
         kamaitachi_id=COALESCE(excluded.kamaitachi_id, players.kamaitachi_id),
+        kamaitachi_rating=excluded.kamaitachi_rating,
         last_synced_at=@now
     `);
-    insertPlayer.run({ username, kamaitachi_id: parseInt(targetUserId) || null, now: Date.now() });
+    insertPlayer.run({ username, kamaitachi_id: parseInt(targetUserId) || null, kamaitachi_rating: kamaitachiRating, now: Date.now() });
     player = db.prepare(`SELECT id FROM players WHERE username = ?`).get(username) as { id: number };
   } catch (err: any) {
     if (username.toLowerCase() === 'mock') {

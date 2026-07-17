@@ -4,6 +4,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
+import { DualSlider } from '../components/DualSlider.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -16,16 +17,22 @@ const PerformanceAnalysis: React.FC = () => {
   
   const { filters } = useGlobal();
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
+  const [ratingRange, setRatingRange] = useState<[number, number]>([0, 22.0]);
 
   useEffect(() => {
     setIsLoadingGlobal(true);
     // Fetch global data
+    const apiFilters = { 
+      ...filters, 
+      ratingMin: ratingRange[0].toString(), 
+      ratingMax: ratingRange[1].toString() 
+    };
     Promise.all([
-      api.getHeatmap(filters),
-      api.getChartMeta(filters),
-      api.getLampDistribution(filters),
-      api.getOpYield(filters),
-      api.getPlayerOpDistribution(filters)
+      api.getHeatmap(apiFilters),
+      api.getChartMeta(apiFilters),
+      api.getLampDistribution(apiFilters),
+      api.getOpYield(apiFilters),
+      api.getPlayerOpDistribution(apiFilters)
     ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
       setHeatmapData(heatmap);
       setMetaData(meta);
@@ -37,10 +44,11 @@ const PerformanceAnalysis: React.FC = () => {
       console.error(err);
       setIsLoadingGlobal(false);
     });
-  }, [filters]);
+  }, [filters, ratingRange]);
 
   const getConstantLabel = (constant: number) => {
-    if (filters.diff === 'MAS_ULT') return constant.toFixed(1);
+    const isMasUltOnly = filters.diff.length > 0 && filters.diff.every(d => d === 'MAS' || d === 'ULT');
+    if (isMasUltOnly) return constant.toFixed(1);
     if (constant % 1 === 0.5) return `${Math.floor(constant)}+`;
     return `${Math.floor(constant)}`;
   };
@@ -158,7 +166,20 @@ const PerformanceAnalysis: React.FC = () => {
             Universal statistics aggregated across all players and songs on the server.
           </p>
         </div>
-        <GlobalFilterBar />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+          <GlobalFilterBar />
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>Player Rating:</span>
+            <DualSlider 
+              min={0} 
+              max={22.0} 
+              step={0.01} 
+              value={ratingRange} 
+              onChange={setRatingRange} 
+              formatLabel={(v) => v.toFixed(2)}
+            />
+          </div>
+        </div>
       </div>
 
       {isLoadingGlobal ? (
@@ -269,11 +290,11 @@ const PerformanceAnalysis: React.FC = () => {
                       </ul>
                     );
                   }} />
-                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" />
-                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" />
-                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" />
-                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" />
-                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" />
+                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -290,13 +311,13 @@ const PerformanceAnalysis: React.FC = () => {
                 <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" domain={['auto', 'auto']} tickFormatter={(val) => val.toFixed(0) + '%'} />
+                  <YAxis stroke="var(--text-secondary)" domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                     itemStyle={{ color: 'var(--text-primary)' }}
                     formatter={(val: any) => [val.toFixed(2) + '%', "Average OP Yield"]}
                   />
-                  <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} activeBar={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -318,7 +339,7 @@ const PerformanceAnalysis: React.FC = () => {
                     contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                     itemStyle={{ color: 'var(--text-primary)' }}
                   />
-                  <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

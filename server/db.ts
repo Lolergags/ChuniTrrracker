@@ -1,3 +1,4 @@
+
 import Database from 'better-sqlite3';
 import path from 'node:path';
 
@@ -48,6 +49,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     kamaitachi_id INTEGER,
+    kamaitachi_rating REAL NOT NULL DEFAULT 0,
     last_synced_at INTEGER NOT NULL DEFAULT 0
   );
 
@@ -74,7 +76,15 @@ try {
 } catch (e: any) {
   // Ignore error if column already exists
   if (!e.message.includes('duplicate column name')) {
-    console.error('Migration error:', e.message);
+    console.error('Migration error (clear_lamp):', e.message);
+  }
+}
+
+try {
+  db.exec(`ALTER TABLE players ADD COLUMN kamaitachi_rating REAL NOT NULL DEFAULT 0`);
+} catch (e: any) {
+  if (!e.message.includes('duplicate column name')) {
+    console.error('Migration error (kamaitachi_rating):', e.message);
   }
 }
 

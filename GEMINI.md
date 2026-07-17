@@ -50,6 +50,16 @@ The OP calculation is a piecewise function based on the user's score relative to
     *   AJC (All Justice Critical): +1250
 *   **Rounding:** For scores >= 975,000, the result is floored to the nearest 5. For scores < 975,000, it is floored to the nearest 50.
 
+### Possession Plate Requirements
+Players can earn a possession plate based on a combination of their OP% and their minimum score rank across **all** Master and Ultima charts for a given version. The requirements are calculated cumulatively (including all charts released up to that version):
+
+| Possession Rank | Minimum OP% | Minimum Grade on ALL Master/Ultima |
+| :--- | :--- | :--- |
+| **Rainbow** | 99.5% | SSS (1,007,500+) |
+| **Platinum** | 99.0% | SS (1,000,000+) |
+| **Gold** | 97.5% | S+ (990,000+) |
+| **Silver** | (None) | S (975,000+) |
+
 ## UI & UX Constraints
 
 *   **React Conditional Rendering:** When conditionally rendering UI elements based on string values (e.g., `{searchInput && <Dropdown />}`), NEVER use the raw string variable. An empty string (`""`) evaluates as truthy enough to render an invisible text node in the DOM. In flex containers, this establishes a baseline and causes dramatic layout shifts/page jumps. Always use strict boolean evaluations: `{searchInput.trim().length > 0 && <Dropdown />}`.
@@ -71,6 +81,8 @@ The OP calculation is a piecewise function based on the user's score relative to
 *   **API Pathing:** Chunithm is a single-playtype game. Kamaitachi drops the playtype segment entirely from the route. Use `/games/chunithm/pbs/all` (do NOT include `/Single`).
 *   **Rate Limiting & Safety:** Kamaitachi strictly enforces rate limits (~60 requests/minute). Any backend looping logic (e.g., scraping, bulk syncing) that triggers external Kamaitachi API requests **MUST** implement a minimum `1.5-second (1500ms) delay` between iterations to avoid 429 Too Many Requests errors and IP bans.
 *   **Endpoint Selection:** Always use the `pbs/all` (Personal Bests) endpoint instead of `scores/all` to automatically retrieve the highest score and best lamp correctly merged by Kamaitachi.
+*   **Player Rating Pathing:** The overall player rating is nested within the `gameStats` object under a specific `ratings` sub-object. When fetching `https://kamai.tachi.ac/api/v1/users/{id}/games/chunithm`, you must extract the rating via `body.gameStats.ratings.naiveRating`. Do not attempt to read `body.gameStats.rating`.
+*   **Ghost Charts (Unmapped DB Entries):** Kamaitachi tracks two legacy/phantom chart records (`chart.id` 95 and 201) that do not map to any active in-game track. Whenever calculating global chart denominators (e.g., Possession plate requirements or completion percentages), you **MUST** apply a hardcoded blacklist (`c.id NOT IN (95, 201)`) in the SQL query. Failing to do so inflates the denominator and makes 100% completion mathematically impossible for users.
 *   **Data Normalization:** Kamaitachi identifies songs with string IDs (e.g. `S...`). You must map these to the local integer IDs (sourced from Beerpsi) by matching the `chart.data.inGameID` property found in the Kamaitachi chart object. DO NOT match by `title`, as Chunithm contains duplicate song names that will cause silent data loss.
 *   **Global Filtering Paradigm:** Kamaitachi tracks all scores (Omnimix), including charts that have been deleted or are International-only. When importing scores in `sync.ts`, **import everything that exists in the local database**. Do NOT skip `is_jp_active = 0` charts. Instead, apply the `getChartFilterConditions()` utility from `server/utils/filters.ts` to all backend endpoints (`routes.ts`) to dynamically slice the charts and scores by Server (`JP`, `INT`, `OMNI`), Difficulty, and Version. This ensures mathematically perfect denominator/numerator matching for completion graphs.
 *   **Version Filtering Modes:** When slicing player statistics globally, apply *cumulative* version filtering (i.e. "Time Machine" mode where `LUMINOUS` includes `SUN`, `NEW`, etc.). When filtering specific song lists (e.g. Song Analytics), use *strict* version matching to simulate in-game version folders.
@@ -79,6 +91,7 @@ The OP calculation is a piecewise function based on the user's score relative to
 *   **Scatter Plot Deduplication:** When plotting player scores across the entire track list, ensure the backend endpoint returns `songId`. Use `reduce` (within a `useMemo` hook) on the frontend to deduplicate charts per song, ensuring only the chart yielding the maximum OP is plotted. Also apply limits and dynamic domains (`Math.max()`) to keep axes from flattening out due to low-scoring attempts.
 *   **Recharts Stacked Bars:** Recharts renders the first `<Bar>` element at the bottom of the visual stack. When building progression charts (e.g. Fail -> Clear -> AJC), define the lowest achievements first in the JSX. If a specific legend order is required, use a custom `<Legend payload={...}>` rather than reordering the bars.
 *   **Recharts Stack Transparency:** When using `stackOffset="expand"`, do not use `fill="transparent"` for empty/unplayed padding bars. It creates an optical illusion of 100% completion against dark backgrounds. Use a faint color like `rgba(255,255,255,0.05)` instead.
+*   **Recharts BarChart Domains:** When using a `<BarChart>` to plot percentage data (e.g., OP Yield 0-100%), NEVER use dynamic domains like `domain={['auto', 'auto']}` on the `<YAxis>`. `BarChart` rectangles require a strict baseline of `0` to render visually. Always explicitly define the domain (e.g., `domain={[0, 100]}`).
 
 ## Frontend & Backend State Conventions
 

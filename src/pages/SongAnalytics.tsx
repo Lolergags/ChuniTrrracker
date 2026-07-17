@@ -15,7 +15,7 @@ const SongAnalytics: React.FC = () => {
   const [minConst, setMinConst] = useState<string>('');
   const [maxConst, setMaxConst] = useState<string>('');
   const [serverFilter, setServerFilter] = useState<string>('JP');
-  const [versionFilter, setVersionFilter] = useState<string>('ALL');
+  const [versionFilter, setVersionFilter] = useState<string>('LUMINOUS PLUS');
   const [chartPage, setChartPage] = useState(1);
 
   useEffect(() => {
@@ -124,9 +124,7 @@ const SongAnalytics: React.FC = () => {
     }
 
     // Filter by Version (Strict, not cumulative)
-    if (versionFilter !== 'ALL') {
-      result = result.filter(c => c.version === versionFilter);
-    }
+    result = result.filter(c => c.version === versionFilter);
 
     // Sort
     result = [...result].sort((a, b) => {
@@ -241,7 +239,7 @@ const SongAnalytics: React.FC = () => {
               onChange={(e) => setVersionFilter(e.target.value)}
               style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
             >
-              <option value="ALL">All Versions</option>
+
               <option value="X-VERSE-X">X-VERSE-X</option>
               <option value="X-VERSE">X-VERSE</option>
               <option value="VERSE">VERSE</option>

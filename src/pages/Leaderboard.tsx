@@ -9,7 +9,7 @@ const Leaderboard: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [server, setServer] = useState('jp');
-  const [version, setVersion] = useState('all');
+  const [version, setVersion] = useState('LUMINOUS PLUS');
   const [isLoading, setIsLoading] = useState(true);
   
   const { setActivePlayer } = useContext(GlobalContext);
@@ -32,7 +32,6 @@ const Leaderboard: React.FC = () => {
   };
 
   const VERSIONS = [
-    'all',
     'X-VERSE-X',
     'X-VERSE',
     'VERSE',
@@ -84,8 +83,7 @@ const Leaderboard: React.FC = () => {
             onChange={e => setVersion(e.target.value)}
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
           >
-            <option value="all">All Versions</option>
-            {VERSIONS.filter(v => v !== 'all').map(v => (
+            {VERSIONS.map(v => (
               <option key={v} value={v}>Up to {v}</option>
             ))}
           </select>

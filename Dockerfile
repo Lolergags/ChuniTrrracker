@@ -1,13 +1,20 @@
 FROM node:22-alpine
 
-# Install git and bash for the Update Manager and entrypoint
-RUN apk add --no-cache git bash python3 make g++ 
-
-# Copy the entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 WORKDIR /app
 
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install ALL dependencies so Vite and tsx are available
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Build the frontend via Vite
+RUN npm run build
+
 EXPOSE 3001
-CMD ["/entrypoint.sh"]
+
+# Execute the TypeScript server directly using tsx, just like your old setup
+CMD ["npx", "tsx", "server/index.ts"]

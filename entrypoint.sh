@@ -4,9 +4,9 @@ set -e
 # If /app is empty or doesn't have a .git folder, clone the repo
 if [ ! -d "/app/.git" ]; then
   echo "Initial startup: Cloning ChuniTrrracker repository into /app..."
-  # Clean directory just in case it has lost+found or other hidden files
-  rm -rf /app/* /app/.* 2>/dev/null || true
-  git clone https://github.com/Lolergags/ChuniTrrracker.git /app
+  git clone https://github.com/Lolergags/ChuniTrrracker.git /tmp/repo
+  cp -a /tmp/repo/. /app/
+  rm -rf /tmp/repo
 fi
 
 cd /app

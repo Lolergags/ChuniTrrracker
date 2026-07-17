@@ -47,10 +47,7 @@ const PerformanceAnalysis: React.FC = () => {
   }, [filters]);
 
   const getConstantLabel = (constant: number) => {
-    const isMasUltOnly = filters.diff.length > 0 && filters.diff.every(d => d === 'MAS' || d === 'ULT');
-    if (isMasUltOnly) return constant.toFixed(1);
-    if (constant % 1 === 0.5) return `${Math.floor(constant)}+`;
-    return `${Math.floor(constant)}`;
+    return constant.toFixed(1);
   };
 
   // Process Heatmap Data
@@ -183,15 +180,7 @@ const PerformanceAnalysis: React.FC = () => {
               Shows the normalized percentage of scores for each Chart Constant that fall into a specific Grade. (Brighter = Higher %)
             </p>
             
-            <div style={{ display: 'inline-grid', gridTemplateColumns: `60px repeat(${constants.length}, 30px)`, gap: '2px', paddingBottom: '1rem' }}>
-              {/* Header row */}
-              <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}></div>
-              {constants.map(c => (
-                <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)', writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}>
-                  {getConstantLabel(c)}
-                </div>
-              ))}
-
+            <div style={{ display: 'inline-grid', gridTemplateColumns: `60px repeat(${constants.length}, 40px)`, gap: '2px', paddingBottom: '1rem' }}>
               {/* Data rows */}
               {GRADES.map(grade => (
                 <React.Fragment key={grade}>
@@ -218,6 +207,14 @@ const PerformanceAnalysis: React.FC = () => {
                     );
                   })}
                 </React.Fragment>
+              ))}
+
+              {/* Header row at the bottom */}
+              <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}></div>
+              {constants.map(c => (
+                <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  {getConstantLabel(c)}
+                </div>
               ))}
             </div>
           </div>

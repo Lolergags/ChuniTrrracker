@@ -62,7 +62,7 @@ export function ImportDataForm() {
           }}
         />
         
-        {error && <div style={{ color: 'var(--rank-failed)', fontSize: '0.9rem', textAlign: 'left' }}>{error}</div>}
+        {error && <div style={{ color: 'white', fontSize: '0.9rem', textAlign: 'left' }}>{error}</div>}
         
         <button 
           onClick={handleAction} 

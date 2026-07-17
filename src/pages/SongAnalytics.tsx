@@ -72,7 +72,7 @@ const SongAnalytics: React.FC = () => {
 
   const handleRowClick = (username: string) => {
     setActivePlayer(username);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   // Get a flat list of all charts (song + difficulty)

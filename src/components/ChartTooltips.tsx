@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const LampTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const order = ['AJC', 'AJ', 'FC', 'CLEAR', 'FAILED'];

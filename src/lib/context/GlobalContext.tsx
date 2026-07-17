@@ -12,7 +12,7 @@ export interface FilterOptions {
 const defaultFilters: FilterOptions = {
   server: 'JP',
   diff: ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'],
-  version: 'LUMINOUS PLUS',
+  version: 'X-VERSE-X',
   ratingMin: '0',
   ratingMax: '22.0'
 };

@@ -75,7 +75,7 @@ router.get('/players', (req, res) => {
 
 // 2. Get Global Leaderboard
 router.get('/leaderboard', (req, res) => {
-  const { page = 1, limit = 50, server = 'jp', version = 'LUMINOUS PLUS' } = req.query;
+  const { page = 1, limit = 50, server = 'jp', version = 'X-VERSE-X' } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
   // Map server query to db column

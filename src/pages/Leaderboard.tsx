@@ -9,7 +9,7 @@ const Leaderboard: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [server, setServer] = useState('jp');
-  const [version, setVersion] = useState('LUMINOUS PLUS');
+  const [version, setVersion] = useState('X-VERSE-X');
   const [isLoading, setIsLoading] = useState(true);
   
   const { setActivePlayer } = useContext(GlobalContext);

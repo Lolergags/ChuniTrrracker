@@ -176,7 +176,7 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty != 'WE' ${serverCondition}
+      WHERE s.player_id = ? AND c.difficulty != 'WE' AND c.id NOT IN (95, 201, 239116) ${serverCondition}
       GROUP BY c.song_id
     `).all(player.id) as any[];
 
@@ -186,7 +186,7 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') ${serverCondition}
+      WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') AND c.id NOT IN (95, 201, 239116) ${serverCondition}
     `).all(player.id) as any[];
 
     // Group OP by version
@@ -228,9 +228,8 @@ router.get('/leaderboard', (req, res) => {
       else if (cumulativeSPlus >= vData.totalMasUlt && opPercent >= 97.5) currentTier = 1;
       else if (cumulativeS >= vData.totalMasUlt) currentTier = 0;
 
-      if (currentTier > bestPossessionTier) {
-        bestPossessionTier = currentTier;
-        possessionStr = tiers[currentTier];
+      if (i === selectedVersionIdx) {
+        possessionStr = currentTier >= 0 ? tiers[currentTier] : 'None';
       }
     }
 

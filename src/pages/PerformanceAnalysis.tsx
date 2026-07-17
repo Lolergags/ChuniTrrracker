@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, ReferenceLine } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line } from 'recharts';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
@@ -349,16 +349,21 @@ const PerformanceAnalysis: React.FC = () => {
                     dataKey="avgScore" 
                     name="Avg Score" 
                     domain={[975000, 1010000]}
+                    ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000]}
                     stroke="var(--text-secondary)" 
-                    tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'}
+                    tickFormatter={(val) => {
+                      if (val === 1009000) return 'SSS+ (1009k)';
+                      if (val === 1007500) return 'SSS (1007.5k)';
+                      if (val === 1005000) return 'SS+ (1005k)';
+                      if (val === 1000000) return 'SS (1000k)';
+                      if (val === 990000) return 'S+ (990k)';
+                      if (val === 975000) return 'S (975k)';
+                      return (val / 1000).toFixed(0) + 'k';
+                    }}
                     label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
+                    width={100}
                   />
                   <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
-                  <ReferenceLine y={1009000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SSS+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
-                  <ReferenceLine y={1007500} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SSS', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
-                  <ReferenceLine y={1005000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SS+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
-                  <ReferenceLine y={1000000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SS', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
-                  <ReferenceLine y={990000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'S+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
                   <Tooltip content={<CustomTooltip />} />
                   <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
                 </ScatterChart>

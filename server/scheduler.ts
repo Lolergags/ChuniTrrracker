@@ -129,5 +129,7 @@ export function stopScheduler() {
 }
 
 export function initScheduler() {
-  startScheduler();
+  if (isSchedulerEnabled) {
+    startScheduler();
+  }
 }

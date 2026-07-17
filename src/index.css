@@ -126,6 +126,7 @@ code {
   margin-top: -6px;
 }
 .dual-slider-thumb::-webkit-slider-runnable-track {
+  pointer-events: none;
   appearance: none;
   background: transparent;
   border: none;
@@ -140,6 +141,7 @@ code {
   border: 2px solid var(--accent-primary);
 }
 .dual-slider-thumb::-moz-range-track {
+  pointer-events: none;
   appearance: none;
   background: transparent;
   border: none;

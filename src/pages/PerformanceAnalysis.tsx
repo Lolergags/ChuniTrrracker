@@ -166,7 +166,7 @@ const PerformanceAnalysis: React.FC = () => {
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
-          <GlobalFilterBar />
+          <GlobalFilterBar showRating={true} />
         </div>
       </div>
 

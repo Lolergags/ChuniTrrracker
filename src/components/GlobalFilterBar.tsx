@@ -1,7 +1,7 @@
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { DualSlider } from './DualSlider.js';
 
-export function GlobalFilterBar() {
+export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }) {
   const { filters, setFilters } = useGlobal();
 
   const toggleDiff = (diff: string) => {
@@ -78,17 +78,19 @@ export function GlobalFilterBar() {
         <option value="CHUNITHM">CHUNITHM</option>
       </select>
       
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '0.5rem' }}>
-        <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Rating:</span>
-        <DualSlider 
-          min={0} 
-          max={22.0} 
-          step={0.01} 
-          value={[Number(filters.ratingMin || 0), Number(filters.ratingMax || 22.0)]} 
-          onChange={([min, max]) => setFilters({ ...filters, ratingMin: min.toString(), ratingMax: max.toString() })} 
-          formatLabel={(v) => v.toFixed(2)}
-        />
-      </div>
+      {showRating && (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '0.5rem' }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Rating:</span>
+          <DualSlider 
+            min={0} 
+            max={22.0} 
+            step={0.01} 
+            value={[Number(filters.ratingMin || 0), Number(filters.ratingMax || 22.0)]} 
+            onChange={([min, max]) => setFilters({ ...filters, ratingMin: min.toString(), ratingMax: max.toString() })} 
+            formatLabel={(v) => v.toFixed(2)}
+          />
+        </div>
+      )}
     </div>
   );
 }

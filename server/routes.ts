@@ -79,7 +79,9 @@ router.get('/leaderboard', (req, res) => {
   const offset = (Number(page) - 1) * Number(limit);
 
   // Map server query to db column
-  const serverCol = server === 'intl' ? 'is_intl_active' : 'is_jp_active';
+  let serverCondition = '';
+  if (server === 'jp') serverCondition = 'AND songs.is_jp_active = 1';
+  else if (server === 'intl') serverCondition = 'AND songs.is_intl_active = 1';
   
   const VERSION_ORDER = [
     'CHUNITHM', 'CHUNITHM PLUS', 'AIR', 'AIR PLUS', 'STAR', 'STAR PLUS',
@@ -103,7 +105,7 @@ router.get('/leaderboard', (req, res) => {
     SELECT COUNT(DISTINCT song_id) as count
     FROM charts c
     JOIN songs ON c.song_id = songs.id
-    WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1
+    WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) ${serverCondition}
     ${versionFilter}
   `).get(...versionParams) as any).count;
 
@@ -117,7 +119,7 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs on c.song_id = songs.id
-      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1 ${versionFilter}
+      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) ${serverCondition} ${versionFilter}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
     LEFT JOIN (
@@ -125,7 +127,7 @@ router.get('/leaderboard', (req, res) => {
       FROM charts c
       JOIN charts c2 ON c.song_id = c2.song_id AND c2.difficulty != 'WE' AND c2.id NOT IN (95, 201)
       JOIN songs on c.song_id = songs.id
-      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1 ${versionFilter}
+      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) ${serverCondition} ${versionFilter}
       GROUP BY c.song_id
     ) song_max ON max_scores.song_id = song_max.song_id
     GROUP BY p.id
@@ -136,7 +138,7 @@ router.get('/leaderboard', (req, res) => {
   
   const queryParams = [totalActiveSongs, ...versionParams, ...versionParams, Number(limit), Number(offset)];
   const topPlayers = db.prepare(playersQuery).all(...queryParams) as any[];
-  const totalPlayers = (db.prepare(`SELECT COUNT(DISTINCT s.player_id) as count FROM scores s JOIN charts c ON s.chart_id = c.id JOIN songs ON c.song_id = songs.id WHERE songs.${serverCol} = 1 ${versionFilter}`).get(...versionParams) as any).count;
+  const totalPlayers = (db.prepare(`SELECT COUNT(DISTINCT s.player_id) as count FROM scores s JOIN charts c ON s.chart_id = c.id JOIN songs ON c.song_id = songs.id WHERE 1=1 ${serverCondition} ${versionFilter}`).get(...versionParams) as any).count;
 
   // Pre-calculate total MAS/ULT charts and Max OP per version
   const cumulativeVersionData: Record<string, { totalMasUlt: number, totalSongOp: number }> = {};
@@ -145,19 +147,19 @@ router.get('/leaderboard', (req, res) => {
     const allowed = VERSION_ORDER.slice(0, i + 1);
     const p = allowed.map(() => '?').join(',');
     
-    const masUlt = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') AND songs.${serverCol} = 1 AND songs.version IN (${p}) AND c.id NOT IN (95, 201)`).get(...allowed) as any).count;
+    const masUlt = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') ${serverCondition} AND songs.version IN (${p}) AND c.id NOT IN (95, 201)`).get(...allowed) as any).count;
     
     const maxOpQuery = db.prepare(`
       SELECT IFNULL(SUM(((max_const * 5000 + 15000) / 5) * 5), 0) as total_op FROM (
         SELECT MAX(c.constant) as max_const
         FROM charts c
         JOIN songs ON c.song_id = songs.id
-        WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1 AND songs.version IN (${p}) AND c.id NOT IN (95, 201)
+        WHERE c.difficulty != 'WE' ${serverCondition} AND songs.version IN (${p}) AND c.id NOT IN (95, 201)
         GROUP BY c.song_id
       )
     `).get(...allowed) as any;
     
-    const activeSongs = (db.prepare(`SELECT COUNT(DISTINCT song_id) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1 AND songs.version IN (${p}) AND c.id NOT IN (95, 201)`).get(...allowed) as any).count;
+    const activeSongs = (db.prepare(`SELECT COUNT(DISTINCT song_id) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty != 'WE' ${serverCondition} AND songs.version IN (${p}) AND c.id NOT IN (95, 201)`).get(...allowed) as any).count;
     
     cumulativeVersionData[v] = { totalMasUlt: masUlt, totalSongOp: maxOpQuery.total_op, activeSongs };
   }
@@ -174,7 +176,7 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty != 'WE' AND songs.${serverCol} = 1
+      WHERE s.player_id = ? AND c.difficulty != 'WE' ${serverCondition}
       GROUP BY c.song_id
     `).all(player.id) as any[];
 
@@ -184,7 +186,7 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') AND songs.${serverCol} = 1
+      WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') ${serverCondition}
     `).all(player.id) as any[];
 
     // Group OP by version

@@ -307,15 +307,17 @@ router.get('/players/:username', (req, res) => {
   // Get other stats directly from scores
   const stats = db.prepare(`
     SELECT 
-      COUNT(*) as scoreCount,
-      AVG(score) as averageScore,
-      SUM(CASE WHEN lamp = 'AJC' THEN 1 ELSE 0 END) as ajcCount,
-      SUM(CASE WHEN lamp = 'AJ' THEN 1 ELSE 0 END) as ajCount,
-      SUM(CASE WHEN lamp = 'FC' THEN 1 ELSE 0 END) as fcCount,
-      SUM(CASE WHEN clear_lamp != 'FAILED' THEN 1 ELSE 0 END) as clearCount
-    FROM scores
-    WHERE player_id = ?
-  `).get(player.id) as any;
+      COUNT(s.id) as scoreCount,
+      AVG(s.score) as averageScore,
+      SUM(CASE WHEN s.lamp = 'AJC' THEN 1 ELSE 0 END) as ajcCount,
+      SUM(CASE WHEN s.lamp = 'AJ' THEN 1 ELSE 0 END) as ajCount,
+      SUM(CASE WHEN s.lamp = 'FC' THEN 1 ELSE 0 END) as fcCount,
+      SUM(CASE WHEN s.clear_lamp != 'FAILED' THEN 1 ELSE 0 END) as clearCount
+    FROM scores s
+    JOIN charts c ON s.chart_id = c.id
+    JOIN songs ON c.song_id = songs.id
+    WHERE s.player_id = ? AND ${conditions.join(' AND ')}
+  `).get(player.id, ...bindings) as any;
 
   // Get lamp distribution grouped by chart level
   const lampQuery = db.prepare(`

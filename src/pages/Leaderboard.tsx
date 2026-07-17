@@ -5,10 +5,27 @@ import { GlobalContext } from '../lib/context/GlobalContext.js';
 import type { ApiPlayer } from '../lib/types/index.js';
 
 const Leaderboard: React.FC = () => {
+  const { setActivePlayer, filters, setFilters } = useContext(GlobalContext);
+
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // The URL takes precedence. If no URL, fallback to GlobalContext, else defaults.
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const server = searchParams.get('server') || 'jp';
-  const version = searchParams.get('version') || 'X-VERSE-X';
+  
+  const ctxServerMap: Record<string, string> = { 'JP': 'jp', 'INT': 'intl', 'OMNI': 'omni' };
+  const getContextServer = () => ctxServerMap[filters.server] || 'jp';
+  const server = searchParams.get('server') || getContextServer();
+  const version = searchParams.get('version') || filters.version || 'X-VERSE-X';
+
+  // Sync to GlobalContext whenever server or version changes
+  useEffect(() => {
+    const revMap: Record<string, string> = { 'jp': 'JP', 'intl': 'INT', 'omni': 'OMNI' };
+    const ctxServer = revMap[server] || 'JP';
+    
+    if (filters.server !== ctxServer || filters.version !== version) {
+      setFilters({ ...filters, server: ctxServer, version });
+    }
+  }, [server, version, filters, setFilters]);
 
   const setPage = (p: number | ((prev: number) => number)) => {
     const newPage = typeof p === 'function' ? p(page) : p;
@@ -26,8 +43,6 @@ const Leaderboard: React.FC = () => {
   const [players, setPlayers] = useState<ApiPlayer[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const { setActivePlayer } = useContext(GlobalContext);
   const navigate = useNavigate();
 
   useEffect(() => {

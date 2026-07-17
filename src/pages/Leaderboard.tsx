@@ -84,7 +84,7 @@ const Leaderboard: React.FC = () => {
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
           >
             {VERSIONS.map(v => (
-              <option key={v} value={v}>Up to {v}</option>
+              <option key={v} value={v}>{v}</option>
             ))}
           </select>
         </div>

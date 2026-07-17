@@ -1,4 +1,4 @@
-import { syncPlayer } from './sync.js';
+import { syncPlayer, syncSongs } from './sync.js';
 import db from './db.js';
 
 let isScraping = false;
@@ -96,6 +96,13 @@ export async function runGlobalSync() {
   globalSyncState.total = players.length;
   globalSyncState.current = 0;
   globalSyncState.currentUser = '';
+
+  try {
+    console.log(`[Sync-All] Syncing song database from beerpsi before user sync...`);
+    await syncSongs();
+  } catch (err: any) {
+    console.error(`[Sync-All] Failed to sync songs: ${err.message}`);
+  }
 
   console.log(`[Sync-All] Started background sync for ${players.length} players.`);
   

@@ -866,20 +866,31 @@ router.delete('/admin/blacklist/:id', adminAuth, (req, res) => {
 
 router.get('/admin/update/check', adminAuth, async (req, res) => {
   try {
-    const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/releases');
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+    const isProd = process.env.NODE_ENV === 'production';
+    let latestVersion = 'Unknown';
+    let url = '';
+
+    if (isProd) {
+      const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/releases');
+      if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+      const data = await response.json();
+      latestVersion = data && data.length > 0 ? data[0].tag_name : 'Unknown';
+      url = data && data.length > 0 ? data[0].html_url : '';
+    } else {
+      const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/main');
+      if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+      const data = await response.json();
+      latestVersion = data ? data.sha.substring(0, 7) : 'Unknown';
+      url = data ? data.html_url : '';
     }
-    const data = await response.json();
-    const latestVersion = data && data.length > 0 ? data[0].tag_name : 'Unknown';
-    const url = data && data.length > 0 ? data[0].html_url : '';
     
-    exec('git rev-parse --short HEAD', (error, stdout) => {
+    const checkCmd = isProd ? 'git describe --tags --exact-match || git rev-parse --short HEAD' : 'git rev-parse --short HEAD';
+    exec(checkCmd, (error, stdout) => {
       let currentCommit = 'Unknown';
       if (!error) {
         currentCommit = stdout.trim();
       }
-      res.json({ latestVersion, url, currentCommit });
+      res.json({ latestVersion, url, currentCommit, isProd });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -887,10 +898,15 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
 });
 
 router.post('/admin/update/apply', adminAuth, (req, res) => {
+  const isProd = process.env.NODE_ENV === 'production';
   res.json({ success: true, message: 'Update process started in background. Server will restart shortly.' });
   
   setTimeout(() => {
-    exec('git pull && npm install && npm run build', (error, stdout, stderr) => {
+    const cmd = isProd 
+      ? 'git fetch --tags && git checkout $(git describe --tags `git rev-list --tags --max-count=1`) && npm install && npm run build'
+      : 'git pull && npm install && npm run build';
+      
+    exec(cmd, (error, stdout, stderr) => {
       if (error) {
         console.error(`Update error: ${error.message}`);
         return;

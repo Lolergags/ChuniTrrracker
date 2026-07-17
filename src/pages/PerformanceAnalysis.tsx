@@ -227,7 +227,7 @@ const PerformanceAnalysis: React.FC = () => {
             </p>
             <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={survivalData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                <LineChart data={survivalData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constant" stroke="var(--text-secondary)" />
                   <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
@@ -252,7 +252,7 @@ const PerformanceAnalysis: React.FC = () => {
             </p>
             <div style={{ height: '350px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }} stackOffset="expand">
+                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} stackOffset="expand">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
                   <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
@@ -312,7 +312,7 @@ const PerformanceAnalysis: React.FC = () => {
             </p>
             <div style={{ height: '250px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="bucket" stroke="var(--text-secondary)" />
                   <YAxis stroke="var(--text-secondary)" allowDecimals={false} />

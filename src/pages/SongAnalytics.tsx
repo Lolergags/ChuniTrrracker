@@ -438,7 +438,7 @@ const SongAnalytics: React.FC = () => {
                   <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Score Distribution</h3>
                   <div style={{ width: '100%', height: '250px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
                         <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
                         <Tooltip 
@@ -458,7 +458,7 @@ const SongAnalytics: React.FC = () => {
                   <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Normal Distribution</h3>
                   <div style={{ width: '100%', height: '250px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
                         <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
                         <Tooltip 

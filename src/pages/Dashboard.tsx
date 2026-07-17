@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useDeferredValue } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceLine } from 'recharts';
 import { Search, ChevronRight } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
@@ -334,6 +334,11 @@ export function Dashboard() {
                 tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'} 
               />
               <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
+              <ReferenceLine y={1009000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SSS+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
+              <ReferenceLine y={1007500} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SSS', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
+              <ReferenceLine y={1005000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SS+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
+              <ReferenceLine y={1000000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'SS', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
+              <ReferenceLine y={990000} stroke="rgba(255, 255, 255, 0.15)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'S+', fill: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }} />
               <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
               <Scatter 
                 name="Scores" 

@@ -20,7 +20,7 @@ export const DualSlider: React.FC<DualSliderProps> = ({ min, max, step, value, o
     setMaxVal(value[1]);
     minValRef.current = value[0];
     maxValRef.current = value[1];
-  }, [value]);
+  }, [value[0], value[1]]);
 
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Math.min(Number(e.target.value), maxVal - step);
@@ -67,7 +67,7 @@ export const DualSlider: React.FC<DualSliderProps> = ({ min, max, step, value, o
         onChange={handleMinChange}
         onMouseUp={handleMouseUp}
         onTouchEnd={handleMouseUp}
-        style={{ position: 'absolute', width: '100%', pointerEvents: 'none', appearance: 'none', background: 'transparent', zIndex: 3, top: '21px', left: 0, margin: 0 }}
+        style={{ position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', zIndex: 3, top: '21px', left: 0, margin: 0 }}
         className="dual-slider-thumb"
       />
       <input
@@ -79,7 +79,7 @@ export const DualSlider: React.FC<DualSliderProps> = ({ min, max, step, value, o
         onChange={handleMaxChange}
         onMouseUp={handleMouseUp}
         onTouchEnd={handleMouseUp}
-        style={{ position: 'absolute', width: '100%', pointerEvents: 'none', appearance: 'none', background: 'transparent', zIndex: 4, top: '21px', left: 0, margin: 0 }}
+        style={{ position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', zIndex: 4, top: '21px', left: 0, margin: 0 }}
         className="dual-slider-thumb"
       />
     </div>

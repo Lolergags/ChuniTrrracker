@@ -110,6 +110,10 @@ code {
   background: var(--code-bg);
 }
 
+.dual-slider-thumb {
+  pointer-events: none;
+}
+
 .dual-slider-thumb::-webkit-slider-thumb {
   pointer-events: auto;
   appearance: none;

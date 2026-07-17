@@ -4,7 +4,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
-import { DualSlider } from '../components/DualSlider.js';
+
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -17,15 +17,14 @@ const PerformanceAnalysis: React.FC = () => {
   
   const { filters } = useGlobal();
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
-  const [ratingRange, setRatingRange] = useState<[number, number]>([0, 22.0]);
 
   useEffect(() => {
     setIsLoadingGlobal(true);
     // Fetch global data
     const apiFilters = { 
       ...filters, 
-      ratingMin: ratingRange[0].toString(), 
-      ratingMax: ratingRange[1].toString() 
+      ratingMin: filters.ratingMin || '0', 
+      ratingMax: filters.ratingMax || '22.0' 
     };
     Promise.all([
       api.getHeatmap(apiFilters),
@@ -44,7 +43,7 @@ const PerformanceAnalysis: React.FC = () => {
       console.error(err);
       setIsLoadingGlobal(false);
     });
-  }, [filters, ratingRange]);
+  }, [filters]);
 
   const getConstantLabel = (constant: number) => {
     const isMasUltOnly = filters.diff.length > 0 && filters.diff.every(d => d === 'MAS' || d === 'ULT');
@@ -168,17 +167,6 @@ const PerformanceAnalysis: React.FC = () => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
           <GlobalFilterBar />
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Player Rating:</span>
-            <DualSlider 
-              min={0} 
-              max={22.0} 
-              step={0.01} 
-              value={ratingRange} 
-              onChange={setRatingRange} 
-              formatLabel={(v) => v.toFixed(2)}
-            />
-          </div>
         </div>
       </div>
 

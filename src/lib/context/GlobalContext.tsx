@@ -5,12 +5,16 @@ export interface FilterOptions {
   server: string;
   diff: string[];
   version: string;
+  ratingMin?: string;
+  ratingMax?: string;
 }
 
 const defaultFilters: FilterOptions = {
   server: 'JP',
   diff: ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'],
-  version: 'LUMINOUS PLUS'
+  version: 'LUMINOUS PLUS',
+  ratingMin: '0',
+  ratingMax: '22.0'
 };
 
 interface GlobalContextType {

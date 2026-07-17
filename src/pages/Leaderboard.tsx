@@ -1,15 +1,30 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import type { ApiPlayer } from '../lib/types/index.js';
 
 const Leaderboard: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const server = searchParams.get('server') || 'jp';
+  const version = searchParams.get('version') || 'X-VERSE-X';
+
+  const setPage = (p: number | ((prev: number) => number)) => {
+    const newPage = typeof p === 'function' ? p(page) : p;
+    setSearchParams(prev => { prev.set('page', newPage.toString()); return prev; });
+  };
+  
+  const setServer = (s: string) => {
+    setSearchParams(prev => { prev.set('server', s); prev.set('page', '1'); return prev; });
+  };
+  
+  const setVersion = (v: string) => {
+    setSearchParams(prev => { prev.set('version', v); prev.set('page', '1'); return prev; });
+  };
+
   const [players, setPlayers] = useState<ApiPlayer[]>([]);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [server, setServer] = useState('jp');
-  const [version, setVersion] = useState('X-VERSE-X');
   const [isLoading, setIsLoading] = useState(true);
   
   const { setActivePlayer } = useContext(GlobalContext);

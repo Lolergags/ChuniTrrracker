@@ -4,6 +4,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
+import { LampTooltip } from '../components/ChartTooltips.js';
 
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
@@ -258,12 +259,7 @@ const PerformanceAnalysis: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
                   <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                    itemStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(value: any) => [value, undefined]}
-                  />
-                  <Legend content={(props: any) => {
+                  <Tooltip content={<LampTooltip />} /><Legend content={(props: any) => {
                     const { payload } = props;
                     const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
                     const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));

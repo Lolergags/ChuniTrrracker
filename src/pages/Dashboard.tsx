@@ -5,6 +5,7 @@ import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
+import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 
 export function Dashboard() {
   const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
@@ -278,13 +279,7 @@ export function Dashboard() {
                 tick={{ fontSize: 12 }}
               />
               <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                itemStyle={{ color: 'var(--text-primary)' }}
-                formatter={(value: any) => {
-                  return [value, undefined];
-                }}
-              />
+              <Tooltip content={<LampTooltip />} />
               <Legend content={(props: any) => {
                 const { payload } = props;
                 const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
@@ -339,11 +334,7 @@ export function Dashboard() {
                 tickFormatter={(val) => (val / 1000).toFixed(0) + 'k'} 
               />
               <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
-              <Tooltip 
-                cursor={{ strokeDasharray: '3 3' }} 
-                contentStyle={{ backgroundColor: 'var(--bg-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
-                itemStyle={{ color: 'var(--text-primary)' }}
-              />
+              <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
               <Scatter 
                 name="Scores" 
                 data={uniqueScores.map(s => ({

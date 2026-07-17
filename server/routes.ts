@@ -527,8 +527,7 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 router.get('/performance/heatmap', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const isMasUltOnly = typeof req.query.diff === 'string' ? req.query.diff.split(',').every(d => d === 'MAS' || d === 'ULT') : false;
-  const groupByCol = isMasUltOnly ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
+  const groupByCol = 'c.constant';
 
   const data = db.prepare(`
     SELECT 

@@ -349,9 +349,10 @@ const PerformanceAnalysis: React.FC = () => {
                     dataKey="avgScore" 
                     name="Avg Score" 
                     domain={[975000, 1010000]}
-                    ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000]}
+                    ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                     stroke="var(--text-secondary)" 
                     tickFormatter={(val) => {
+                      if (val === 1010000) return 'AJC (1010k)';
                       if (val === 1009000) return 'SSS+ (1009k)';
                       if (val === 1007500) return 'SSS (1007.5k)';
                       if (val === 1005000) return 'SS+ (1005k)';

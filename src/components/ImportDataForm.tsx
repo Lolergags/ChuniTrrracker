@@ -32,11 +32,11 @@ export function ImportDataForm() {
   return (
     <div className="glass-panel" style={{ padding: '2rem', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
       <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>
-        Import Public Profile
+        Update Public Profile
       </h2>
       
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-        Enter a public Kamaitachi username to add their scores to the global leaderboard.
+        Enter a public Kamaitachi username to add or update their scores on the global leaderboard.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -78,7 +78,7 @@ export function ImportDataForm() {
             opacity: loading ? 0.7 : 1
           }}
         >
-          {loading ? "Syncing..." : "Import"}
+          {loading ? "Syncing..." : "Update"}
         </button>
       </div>
     </div>

@@ -103,7 +103,7 @@ router.get('/leaderboard', (req, res) => {
     SELECT COUNT(DISTINCT song_id) as count
     FROM charts c
     JOIN songs ON c.song_id = songs.id
-    WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1
+    WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1
     ${versionFilter}
   `).get(...versionParams) as any).count;
 
@@ -117,15 +117,15 @@ router.get('/leaderboard', (req, res) => {
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs on c.song_id = songs.id
-      WHERE songs.${serverCol} = 1 ${versionFilter}
+      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1 ${versionFilter}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
     LEFT JOIN (
       SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
       FROM charts c
-      JOIN charts c2 ON c.song_id = c2.song_id AND c2.difficulty != 'WE'
+      JOIN charts c2 ON c.song_id = c2.song_id AND c2.difficulty != 'WE' AND c2.id NOT IN (95, 201)
       JOIN songs on c.song_id = songs.id
-      WHERE c.difficulty != 'WE' AND songs.${serverCol} = 1 ${versionFilter}
+      WHERE c.difficulty != 'WE' AND c.id NOT IN (95, 201) AND songs.${serverCol} = 1 ${versionFilter}
       GROUP BY c.song_id
     ) song_max ON max_scores.song_id = song_max.song_id
     GROUP BY p.id
@@ -414,8 +414,8 @@ router.get('/songs', (req, res) => {
   // Fetch all songs
   const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active FROM songs`).all() as any[];
   
-  // Fetch all charts and attach to songs
-  const charts = db.prepare(`SELECT song_id, difficulty, constant, level, note_count FROM charts`).all() as any[];
+  // Fetch all charts and attach to songs, excluding ghost charts
+  const charts = db.prepare(`SELECT id, song_id, difficulty, constant, level, note_count FROM charts WHERE id NOT IN (95, 201)`).all() as any[];
   
   const songMap = new Map();
   songs.forEach(s => {

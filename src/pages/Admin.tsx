@@ -442,7 +442,7 @@ export function Admin() {
                 <button 
                   onClick={handleStopScheduler}
                   disabled={!schedulerStatus.isEnabled}
-                  style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                  style={{ padding: '0.75rem 1.5rem', backgroundColor: !schedulerStatus.isEnabled ? 'var(--bg-secondary)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !schedulerStatus.isEnabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
                 >
                   Stop Engine
                 </button>
@@ -491,7 +491,7 @@ export function Admin() {
             <button 
               onClick={handleSyncAll}
               disabled={isSyncingAll}
-              style={{ padding: '0.5rem 1rem', background: isSyncingAll ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isSyncingAll ? 'not-allowed' : 'pointer', width: '100%' }}
+              style={{ padding: '0.5rem 1rem', background: isSyncingAll ? 'var(--bg-secondary)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isSyncingAll ? 'not-allowed' : 'pointer', width: '100%' }}
             >
               {isSyncingAll ? 'Sync in Progress...' : 'Trigger Full Re-sync'}
             </button>
@@ -528,14 +528,14 @@ export function Admin() {
               <button 
                 onClick={startScrape}
                 disabled={isScraping}
-                style={{ flex: 1, padding: '0.5rem', backgroundColor: isScraping ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
+                style={{ flex: 1, padding: '0.5rem', backgroundColor: isScraping ? 'var(--bg-secondary)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
               >
                 Start
               </button>
               <button 
                 onClick={stopScrape}
                 disabled={!isScraping}
-                style={{ flex: 1, padding: '0.5rem', backgroundColor: !isScraping ? 'var(--bg-color)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
+                style={{ flex: 1, padding: '0.5rem', backgroundColor: !isScraping ? 'var(--bg-secondary)' : 'var(--accent-danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: !isScraping ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
               >
                 Stop
               </button>
@@ -588,7 +588,7 @@ export function Admin() {
                   <select 
                     value={selectedBranch}
                     onChange={handleBranchChange}
-                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', fontWeight: 'bold' }}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: 'bold' }}
                   >
                     {updateInfo.branches.map(b => (
                       <option key={b} value={b}>{b}</option>
@@ -613,7 +613,7 @@ export function Admin() {
             <button 
               onClick={handleApplyUpdate}
               disabled={isUpdating || !updateInfo}
-              style={{ padding: '0.5rem 1rem', background: isUpdating ? 'var(--bg-color)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isUpdating || !updateInfo ? 'not-allowed' : 'pointer', width: '100%', fontWeight: 'bold' }}
+              style={{ padding: '0.5rem 1rem', background: isUpdating ? 'var(--bg-secondary)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: isUpdating || !updateInfo ? 'not-allowed' : 'pointer', width: '100%', fontWeight: 'bold' }}
             >
               {isUpdating ? 'Applying Update...' : 'Apply Update'}
             </button>

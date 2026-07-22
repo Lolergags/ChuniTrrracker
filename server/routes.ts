@@ -964,8 +964,8 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   
   setTimeout(() => {
     const cmd = isProd && targetBranch === 'main'
-      ? 'git fetch --all --tags && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git checkout main && git pull origin main) && npm install && npm run build'
-      : `git fetch --all && git checkout ${targetBranch} && git pull origin ${targetBranch} && npm install && npm run build`;
+      ? 'git fetch --all --tags && git reset --hard HEAD && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git checkout main && git reset --hard origin/main) && npm install && npm run build'
+      : `git fetch --all && git reset --hard HEAD && git checkout ${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
       
     exec(cmd, (error, stdout, stderr) => {
       if (error) {

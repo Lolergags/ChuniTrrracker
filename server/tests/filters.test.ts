@@ -25,8 +25,8 @@ describe('getChartFilterConditions', () => {
 
   it('should filter by MAS_ULT difficulty', () => {
     const { conditions, bindings } = getChartFilterConditions({ diff: 'MAS_ULT' });
-    expect(conditions).toContain("charts.difficulty IN ('MAS', 'ULT')");
-    expect(bindings).toEqual([]);
+    expect(conditions).toContain("charts.difficulty IN (?, ?)");
+    expect(bindings).toEqual(['MAS', 'ULT']);
   });
 
   it('should not filter difficulty if diff is ALL', () => {

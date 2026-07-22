@@ -36,7 +36,7 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
 
   // Exclude World's End and Ghost charts by default
   conditions.push(`${chartsAlias}.difficulty != 'WE'`);
-  conditions.push(`${chartsAlias}.id NOT IN (95, 201, 239116)`);
+  conditions.push(`${chartsAlias}.song_id NOT IN (50, 81) AND ${chartsAlias}.id != 239116`);
 
   // Server Filter
   const server = params.server || 'JP';

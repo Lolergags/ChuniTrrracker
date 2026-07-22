@@ -872,11 +872,17 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
 
     if (isProd) {
       const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/releases');
-      if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
-      const data = await response.json();
-      latestVersion = data && data.length > 0 ? data[0].tag_name : 'Unknown';
-      url = data && data.length > 0 ? data[0].html_url : '';
-    } else {
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          latestVersion = data[0].tag_name;
+          url = data[0].html_url;
+        }
+      }
+    }
+    
+    // Fallback to commits if not prod or no releases exist yet
+    if (latestVersion === 'Unknown') {
       const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/main');
       if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
       const data = await response.json();
@@ -903,7 +909,7 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   
   setTimeout(() => {
     const cmd = isProd 
-      ? 'git fetch --tags && git checkout $(git describe --tags `git rev-list --tags --max-count=1`) && npm install && npm run build'
+      ? 'git fetch --tags && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git pull origin main) && npm install && npm run build'
       : 'git pull && npm install && npm run build';
       
     exec(cmd, (error, stdout, stderr) => {

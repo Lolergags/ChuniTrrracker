@@ -5,7 +5,8 @@ WORKDIR /app
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install ALL dependencies so Vite and tsx are available
+# Install git for the Update Manager, then install ALL dependencies
+RUN apk add --no-cache git
 RUN npm install
 
 # Copy the rest of the application source code

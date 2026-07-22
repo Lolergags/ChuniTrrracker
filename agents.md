@@ -20,7 +20,7 @@ The project aims to provide a more detailed view of player progress than what is
 *   **Data Sources:**
     *   Kamaitachi API (`https://kamai.tachi.ac/api/v1/...`)
     *   Chunithm Song List (`https://chunithm.beerpsi.cc/songs`)
-*   **Deployment:** Docker (Unraid NAS) or GitHub Pages.
+*   **Deployment:** Docker (Unraid NAS).
 
 ## Project Structure
 

@@ -98,8 +98,8 @@ export function Admin() {
     api.checkUpdate().then(data => {
       if (!isMounted) return;
       setUpdateInfo(data);
-      if (data.currentBranch) {
-        setSelectedBranch(data.currentBranch);
+      if (data.targetBranch || data.currentBranch) {
+        setSelectedBranch(data.targetBranch || data.currentBranch);
       }
     }).catch(() => {});
 
@@ -312,6 +312,21 @@ export function Admin() {
     } catch (err: any) {
       setUpdateMessage(`Error: ${err.message}`);
       setIsUpdating(false);
+    }
+  };
+
+  const handleBranchChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranch = e.target.value;
+    setSelectedBranch(newBranch);
+    try {
+      await api.setTargetBranch(newBranch);
+      // Re-fetch update info so latestVersion aligns with the new branch
+      setUpdateMessage('Fetching branch info...');
+      const data = await api.checkUpdate();
+      setUpdateInfo(data);
+      setUpdateMessage('');
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -572,7 +587,7 @@ export function Admin() {
                 {updateInfo?.branches && updateInfo.branches.length > 0 ? (
                   <select 
                     value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    onChange={handleBranchChange}
                     style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', fontWeight: 'bold' }}
                   >
                     {updateInfo.branches.map(b => (

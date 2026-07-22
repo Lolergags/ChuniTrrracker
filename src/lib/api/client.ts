@@ -322,6 +322,16 @@ export const api = {
     return res.json();
   },
 
+  setTargetBranch: async (branch: string) => {
+    const res = await fetch(`${API_BASE}/admin/update/target`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ branch })
+    });
+    if (!res.ok) throw new Error('Failed to save target branch');
+    return res.json();
+  },
+
   applyUpdate: async (branch?: string) => {
     const res = await fetch(`${API_BASE}/admin/update/apply`, {
       method: 'POST',

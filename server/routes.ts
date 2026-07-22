@@ -871,6 +871,9 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
     let url = '';
     let branches: string[] = ['main'];
 
+    const configRow = db.prepare(`SELECT value FROM config WHERE key = 'target_branch'`).get() as { value: string } | undefined;
+    let targetBranch = configRow?.value || 'main';
+
     if (isProd) {
       const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/releases');
       if (response.ok) {
@@ -897,11 +900,24 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
 
     // Fallback to commits if not prod or no releases exist yet
     if (latestVersion === 'Unknown') {
-      const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/main');
-      if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
-      const data = await response.json();
-      latestVersion = data ? data.sha.substring(0, 7) : 'Unknown';
-      url = data ? data.html_url : '';
+      const response = await fetch(`https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/${targetBranch}`);
+      if (!response.ok) {
+        if (targetBranch !== 'main') {
+           // fallback to main if target branch fails
+           const mainResponse = await fetch(`https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/main`);
+           if (mainResponse.ok) {
+             const data = await mainResponse.json();
+             latestVersion = data ? data.sha.substring(0, 7) : 'Unknown';
+             url = data ? data.html_url : '';
+           }
+        } else {
+           throw new Error(`GitHub API error: ${response.status}`);
+        }
+      } else {
+        const data = await response.json();
+        latestVersion = data ? data.sha.substring(0, 7) : 'Unknown';
+        url = data ? data.html_url : '';
+      }
     }
     
     exec('git branch --show-current', (err, stdout) => {
@@ -910,13 +926,17 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
         currentBranch = stdout.trim();
       }
       
+      if (!configRow && currentBranch !== 'main') {
+        targetBranch = currentBranch;
+      }
+      
       const checkCmd = isProd ? 'git describe --tags --exact-match || git rev-parse --short HEAD' : 'git rev-parse --short HEAD';
       exec(checkCmd, (error, commitOut) => {
         let currentCommit = 'Unknown';
         if (!error) {
           currentCommit = commitOut.trim();
         }
-        res.json({ latestVersion, url, currentCommit, isProd, currentBranch, branches });
+        res.json({ latestVersion, url, currentCommit, isProd, currentBranch, branches, targetBranch });
       });
     });
   } catch (err: any) {
@@ -924,9 +944,21 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
   }
 });
 
+router.post('/admin/update/target', adminAuth, (req, res) => {
+  const { branch } = req.body;
+  if (!branch) return res.status(400).json({ error: 'Branch is required' });
+  db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('target_branch', ?)`).run(branch);
+  res.json({ success: true, message: 'Target branch saved' });
+});
+
 router.post('/admin/update/apply', adminAuth, (req, res) => {
   const { branch } = req.body;
-  const targetBranch = branch || 'main';
+  const configRow = db.prepare(`SELECT value FROM config WHERE key = 'target_branch'`).get() as { value: string } | undefined;
+  const targetBranch = branch || configRow?.value || 'main';
+  
+  // Save to config so it is persistent across reboots
+  db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('target_branch', ?)`).run(targetBranch);
+  
   const isProd = process.env.NODE_ENV === 'production';
   res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   

@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 // Store DB in the project root's /data directory
-export const DB_PATH = process.env.DB_PATH || path.join(import.meta.dirname, '..', 'data', 'chunitrrracker.db');
+export const DB_PATH = process.env.DB_PATH || path.join(import.meta.dirname, 'data', 'chunitrrracker.db');
 
 // Ensure the directory exists before initializing the database
 const dbDir = path.dirname(DB_PATH);

@@ -869,6 +869,7 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
     const isProd = process.env.NODE_ENV === 'production';
     let latestVersion = 'Unknown';
     let url = '';
+    let branches: string[] = ['main'];
 
     if (isProd) {
       const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/releases');
@@ -881,6 +882,19 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
       }
     }
     
+    // Fetch branches from GitHub
+    try {
+      const branchesRes = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/branches');
+      if (branchesRes.ok) {
+        const bData = await branchesRes.json();
+        if (bData && Array.isArray(bData)) {
+          branches = bData.map((b: any) => b.name);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     // Fallback to commits if not prod or no releases exist yet
     if (latestVersion === 'Unknown') {
       const response = await fetch('https://api.github.com/repos/Lolergags/ChuniTrrracker/commits/main');
@@ -890,13 +904,20 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
       url = data ? data.html_url : '';
     }
     
-    const checkCmd = isProd ? 'git describe --tags --exact-match || git rev-parse --short HEAD' : 'git rev-parse --short HEAD';
-    exec(checkCmd, (error, stdout) => {
-      let currentCommit = 'Unknown';
-      if (!error) {
-        currentCommit = stdout.trim();
+    exec('git branch --show-current', (err, stdout) => {
+      let currentBranch = 'main';
+      if (!err && stdout.trim()) {
+        currentBranch = stdout.trim();
       }
-      res.json({ latestVersion, url, currentCommit, isProd });
+      
+      const checkCmd = isProd ? 'git describe --tags --exact-match || git rev-parse --short HEAD' : 'git rev-parse --short HEAD';
+      exec(checkCmd, (error, commitOut) => {
+        let currentCommit = 'Unknown';
+        if (!error) {
+          currentCommit = commitOut.trim();
+        }
+        res.json({ latestVersion, url, currentCommit, isProd, currentBranch, branches });
+      });
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -904,13 +925,15 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
 });
 
 router.post('/admin/update/apply', adminAuth, (req, res) => {
+  const { branch } = req.body;
+  const targetBranch = branch || 'main';
   const isProd = process.env.NODE_ENV === 'production';
-  res.json({ success: true, message: 'Update process started in background. Server will restart shortly.' });
+  res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   
   setTimeout(() => {
-    const cmd = isProd 
-      ? 'git fetch --tags && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git pull origin main) && npm install && npm run build'
-      : 'git pull && npm install && npm run build';
+    const cmd = isProd && targetBranch === 'main'
+      ? 'git fetch --all --tags && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git checkout main && git pull origin main) && npm install && npm run build'
+      : `git fetch --all && git checkout ${targetBranch} && git pull origin ${targetBranch} && npm install && npm run build`;
       
     exec(cmd, (error, stdout, stderr) => {
       if (error) {

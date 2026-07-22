@@ -44,9 +44,10 @@ export function Admin() {
   const BLACKLIST_PER_PAGE = 5;
 
   // Update Manager state
-  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string, currentCommit: string, url: string } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string, currentCommit: string, url: string, currentBranch?: string, branches?: string[] } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
 
   const fetchBlacklist = async () => {
     try {
@@ -97,6 +98,9 @@ export function Admin() {
     api.checkUpdate().then(data => {
       if (!isMounted) return;
       setUpdateInfo(data);
+      if (data.currentBranch) {
+        setSelectedBranch(data.currentBranch);
+      }
     }).catch(() => {});
 
     // Polling interval
@@ -298,11 +302,11 @@ export function Admin() {
   };
 
   const handleApplyUpdate = async () => {
-    if (!window.confirm('Are you sure you want to apply the latest update? The server will download the update, rebuild the frontend, and restart.')) return;
+    if (!window.confirm(`Are you sure you want to apply the latest update for branch '${selectedBranch || 'main'}'? The server will download the update, rebuild the frontend, and restart.`)) return;
     setIsUpdating(true);
     setUpdateMessage('Applying update... Please wait a few moments for the server to restart.');
     try {
-      const data = await api.applyUpdate();
+      const data = await api.applyUpdate(selectedBranch);
       setUpdateMessage(data.message || 'Update started.');
       setTimeout(() => window.location.reload(), 30000); // Reload after 30s
     } catch (err: any) {
@@ -563,6 +567,22 @@ export function Admin() {
             </p>
             
             <div style={{ background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Target Branch:</span>
+                {updateInfo?.branches && updateInfo.branches.length > 0 ? (
+                  <select 
+                    value={selectedBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-primary)', fontWeight: 'bold' }}
+                  >
+                    {updateInfo.branches.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{updateInfo?.currentBranch || 'Loading...'}</span>
+                )}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Current Commit:</span>
                 <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{updateInfo ? updateInfo.currentCommit : 'Loading...'}</span>

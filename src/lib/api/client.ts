@@ -322,10 +322,11 @@ export const api = {
     return res.json();
   },
 
-  applyUpdate: async () => {
+  applyUpdate: async (branch?: string) => {
     const res = await fetch(`${API_BASE}/admin/update/apply`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      body: branch ? JSON.stringify({ branch }) : undefined
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

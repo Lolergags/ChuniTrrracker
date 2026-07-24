@@ -942,10 +942,10 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   
   setTimeout(() => {
     const cmd = isProd && targetBranch === 'main'
-      ? 'git fetch --all --tags && git reset --hard HEAD && (git checkout $(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null) || git checkout main && git reset --hard origin/main) && npm install && npm run build'
+      ? 'git fetch --all --tags && git reset --hard HEAD && { TAG=$(git describe --tags `git rev-list --tags --max-count=1 2>/dev/null` 2>/dev/null); if [ -n "$TAG" ]; then git checkout "$TAG"; else git checkout main && git reset --hard origin/main; fi; } && npm install && npm run build'
       : `git fetch --all && git reset --hard HEAD && git checkout ${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
       
-    exec(cmd, (error, stdout, stderr) => {
+    exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
       if (error) {
         console.error(`Update error: ${error.message}`);
         return;

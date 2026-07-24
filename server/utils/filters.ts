@@ -27,7 +27,8 @@ export const CHRONOLOGICAL_VERSIONS = [
   'LUMINOUS PLUS',
   'VERSE',
   'X-VERSE',
-  'X-VERSE-X'
+  'X-VERSE-X',
+  'MATE'
 ];
 
 export function getChartFilterConditions(params: ChartFilterParams, songsAlias = 'songs', chartsAlias = 'charts', playersAlias?: string) {

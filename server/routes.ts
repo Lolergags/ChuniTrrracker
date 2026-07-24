@@ -100,19 +100,22 @@ router.get('/leaderboard', (req, res) => {
   versionFilter = `AND songs.version IN (${placeholders})`;
   versionParams.push(...includedVersions);
 
-  // Determine total active songs for denominator
-  const totalActiveSongs = (db.prepare(`
-    SELECT COUNT(DISTINCT song_id) as count
-    FROM charts c
-    JOIN songs ON c.song_id = songs.id
-    WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
-    ${versionFilter}
-  `).get(...versionParams) as any).count;
+  // Determine total max OP for denominator (raw total ratio per reference notebook)
+  const totalMaxOp = (db.prepare(`
+    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+      FROM charts c
+      JOIN songs ON c.song_id = songs.id
+      WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
+      ${versionFilter}
+      GROUP BY c.song_id
+    )
+  `).get(...versionParams) as any).total_max_op || 1;
 
   const playersQuery = `
     SELECT p.id, p.username, 
            IFNULL(SUM(max_scores.max_op), 0) as total_op,
-           IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as op_percent
+           IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as op_percent
     FROM players p
     LEFT JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
@@ -122,22 +125,15 @@ router.get('/leaderboard', (req, res) => {
       WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition} ${versionFilter}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
-    LEFT JOIN (
-      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
-      FROM charts c
-      JOIN charts c2 ON c.song_id = c2.song_id AND c2.difficulty != 'WE' AND (c2.song_id NOT IN (50, 81) AND c2.id != 239116)
-      JOIN songs on c.song_id = songs.id
-      WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition} ${versionFilter}
-      GROUP BY c.song_id
-    ) song_max ON max_scores.song_id = song_max.song_id
     GROUP BY p.id
     HAVING total_op > 0
     ORDER BY total_op DESC
     LIMIT ? OFFSET ?
   `;
   
-  const queryParams = [totalActiveSongs, ...versionParams, ...versionParams, Number(limit), Number(offset)];
+  const queryParams = [totalMaxOp, ...versionParams, Number(limit), Number(offset)];
   const topPlayers = db.prepare(playersQuery).all(...queryParams) as any[];
+
   const totalPlayers = (db.prepare(`SELECT COUNT(DISTINCT s.player_id) as count FROM scores s JOIN charts c ON s.chart_id = c.id JOIN songs ON c.song_id = songs.id WHERE 1=1 ${serverCondition} ${versionFilter}`).get(...versionParams) as any).count;
 
   // Pre-calculate total MAS/ULT charts and Max OP per version
@@ -259,36 +255,7 @@ router.get('/players/:username', (req, res) => {
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  // Determine total active songs for the selected filters
-  const totalActiveSongs = (db.prepare(`
-    SELECT COUNT(DISTINCT song_id) as count
-    FROM charts c
-    JOIN songs ON c.song_id = songs.id
-    ${whereClause}
-  `).get(...bindings) as any).count || 1; // fallback to 1 to avoid division by zero
-
-  // Get MAX OP per song to sum and calculate OP%
-  const opData = (db.prepare(`
-    SELECT 
-      IFNULL(SUM(max_scores.max_op), 0) as total_op_raw,
-      IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as op_percent
-    FROM (
-      SELECT c.song_id, MAX(s.op) as max_op
-      FROM scores s
-      JOIN charts c ON s.chart_id = c.id
-      JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND ${conditions.join(' AND ')}
-      GROUP BY c.song_id
-    ) max_scores
-    LEFT JOIN (
-      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
-      FROM charts c
-      JOIN songs on c.song_id = songs.id
-      ${whereClause}
-      GROUP BY c.song_id
-    ) song_max ON max_scores.song_id = song_max.song_id
-  `).get(totalActiveSongs, player.id, ...bindings, ...bindings) as any);
-
+  // Get total max OP for the selected filters (raw total ratio per reference notebook)
   const totalMaxOp = (db.prepare(`
     SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
       SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
@@ -299,9 +266,24 @@ router.get('/players/:username', (req, res) => {
     )
   `).get(...bindings) as any).total_max_op;
 
+  // Get MAX OP per song to sum
+  const opData = (db.prepare(`
+    SELECT 
+      IFNULL(SUM(max_op), 0) as total_op_raw
+    FROM (
+      SELECT c.song_id, MAX(s.op) as max_op
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      JOIN songs ON c.song_id = songs.id
+      WHERE s.player_id = ? AND ${conditions.join(' AND ')}
+      GROUP BY c.song_id
+    )
+  `).get(player.id, ...bindings) as any);
+
   const totalOp = opData.total_op_raw / 1000;
   const totalPossibleOp = totalMaxOp / 1000;
-  const opPercent = opData.op_percent;
+  const opPercent = totalMaxOp > 0 ? parseFloat((opData.total_op_raw / totalMaxOp * 100).toFixed(2)) : 0;
+
 
   // Get other stats directly from scores
   const stats = db.prepare(`
@@ -637,18 +619,21 @@ router.get('/performance/players', (req, res) => {
     pWhere = `WHERE ${pConds.join(' AND ')}`;
   }
 
-  const totalActiveSongs = (db.prepare(`
-    SELECT COUNT(DISTINCT song_id) as count
-    FROM charts c
-    JOIN songs ON c.song_id = songs.id
-    ${chartWhereClause}
-  `).get(...bindings) as any).count || 1;
+  const totalMaxOp = (db.prepare(`
+    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+      FROM charts c
+      JOIN songs ON c.song_id = songs.id
+      ${chartWhereClause}
+      GROUP BY c.song_id
+    )
+  `).get(...bindings) as any).total_max_op || 1;
 
   const rawData = db.prepare(`
     SELECT 
       p.username,
       IFNULL(SUM(max_scores.max_op), 0) as totalOp,
-      IFNULL(ROUND((SUM(CAST(max_scores.max_op AS REAL) / song_max.max_song_op) / ?) * 100, 2), 0) as opPercent
+      IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as opPercent
     FROM players p
     JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
@@ -658,18 +643,11 @@ router.get('/performance/players', (req, res) => {
       ${chartWhereClause}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
-    JOIN (
-      SELECT c.song_id, ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as max_song_op
-      FROM charts c
-      JOIN songs on c.song_id = songs.id
-      ${chartWhereClause}
-      GROUP BY c.song_id
-    ) song_max ON max_scores.song_id = song_max.song_id
     ${pWhere}
     GROUP BY p.username
     HAVING totalOp > 0
     ORDER BY totalOp DESC
-  `).all(totalActiveSongs, ...bindings, ...bindings, ...pBindings) as any[];
+  `).all(totalMaxOp, ...bindings, ...pBindings) as any[];
 
   const data = rawData.map(row => {
     return {

@@ -55,6 +55,7 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
         onChange={(e) => setFilters({ ...filters, version: e.target.value })}
         style={selectStyle}
       >
+        <option value="MATE">MATE</option>
         <option value="X-VERSE-X">X-VERSE-X</option>
         <option value="X-VERSE">X-VERSE</option>
         <option value="VERSE">VERSE</option>

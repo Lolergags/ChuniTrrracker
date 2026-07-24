@@ -262,49 +262,51 @@ export function Dashboard() {
 
       <div className="glass-panel" style={{ marginTop: '2rem' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Lamp Distribution by Level (Normalized)</h2>
-        <div style={{ width: '100%', height: '400px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={stats.levelStats}
-              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-              stackOffset="expand"
-            >
-              <XAxis 
-                dataKey="level" 
-                stroke="var(--text-secondary)" 
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={60}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
-              <Tooltip content={<LampTooltip />} />
-              <Legend content={(props: any) => {
-                const { payload } = props;
-                const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
-                const sortedPayload = [...(payload || [])]
-                  .filter(p => p.value !== 'Unplayed')
-                  .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
-                return (
-                  <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
-                    {sortedPayload.map((entry, index) => (
-                      <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-                        <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
-                        <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                );
-              }} />
-              <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
-              <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
-              <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
-              <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
-              <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
-              <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="scrollable-content-wrapper">
+          <div className="chart-min-width-sm" style={{ height: '400px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={stats.levelStats}
+                margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                stackOffset="expand"
+              >
+                <XAxis 
+                  dataKey="level" 
+                  stroke="var(--text-secondary)" 
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
+                <Tooltip content={<LampTooltip />} />
+                <Legend content={(props: any) => {
+                  const { payload } = props;
+                  const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
+                  const sortedPayload = [...(payload || [])]
+                    .filter(p => p.value !== 'Unplayed')
+                    .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+                  return (
+                    <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+                      {sortedPayload.map((entry, index) => (
+                        <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                          <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
+                          <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                }} />
+                <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
+                <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -313,58 +315,60 @@ export function Dashboard() {
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
           All imported plays. Correlation between Score and Chart Constant. Bubble size represents OP.
         </p>
-        <div style={{ height: 'calc(100% - 70px)' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis 
-                type="number" 
-                dataKey="constant" 
-                name="Level Constant" 
-                domain={['dataMin - 0.5', 'dataMax + 0.2']} 
-                stroke="var(--text-secondary)" 
-                tickFormatter={(val) => val.toFixed(1)}
-              />
-              <YAxis 
-                type="number" 
-                dataKey="score" 
-                name="Score" 
-                domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
-                ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
-                stroke="var(--text-secondary)"
-                tickFormatter={(val) => {
-                  if (val === 1010000) return 'AJC (1010k)';
-                  if (val === 1009000) return 'SSS+ (1009k)';
-                  if (val === 1007500) return 'SSS (1007.5k)';
-                  if (val === 1005000) return 'SS+ (1005k)';
-                  if (val === 1000000) return 'SS (1000k)';
-                  if (val === 990000) return 'S+ (990k)';
-                  if (val === 975000) return 'S (975k)';
-                  return (val / 1000).toFixed(0) + 'k';
-                }}
-                width={100}
-              />
-              <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
-              <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-              <Scatter 
-                name="Scores" 
-                data={uniqueScores.map(s => ({
-                  name: s.songTitle,
-                  score: s.score,
-                  constant: s.constant,
-                  opDisplay: Number((s.op / 10000).toFixed(2)),
-                  lamp: s.lamp
-                }))} 
-                fill="var(--accent-primary)" 
-                fillOpacity={0.6} 
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
+        <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 70px)' }}>
+          <div className="chart-min-width-md">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis 
+                  type="number" 
+                  dataKey="constant" 
+                  name="Level Constant" 
+                  domain={['dataMin - 0.5', 'dataMax + 0.2']} 
+                  stroke="var(--text-secondary)" 
+                  tickFormatter={(val) => val.toFixed(1)}
+                />
+                <YAxis 
+                  type="number" 
+                  dataKey="score" 
+                  name="Score" 
+                  domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
+                  ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                  stroke="var(--text-secondary)"
+                  tickFormatter={(val) => {
+                    if (val === 1010000) return 'AJC (1010k)';
+                    if (val === 1009000) return 'SSS+ (1009k)';
+                    if (val === 1007500) return 'SSS (1007.5k)';
+                    if (val === 1005000) return 'SS+ (1005k)';
+                    if (val === 1000000) return 'SS (1000k)';
+                    if (val === 990000) return 'S+ (990k)';
+                    if (val === 975000) return 'S (975k)';
+                    return (val / 1000).toFixed(0) + 'k';
+                  }}
+                  width={100}
+                />
+                <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
+                <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                <Scatter 
+                  name="Scores" 
+                  data={uniqueScores.map(s => ({
+                    name: s.songTitle,
+                    score: s.score,
+                    constant: s.constant,
+                    opDisplay: Number((s.op / 10000).toFixed(2)),
+                    lamp: s.lamp
+                  }))} 
+                  fill="var(--accent-primary)" 
+                  fillOpacity={0.6} 
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       <h2 className="text-gradient" style={{ marginTop: '3rem', marginBottom: '1rem' }}>All Plays (by OP)</h2>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="scrollable-content-wrapper">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

@@ -110,3 +110,50 @@ h1, h2, h3, h4 {
     /* max-height: calc(100vh - 5rem); optional if we want to ensure it doesn't overflow bottom */
   }
 }
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  /* Reduce padding on mobile to maximize screen real estate */
+  .container {
+    padding: var(--spacing-md);
+  }
+  .glass-panel {
+    padding: var(--spacing-md);
+  }
+  
+  /* Make navbar layout stack or scroll */
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .nav-logo h2 {
+    font-size: 1.25rem;
+  }
+
+  .nav-links {
+    width: 100%;
+    overflow-x: auto;
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+    /* Hide scrollbar for a cleaner look while keeping it scrollable */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Utilities for responsive content */
+.scrollable-content-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--spacing-sm);
+}
+
+.chart-min-width-sm { min-width: 600px; height: 100%; }
+.chart-min-width-md { min-width: 800px; height: 100%; }
+.chart-min-width-lg { min-width: 1200px; height: 100%; }

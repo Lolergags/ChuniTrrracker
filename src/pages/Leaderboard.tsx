@@ -129,7 +129,7 @@ const Leaderboard: React.FC = () => {
           No players found in the database.
         </div>
       ) : (
-        <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
+        <div className="scrollable-content-wrapper" style={{ marginTop: '2rem' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

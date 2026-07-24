@@ -225,22 +225,24 @@ const PerformanceAnalysis: React.FC = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
               The exact percentage chance of a player achieving an All Justice or Full Combo plotted against the Chart Constant. Shows the difficulty cliff.
             </p>
-            <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={survivalData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="constant" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                    itemStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(val: any) => [val.toFixed(1) + '%']}
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
-                  <Line type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="scrollable-content-wrapper">
+              <div className="chart-min-width-md" style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={survivalData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="constant" stroke="var(--text-secondary)" />
+                    <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                      itemStyle={{ color: 'var(--text-primary)' }}
+                      formatter={(val: any) => [val.toFixed(1) + '%']}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
+                    <Line type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -250,34 +252,36 @@ const PerformanceAnalysis: React.FC = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
               Normalized distribution of all logged lamps across chart constants. Compare this against your personal dashboard.
             </p>
-            <div style={{ height: '350px', width: '100%', minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} stackOffset="expand">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
-                  <Tooltip content={<LampTooltip />} /><Legend content={(props: any) => {
-                    const { payload } = props;
-                    const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
-                    const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
-                    return (
-                      <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
-                        {sortedPayload.map((entry, index) => (
-                          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-                            <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
-                            <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  }} />
-                  <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
-                  <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
-                  <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
-                  <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
-                  <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="scrollable-content-wrapper">
+              <div className="chart-min-width-md" style={{ height: '350px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} stackOffset="expand">
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                    <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
+                    <Tooltip content={<LampTooltip />} /><Legend content={(props: any) => {
+                      const { payload } = props;
+                      const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
+                      const sortedPayload = [...(payload || [])].sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+                      return (
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
+                          {sortedPayload.map((entry, index) => (
+                            <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                              <span style={{ width: 14, height: 14, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
+                              <span style={{ color: 'var(--text-primary)' }}>{entry.value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    }} />
+                    <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                    <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                    <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                    <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                    <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -287,20 +291,22 @@ const PerformanceAnalysis: React.FC = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
               The average percentage of maximum Overpower rewarded per play grouped by Chart Constant.
             </p>
-            <div style={{ height: '300px', width: '100%', minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                    itemStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(val: any) => [val.toFixed(2) + '%', "Average OP Yield"]}
-                  />
-                  <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} activeBar={false} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="scrollable-content-wrapper">
+              <div className="chart-min-width-sm" style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                    <YAxis stroke="var(--text-secondary)" domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                      itemStyle={{ color: 'var(--text-primary)' }}
+                      formatter={(val: any) => [val.toFixed(2) + '%', "Average OP Yield"]}
+                    />
+                    <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} activeBar={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -310,19 +316,21 @@ const PerformanceAnalysis: React.FC = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
               The bell curve of total Overpower for all players on the server.
             </p>
-            <div style={{ height: '250px', width: '100%', minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="bucket" stroke="var(--text-secondary)" />
-                  <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                    itemStyle={{ color: 'var(--text-primary)' }}
-                  />
-                  <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="scrollable-content-wrapper">
+              <div className="chart-min-width-sm" style={{ height: '250px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" />
+                    <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                      itemStyle={{ color: 'var(--text-primary)' }}
+                    />
+                    <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -332,43 +340,45 @@ const PerformanceAnalysis: React.FC = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
               Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
             </p>
-            <div style={{ height: '500px', width: '100%', minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="constant" 
-                    name="Chart Constant" 
-                    stroke="var(--text-secondary)"
-                    domain={['dataMin', 'dataMax']}
-                    label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
-                  />
-                  <YAxis 
-                    type="number" 
-                    dataKey="avgScore" 
-                    name="Avg Score" 
-                    domain={[975000, 1010000]}
-                    ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
-                    stroke="var(--text-secondary)" 
-                    tickFormatter={(val) => {
-                      if (val === 1010000) return 'AJC (1010k)';
-                      if (val === 1009000) return 'SSS+ (1009k)';
-                      if (val === 1007500) return 'SSS (1007.5k)';
-                      if (val === 1005000) return 'SS+ (1005k)';
-                      if (val === 1000000) return 'SS (1000k)';
-                      if (val === 990000) return 'S+ (990k)';
-                      if (val === 975000) return 'S (975k)';
-                      return (val / 1000).toFixed(0) + 'k';
-                    }}
-                    label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
-                    width={100}
-                  />
-                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
-                </ScatterChart>
-              </ResponsiveContainer>
+            <div className="scrollable-content-wrapper">
+              <div className="chart-min-width-md" style={{ height: '500px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis 
+                      type="number" 
+                      dataKey="constant" 
+                      name="Chart Constant" 
+                      stroke="var(--text-secondary)"
+                      domain={['dataMin', 'dataMax']}
+                      label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
+                    />
+                    <YAxis 
+                      type="number" 
+                      dataKey="avgScore" 
+                      name="Avg Score" 
+                      domain={[975000, 1010000]}
+                      ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                      stroke="var(--text-secondary)" 
+                      tickFormatter={(val) => {
+                        if (val === 1010000) return 'AJC (1010k)';
+                        if (val === 1009000) return 'SSS+ (1009k)';
+                        if (val === 1007500) return 'SSS (1007.5k)';
+                        if (val === 1005000) return 'SS+ (1005k)';
+                        if (val === 1000000) return 'SS (1000k)';
+                        if (val === 990000) return 'S+ (990k)';
+                        if (val === 975000) return 'S (975k)';
+                        return (val / 1000).toFixed(0) + 'k';
+                      }}
+                      label={{ value: 'Average Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
+                      width={100}
+                    />
+                    <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 

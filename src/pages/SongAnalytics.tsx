@@ -355,36 +355,38 @@ const SongAnalytics: React.FC = () => {
               ) : leaderboard.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)' }}>No imported players have played this chart yet!</p>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '1rem' }}>Rank</th>
-                      <th style={{ padding: '1rem' }}>Player</th>
-                      <th style={{ padding: '1rem' }}>Score</th>
-                      <th style={{ padding: '1rem' }}>Lamp</th>
-                      <th style={{ padding: '1rem' }}>OP</th>
-                      <th style={{ padding: '1rem' }}>OP%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboard.map((row, idx) => (
-                      <tr 
-                        key={row.username} 
-                        onClick={() => handleRowClick(row.username)}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
-                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
-                        <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
-                        <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
-                        <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
+                <div className="scrollable-content-wrapper">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <th style={{ padding: '1rem' }}>Rank</th>
+                        <th style={{ padding: '1rem' }}>Player</th>
+                        <th style={{ padding: '1rem' }}>Score</th>
+                        <th style={{ padding: '1rem' }}>Lamp</th>
+                        <th style={{ padding: '1rem' }}>OP</th>
+                        <th style={{ padding: '1rem' }}>OP%</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((row, idx) => (
+                        <tr 
+                          key={row.username} 
+                          onClick={() => handleRowClick(row.username)}
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
+                          <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
+                          <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
+                          <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
+                          <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
+                          <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
               {leaderboard.length > 0 && (
@@ -436,19 +438,21 @@ const SongAnalytics: React.FC = () => {
               {gradeDistribution.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Score Distribution</h3>
-                  <div style={{ width: '100%', height: '250px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
-                        <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                          itemStyle={{ color: 'var(--text-primary)' }}
-                          cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                        />
-                        <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="scrollable-content-wrapper">
+                    <div className="chart-min-width-sm" style={{ height: '250px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                          <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                            itemStyle={{ color: 'var(--text-primary)' }}
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                          />
+                          <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               )}
@@ -456,19 +460,21 @@ const SongAnalytics: React.FC = () => {
               {normalDistribution.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Normal Distribution</h3>
-                  <div style={{ width: '100%', height: '250px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
-                        <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
-                          itemStyle={{ color: 'var(--text-primary)' }}
-                          cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
-                        />
-                        <Line type="monotone" dataKey="count" stroke="#ff66ff" strokeWidth={3} dot={{ r: 4, fill: '#ff66ff', strokeWidth: 0 }} name="Players" />
-                      </LineChart>
-                    </ResponsiveContainer>
+                  <div className="scrollable-content-wrapper">
+                    <div className="chart-min-width-sm" style={{ height: '250px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                          <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
+                            itemStyle={{ color: 'var(--text-primary)' }}
+                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                          />
+                          <Line type="monotone" dataKey="count" stroke="#ff66ff" strokeWidth={3} dot={{ r: 4, fill: '#ff66ff', strokeWidth: 0 }} name="Players" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               )}

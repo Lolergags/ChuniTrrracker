@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import multer from 'multer';
 import { default as db, DB_PATH } from './db.js';
 import { syncPlayer } from './sync.js';
-import { getChartFilterConditions } from './utils/filters.js';
+import { getChartFilterConditions, AOMN_REMOVE_SONG_IDS } from './utils/filters.js';
 import { exec } from 'node:child_process';
 const upload = multer({ dest: path.join(process.cwd(), 'data', 'temp') });
 
@@ -80,8 +80,10 @@ router.get('/leaderboard', (req, res) => {
 
   // Map server query to db column
   let serverCondition = '';
-  if (server === 'jp') serverCondition = 'AND songs.is_jp_active = 1';
-  else if (server === 'intl') serverCondition = 'AND songs.is_intl_active = 1';
+  const sUpper = (server as string).toUpperCase();
+  if (sUpper === 'JP') serverCondition = 'AND songs.is_jp_active = 1';
+  else if (sUpper === 'INTL' || sUpper === 'INT') serverCondition = 'AND songs.is_intl_active = 1';
+  else if (sUpper === 'OMNI') serverCondition = `AND songs.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`;
   
   const VERSION_ORDER = [
     'CHUNITHM', 'CHUNITHM PLUS', 'AIR', 'AIR PLUS', 'STAR', 'STAR PLUS',

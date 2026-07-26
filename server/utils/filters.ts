@@ -31,6 +31,16 @@ export const CHRONOLOGICAL_VERSIONS = [
   'MATE'
 ];
 
+export const AOMN_REMOVE_SONG_IDS = [
+  0, 5, 9, 10, 12, 14, 17, 28, 34, 36, 39, 42, 43, 54, 55, 56, 57, 58, 60, 78, 84, 85, 86, 87, 109, 
+  110, 111, 112, 116, 124, 125, 126, 129, 130, 154, 155, 176, 182, 184, 185, 206, 207, 209, 214, 215, 
+  231, 235, 238, 243, 247, 255, 269, 296, 299, 308, 309, 311, 313, 315, 344, 345, 348, 349, 350, 351, 
+  352, 353, 355, 356, 357, 358, 359, 360, 410, 419, 420, 422, 424, 454, 473, 495, 501, 509, 522, 523, 
+  529, 530, 531, 537, 541, 542, 544, 545, 546, 579, 580, 581, 582, 591, 609, 610, 611, 612, 613, 620, 
+  621, 622, 623, 624, 639, 640, 642, 644, 645, 646, 647, 648, 649, 650, 651, 652, 682, 724, 725, 726, 
+  727, 728, 769, 770, 778, 794, 808
+];
+
 export function getChartFilterConditions(params: ChartFilterParams, songsAlias = 'songs', chartsAlias = 'charts', playersAlias?: string) {
   const conditions: string[] = [];
   const bindings: any[] = [];
@@ -40,13 +50,14 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
   conditions.push(`${chartsAlias}.song_id NOT IN (50, 81) AND ${chartsAlias}.id != 239116`);
 
   // Server Filter
-  const server = params.server || 'JP';
+  const server = (params.server || 'JP').toUpperCase();
   if (server === 'JP') {
     conditions.push(`${songsAlias}.is_jp_active = 1`);
   } else if (server === 'INT') {
     conditions.push(`${songsAlias}.is_intl_active = 1`);
+  } else if (server === 'OMNI') {
+    conditions.push(`${songsAlias}.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`);
   }
-  // If 'OMNI', we apply no active filter, including all legacy/deleted charts.
 
   // Difficulty Filter
   if (params.diff && params.diff !== 'ALL') {

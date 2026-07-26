@@ -16,8 +16,9 @@ describe('getChartFilterConditions', () => {
     expect(bindings).toEqual([]);
   });
 
-  it('should not apply active filters for OMNI server', () => {
+  it('should exclude AOMN_REMOVE song IDs for OMNI server', () => {
     const { conditions, bindings } = getChartFilterConditions({ server: 'OMNI' });
+    expect(conditions.some(c => c.includes('songs.id NOT IN'))).toBe(true);
     expect(conditions).not.toContain("songs.is_jp_active = 1");
     expect(conditions).not.toContain("songs.is_intl_active = 1");
     expect(bindings).toEqual([]);

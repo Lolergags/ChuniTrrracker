@@ -355,10 +355,10 @@ export function Admin() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '2rem auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxSizing: 'border-box' }}>
       
       {/* 1. Unified System Automation Hub */}
-      <div className="glass-panel" style={{ padding: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>System Automation & Worker Status</h2>
         
         {schedulerStatus && isInitialized.current ? (
@@ -370,7 +370,7 @@ export function Admin() {
               </span>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
               <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: isSyncingAll ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)' }}>
                 <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Global Sync Worker</h3>
                 <div style={{ color: isSyncingAll ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
@@ -394,23 +394,23 @@ export function Admin() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', marginTop: '1rem' }}>
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '8px', marginTop: '1rem' }}>
               <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Schedule Configuration</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
                 Define how often automated background tasks should run.
                 {schedulerStatus.isEnabled && <span style={{ color: 'var(--accent-primary)', marginLeft: '0.5rem' }}>(Click 'Apply Schedules' below to save changes)</span>}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'row', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ minWidth: '120px' }}>Sync Cron:</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                  <span style={{ minWidth: '110px' }}>Sync Cron:</span>
                   <CronBuilder value={syncCron} onChange={setSyncCron} />
                 </label>
-                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'row', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ minWidth: '120px' }}>Scrape Cron:</span>
+                <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                  <span style={{ minWidth: '110px' }}>Scrape Cron:</span>
                   <CronBuilder value={scrapeCron} onChange={setScrapeCron} />
                 </label>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1 1 120px' }}>
                     Scrape Start ID:
                     <input 
                       type="number" 
@@ -419,7 +419,7 @@ export function Admin() {
                       style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                     />
                   </label>
-                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1 1 120px' }}>
                     Scrape End ID:
                     <input 
                       type="number" 
@@ -432,7 +432,7 @@ export function Admin() {
               </div>
             </div>
 
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
                 <button 
                   onClick={handleStartScheduler}
                   style={{ padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
@@ -455,11 +455,10 @@ export function Admin() {
       </div>
 
       {/* 2. Manual Controls */}
-      {/* 2. Manual Controls */}
-      <div className="glass-panel" style={{ padding: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Manual Overrides & Database Controls</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
           
           {/* Delete Player */}
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
@@ -635,12 +634,12 @@ export function Admin() {
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Prevent specific Kamaitachi users from being imported by the scraper or manual sync. Blacklisting a user will also permanently delete any of their existing scores from this tracker.
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
               <PlayerAutocomplete
                 value={blacklistInput}
                 onChange={setBlacklistInput}
                 placeholder="Kamaitachi User ID or Username"
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                style={{ flex: '1 1 200px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
               />
               <button 
                 onClick={handleAddBlacklist}

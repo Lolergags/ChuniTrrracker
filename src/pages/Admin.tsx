@@ -44,7 +44,7 @@ export function Admin() {
   const BLACKLIST_PER_PAGE = 5;
 
   // Update Manager state
-  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string, currentCommit: string, url: string, currentBranch?: string, branches?: string[] } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string, currentCommit: string, url: string, currentBranch?: string, branches?: string[], lastUpdateStatus?: string, lastUpdateError?: string | null } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -620,6 +620,11 @@ export function Admin() {
             {updateMessage && (
               <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: updateMessage.startsWith('Error') ? 'var(--accent-danger)' : 'var(--rank-ajc)', textAlign: 'center' }}>
                 {updateMessage}
+              </div>
+            )}
+            {!updateMessage && updateInfo?.lastUpdateError && (
+              <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--accent-danger)', textAlign: 'center', wordBreak: 'break-word' }}>
+                Last Update Failed: {updateInfo.lastUpdateError}
               </div>
             )}
           </div>

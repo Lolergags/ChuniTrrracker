@@ -842,7 +842,10 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
       }
     }
     
-    exec('git branch --show-current', (err, stdout) => {
+    const lastStatus = (db.prepare(`SELECT value FROM config WHERE key = 'update_status'`).get() as any)?.value || 'idle';
+    const lastError = (db.prepare(`SELECT value FROM config WHERE key = 'update_error'`).get() as any)?.value || null;
+
+    exec('git config --global --add safe.directory "*" 2>/dev/null; git branch --show-current', (err, stdout) => {
       let currentBranch = 'main';
       if (!err && stdout.trim()) {
         currentBranch = stdout.trim();
@@ -858,7 +861,7 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
         if (!error) {
           currentCommit = commitOut.trim();
         }
-        res.json({ latestVersion, url, currentCommit, isProd, currentBranch, branches, targetBranch });
+        res.json({ latestVersion, url, currentCommit, isProd, currentBranch, branches, targetBranch, lastUpdateStatus: lastStatus, lastUpdateError: lastError });
       });
     });
   } catch (err: any) {
@@ -880,22 +883,30 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   
   // Save to config so it is persistent across reboots
   db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('target_branch', ?)`).run(targetBranch);
+  db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'in_progress')`).run();
+  db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
   
   const isProd = process.env.NODE_ENV === 'production';
   res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   
   setTimeout(() => {
+    const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true';
     const cmd = isProd && targetBranch === 'main'
-      ? 'git fetch --all --tags && git reset --hard HEAD && { TAG=$(git describe --tags `git rev-list --tags --max-count=1 2>/dev/null` 2>/dev/null); if [ -n "$TAG" ]; then git checkout "$TAG"; else git checkout main && git reset --hard origin/main; fi; } && npm install && npm run build'
-      : `git fetch --all && git reset --hard HEAD && git checkout ${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
+      ? `${safeGit} && git fetch --all --tags && git reset --hard HEAD && { TAG=$(git describe --tags \`git rev-list --tags --max-count=1 2>/dev/null\` 2>/dev/null); if [ -n "$TAG" ]; then git checkout "$TAG"; else git checkout main && git reset --hard origin/main; fi; } && npm install && npm run build`
+      : `${safeGit} && git fetch --all && git checkout -B ${targetBranch} origin/${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
       
     exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Update error: ${error.message}`);
+        const errMsg = error.message || stderr || 'Unknown update execution failure';
+        console.error(`Update error: ${errMsg}`);
+        db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'failed')`).run();
+        db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_error', ?)`).run(errMsg);
         return;
       }
       console.log(`Update stdout: ${stdout}`);
       console.error(`Update stderr: ${stderr}`);
+      db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
+      db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
       process.exit(0);
     });
   }, 1000);

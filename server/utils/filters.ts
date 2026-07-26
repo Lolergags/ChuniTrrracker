@@ -72,7 +72,7 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
     if (targetIndex !== -1) {
       const allowedVersions = CHRONOLOGICAL_VERSIONS.slice(0, targetIndex + 1);
       const placeholders = allowedVersions.map(() => '?').join(', ');
-      conditions.push(`${songsAlias}.version IN (${placeholders})`);
+      conditions.push(`${chartsAlias}.version IN (${placeholders})`);
       bindings.push(...allowedVersions);
     }
   }

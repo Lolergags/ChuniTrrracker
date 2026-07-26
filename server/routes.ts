@@ -97,7 +97,7 @@ router.get('/leaderboard', (req, res) => {
   
   const includedVersions = VERSION_ORDER.slice(0, selectedVersionIdx + 1);
   const placeholders = includedVersions.map(() => '?').join(',');
-  versionFilter = `AND songs.version IN (${placeholders})`;
+  versionFilter = `AND c.version IN (${placeholders})`;
   versionParams.push(...includedVersions);
 
   // Determine total max OP for denominator (raw total ratio per reference notebook)
@@ -136,97 +136,41 @@ router.get('/leaderboard', (req, res) => {
 
   const totalPlayers = (db.prepare(`SELECT COUNT(DISTINCT s.player_id) as count FROM scores s JOIN charts c ON s.chart_id = c.id JOIN songs ON c.song_id = songs.id WHERE 1=1 ${serverCondition} ${versionFilter}`).get(...versionParams) as any).count;
 
-  // Pre-calculate total MAS/ULT charts and Max OP per version
-  const cumulativeVersionData: Record<string, { totalMasUlt: number, totalSongOp: number }> = {};
-  for (let i = 0; i <= selectedVersionIdx; i++) {
-    const v = VERSION_ORDER[i];
-    const allowed = VERSION_ORDER.slice(0, i + 1);
-    const p = allowed.map(() => '?').join(',');
-    
-    const masUlt = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') ${serverCondition} AND songs.version IN (${p}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)`).get(...allowed) as any).count;
-    
-    const maxOpQuery = db.prepare(`
-      SELECT IFNULL(SUM(((max_const * 5000 + 15000) / 5) * 5), 0) as total_op FROM (
-        SELECT MAX(c.constant) as max_const
-        FROM charts c
-        JOIN songs ON c.song_id = songs.id
-        WHERE c.difficulty != 'WE' ${serverCondition} AND songs.version IN (${p}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)
-        GROUP BY c.song_id
-      )
-    `).get(...allowed) as any;
-    
-    const activeSongs = (db.prepare(`SELECT COUNT(DISTINCT song_id) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty != 'WE' ${serverCondition} AND songs.version IN (${p}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)`).get(...allowed) as any).count;
-    
-    cumulativeVersionData[v] = { totalMasUlt: masUlt, totalSongOp: maxOpQuery.total_op, activeSongs };
-  }
+  // Pre-calculate total MAS/ULT charts and Max OP for the target version set
+  const masUltTotal = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') ${serverCondition} AND c.version IN (${placeholders}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)`).get(...includedVersions) as any).count;
 
-  // Determine highest possession for each top player
+  // Determine possession for each top player
+  const tiers = ['Silver', 'Gold', 'Platinum', 'Rainbow'];
   const result = topPlayers.map(player => {
-    let bestPossessionTier = -1;
     let possessionStr = 'None';
-    const tiers = ['Silver', 'Gold', 'Platinum', 'Rainbow'];
 
-    // Fetch all max OP scores for this player across all active songs
-    const playerScores = db.prepare(`
-      SELECT songs.version, MAX(s.op) as max_op
-      FROM scores s
-      JOIN charts c ON s.chart_id = c.id
-      JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
-      GROUP BY c.song_id
-    `).all(player.id) as any[];
+    if (masUltTotal > 0) {
+      const masUltScores = db.prepare(`
+        SELECT 
+          SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss,
+          SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss,
+          SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as sPlus,
+          SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s
+        FROM scores s
+        JOIN charts c ON s.chart_id = c.id
+        JOIN songs ON c.song_id = songs.id
+        WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') AND c.version IN (${placeholders}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
+      `).get(player.id, ...includedVersions) as any;
 
-    // Fetch all Master/Ultima scores for this player to tally grades
-    const playerMasUltScores = db.prepare(`
-      SELECT songs.version, s.score
-      FROM scores s
-      JOIN charts c ON s.chart_id = c.id
-      JOIN songs ON c.song_id = songs.id
-      WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
-    `).all(player.id) as any[];
+      const sssCount = masUltScores?.sss || 0;
+      const ssCount = masUltScores?.ss || 0;
+      const sPlusCount = masUltScores?.sPlus || 0;
+      const sCount = masUltScores?.s || 0;
 
-    // Group OP by version
-    const opByVersion: Record<string, number> = {};
-    for (const score of playerScores) {
-      opByVersion[score.version] = (opByVersion[score.version] || 0) + score.max_op;
-    }
-
-    // Group grade counts by version
-    const gradeCountsByVersion: Record<string, { sss: number, ss: number, sPlus: number, s: number }> = {};
-    for (const s of playerMasUltScores) {
-      if (!gradeCountsByVersion[s.version]) gradeCountsByVersion[s.version] = { sss: 0, ss: 0, sPlus: 0, s: 0 };
-      if (s.score >= 1007500) gradeCountsByVersion[s.version].sss++;
-      if (s.score >= 1000000) gradeCountsByVersion[s.version].ss++;
-      if (s.score >= 990000) gradeCountsByVersion[s.version].sPlus++;
-      if (s.score >= 975000) gradeCountsByVersion[s.version].s++;
-    }
-
-    let cumulativeOp = 0;
-    let cumulativeSss = 0, cumulativeSs = 0, cumulativeSPlus = 0, cumulativeS = 0;
-    for (let i = 0; i <= selectedVersionIdx; i++) {
-      const v = VERSION_ORDER[i];
-      cumulativeOp += (opByVersion[v] || 0);
-      if (gradeCountsByVersion[v]) {
-         cumulativeSss += gradeCountsByVersion[v].sss;
-         cumulativeSs += gradeCountsByVersion[v].ss;
-         cumulativeSPlus += gradeCountsByVersion[v].sPlus;
-         cumulativeS += gradeCountsByVersion[v].s;
-      }
-
-      const vData = cumulativeVersionData[v];
-      if (!vData || vData.activeSongs === 0) continue;
-
-      const opPercent = (cumulativeOp / vData.totalSongOp) * 100;
+      const opPercent = player.op_percent || 0;
 
       let currentTier = -1;
-      if (cumulativeSss >= vData.totalMasUlt && opPercent >= 99.5) currentTier = 3;
-      else if (cumulativeSs >= vData.totalMasUlt && opPercent >= 99) currentTier = 2;
-      else if (cumulativeSPlus >= vData.totalMasUlt && opPercent >= 97.5) currentTier = 1;
-      else if (cumulativeS >= vData.totalMasUlt) currentTier = 0;
+      if (sssCount >= masUltTotal && opPercent >= 99.5) currentTier = 3;
+      else if (ssCount >= masUltTotal && opPercent >= 99.0) currentTier = 2;
+      else if (sPlusCount >= masUltTotal && opPercent >= 97.5) currentTier = 1;
+      else if (sCount >= masUltTotal) currentTier = 0;
 
-      if (i === selectedVersionIdx) {
-        possessionStr = currentTier >= 0 ? tiers[currentTier] : 'None';
-      }
+      possessionStr = currentTier >= 0 ? tiers[currentTier] : 'None';
     }
 
     return {

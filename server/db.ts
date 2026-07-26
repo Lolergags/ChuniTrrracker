@@ -37,6 +37,7 @@ db.exec(`
     level TEXT NOT NULL,
     note_count INTEGER NOT NULL DEFAULT 0,
     charter TEXT NOT NULL DEFAULT '',
+    version TEXT NOT NULL DEFAULT '',
     UNIQUE(song_id, difficulty)
   );
 
@@ -74,6 +75,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id);
   CREATE INDEX IF NOT EXISTS idx_scores_chart ON scores(chart_id);
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
+  CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version);
 `);
 
 // Simple migration for existing databases
@@ -91,6 +93,14 @@ try {
 } catch (e: any) {
   if (!e.message.includes('duplicate column name')) {
     console.error('Migration error (kamaitachi_rating):', e.message);
+  }
+}
+
+try {
+  db.exec(`ALTER TABLE charts ADD COLUMN version TEXT NOT NULL DEFAULT ''`);
+} catch (e: any) {
+  if (!e.message.includes('duplicate column name')) {
+    console.error('Migration error (charts version):', e.message);
   }
 }
 

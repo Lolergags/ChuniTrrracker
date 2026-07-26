@@ -39,7 +39,7 @@ describe('getChartFilterConditions', () => {
     const { conditions, bindings } = getChartFilterConditions({ version: 'CHUNITHM PLUS' });
     
     // Should include CHUNITHM and CHUNITHM PLUS
-    expect(conditions).toContain("songs.version IN (?, ?)");
+    expect(conditions).toContain("charts.version IN (?, ?)");
     expect(bindings).toEqual(['CHUNITHM', 'CHUNITHM PLUS']);
   });
 
@@ -53,5 +53,11 @@ describe('getChartFilterConditions', () => {
     const { conditions } = getChartFilterConditions({ server: 'JP' }, 's_alias', 'c_alias');
     expect(conditions).toContain("c_alias.difficulty != 'WE'");
     expect(conditions).toContain("s_alias.is_jp_active = 1");
+  });
+
+  it('should filter cumulative version using chart-level version alias', () => {
+    const { conditions, bindings } = getChartFilterConditions({ version: 'AIR' }, 'songs', 'c');
+    expect(conditions).toContain("c.version IN (?, ?, ?)");
+    expect(bindings).toEqual(['CHUNITHM', 'CHUNITHM PLUS', 'AIR']);
   });
 });

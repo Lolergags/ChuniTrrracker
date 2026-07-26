@@ -50,13 +50,14 @@ export async function syncSongs() {
   `);
 
   const insertChart = db.prepare(`
-    INSERT INTO charts (song_id, difficulty, constant, level, note_count, charter)
-    VALUES (@song_id, @difficulty, @constant, @level, @note_count, @charter)
+    INSERT INTO charts (song_id, difficulty, constant, level, note_count, charter, version)
+    VALUES (@song_id, @difficulty, @constant, @level, @note_count, @charter, @version)
     ON CONFLICT(song_id, difficulty) DO UPDATE SET
       constant=excluded.constant,
       level=excluded.level,
       note_count=excluded.note_count,
-      charter=excluded.charter
+      charter=excluded.charter,
+      version=excluded.version
   `);
 
   let songCount = 0;
@@ -87,7 +88,8 @@ export async function syncSongs() {
           constant: chart.const,
           level: chart.level,
           note_count: chart.notecounts?.total || 0,
-          charter: chart.charter || ''
+          charter: chart.charter || '',
+          version: chart.version || song.version
         });
         chartCount++;
       }

@@ -75,7 +75,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id);
   CREATE INDEX IF NOT EXISTS idx_scores_chart ON scores(chart_id);
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
-  CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version);
 `);
 
 // Simple migration for existing databases
@@ -102,6 +101,20 @@ try {
   if (!e.message.includes('duplicate column name')) {
     console.error('Migration error (charts version):', e.message);
   }
+}
+
+// Backfill version for existing charts from songs table if empty
+try {
+  db.exec(`UPDATE charts SET version = (SELECT songs.version FROM songs WHERE songs.id = charts.song_id) WHERE version = '' OR version IS NULL`);
+} catch (e: any) {
+  console.error('Migration backfill error (charts version):', e.message);
+}
+
+// Index charts version after column migration and backfill
+try {
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version)`);
+} catch (e: any) {
+  console.error('Index creation error (idx_charts_version):', e.message);
 }
 
 export default db;

@@ -892,10 +892,9 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   
   setTimeout(() => {
-    const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true && git -c credential.helper= remote set-url origin https://github.com/Lolergags/ChuniTrrracker.git 2>/dev/null || true';
-    const cmd = isProd && targetBranch === 'main'
-      ? `${safeGit} && git -c credential.helper= fetch origin --tags && git reset --hard HEAD && { TAG=$(git describe --tags \`git rev-list --tags --max-count=1 2>/dev/null\` 2>/dev/null); if [ -n "$TAG" ]; then git checkout "$TAG"; else git checkout main && git reset --hard origin/main; fi; } && npm install && npm run build`
-      : `${safeGit} && git -c credential.helper= fetch origin ${targetBranch} && git checkout -B ${targetBranch} origin/${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
+    const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true';
+    const repoUrl = 'https://github.com/Lolergags/ChuniTrrracker.git';
+    const cmd = `${safeGit} && git fetch ${repoUrl} ${targetBranch} && git reset --hard FETCH_HEAD && npm install && npm run build`;
       
     const gitEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
     exec(cmd, { env: gitEnv, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {

@@ -77,44 +77,26 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
 `);
 
-// Simple migration for existing databases
-try {
+// Explicit schema migrations using PRAGMA table_info
+const scoreCols = (db.prepare(`PRAGMA table_info(scores)`).all() as any[]).map(c => c.name);
+if (!scoreCols.includes('clear_lamp')) {
   db.exec(`ALTER TABLE scores ADD COLUMN clear_lamp TEXT NOT NULL DEFAULT 'CLEAR'`);
-} catch (e: any) {
-  // Ignore error if column already exists
-  if (!e.message.includes('duplicate column name')) {
-    console.error('Migration error (clear_lamp):', e.message);
-  }
 }
 
-try {
+const playerCols = (db.prepare(`PRAGMA table_info(players)`).all() as any[]).map(c => c.name);
+if (!playerCols.includes('kamaitachi_rating')) {
   db.exec(`ALTER TABLE players ADD COLUMN kamaitachi_rating REAL NOT NULL DEFAULT 0`);
-} catch (e: any) {
-  if (!e.message.includes('duplicate column name')) {
-    console.error('Migration error (kamaitachi_rating):', e.message);
-  }
 }
 
-try {
+const chartCols = (db.prepare(`PRAGMA table_info(charts)`).all() as any[]).map(c => c.name);
+if (!chartCols.includes('version')) {
   db.exec(`ALTER TABLE charts ADD COLUMN version TEXT NOT NULL DEFAULT ''`);
-} catch (e: any) {
-  if (!e.message.includes('duplicate column name')) {
-    console.error('Migration error (charts version):', e.message);
-  }
 }
 
 // Backfill version for existing charts from songs table if empty
-try {
-  db.exec(`UPDATE charts SET version = (SELECT songs.version FROM songs WHERE songs.id = charts.song_id) WHERE version = '' OR version IS NULL`);
-} catch (e: any) {
-  console.error('Migration backfill error (charts version):', e.message);
-}
+db.exec(`UPDATE charts SET version = (SELECT songs.version FROM songs WHERE songs.id = charts.song_id) WHERE version = '' OR version IS NULL`);
 
 // Index charts version after column migration and backfill
-try {
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version)`);
-} catch (e: any) {
-  console.error('Index creation error (idx_charts_version):', e.message);
-}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version)`);
 
 export default db;

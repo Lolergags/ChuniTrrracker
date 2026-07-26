@@ -8,6 +8,7 @@ COPY package*.json ./
 # Install git for the Update Manager, then install ALL dependencies
 RUN apk add --no-cache git
 RUN git config --global --add safe.directory '*'
+ENV GIT_TERMINAL_PROMPT=0
 RUN npm install
 
 # Copy the rest of the application source code

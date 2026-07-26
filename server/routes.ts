@@ -892,12 +892,13 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   
   setTimeout(() => {
-    const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true';
+    const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true && git remote set-url origin https://github.com/Lolergags/ChuniTrrracker.git 2>/dev/null || true';
     const cmd = isProd && targetBranch === 'main'
       ? `${safeGit} && git fetch --all --tags && git reset --hard HEAD && { TAG=$(git describe --tags \`git rev-list --tags --max-count=1 2>/dev/null\` 2>/dev/null); if [ -n "$TAG" ]; then git checkout "$TAG"; else git checkout main && git reset --hard origin/main; fi; } && npm install && npm run build`
       : `${safeGit} && git fetch --all && git checkout -B ${targetBranch} origin/${targetBranch} && git reset --hard origin/${targetBranch} && npm install && npm run build`;
       
-    exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+    const gitEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
+    exec(cmd, { env: gitEnv, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
       if (error) {
         const errMsg = error.message || stderr || 'Unknown update execution failure';
         console.error(`Update error: ${errMsg}`);

@@ -85,6 +85,7 @@ const SongAnalytics: React.FC = () => {
       if (serverFilter === 'PL_OFFLINE' && song.is_pl_offline_active !== 1) return;
       
       song.charts.forEach(chart => {
+        if (serverFilter === 'PL_OFFLINE' && chart.difficulty === 'ULT') return;
         list.push({
           id: song.id,
           title: song.title,

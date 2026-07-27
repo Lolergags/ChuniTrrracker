@@ -51,12 +51,15 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
 
   // Server Filter
   const server = (params.server || 'JP').toUpperCase();
+  const isPlOffline = server === 'PL_OFFLINE' || server === 'PARADISE_LOST_OFFLINE' || server === 'PARADISE';
+
   if (server === 'JP') {
     conditions.push(`${songsAlias}.is_jp_active = 1`);
   } else if (server === 'INT' || server === 'INTL') {
     conditions.push(`${songsAlias}.is_intl_active = 1`);
-  } else if (server === 'PL_OFFLINE' || server === 'PARADISE_LOST_OFFLINE' || server === 'PARADISE') {
+  } else if (isPlOffline) {
     conditions.push(`${songsAlias}.is_pl_offline_active = 1`);
+    conditions.push(`${chartsAlias}.difficulty != 'ULT'`);
   } else if (server === 'OMNI') {
     conditions.push(`${songsAlias}.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`);
   }
@@ -72,6 +75,9 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
     }
     
     diffArray = diffArray.filter(d => d !== 'WE');
+    if (isPlOffline) {
+      diffArray = diffArray.filter(d => d !== 'ULT');
+    }
     if (diffArray.length > 0) {
       const placeholders = diffArray.map(() => '?').join(', ');
       conditions.push(`${chartsAlias}.difficulty IN (${placeholders})`);
@@ -80,14 +86,20 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
   }
 
   // Version Filter (Cumulative)
-  if (params.version && params.version !== 'ALL') {
-    const targetIndex = CHRONOLOGICAL_VERSIONS.indexOf(params.version);
-    if (targetIndex !== -1) {
-      const allowedVersions = CHRONOLOGICAL_VERSIONS.slice(0, targetIndex + 1);
-      const placeholders = allowedVersions.map(() => '?').join(', ');
-      conditions.push(`${chartsAlias}.version IN (${placeholders})`);
-      bindings.push(...allowedVersions);
-    }
+  const plMaxIndex = CHRONOLOGICAL_VERSIONS.indexOf('PARADISE LOST');
+  let targetIndex = params.version && params.version !== 'ALL' 
+    ? CHRONOLOGICAL_VERSIONS.indexOf(params.version) 
+    : (isPlOffline ? plMaxIndex : -1);
+
+  if (isPlOffline && targetIndex !== -1 && targetIndex > plMaxIndex) {
+    targetIndex = plMaxIndex;
+  }
+
+  if (targetIndex !== -1) {
+    const allowedVersions = CHRONOLOGICAL_VERSIONS.slice(0, targetIndex + 1);
+    const placeholders = allowedVersions.map(() => '?').join(', ');
+    conditions.push(`${chartsAlias}.version IN (${placeholders})`);
+    bindings.push(...allowedVersions);
   }
 
   // Player Rating Filter

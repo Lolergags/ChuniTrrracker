@@ -16,11 +16,13 @@ describe('getChartFilterConditions', () => {
     expect(bindings).toEqual([]);
   });
 
-  it('should filter by PL_OFFLINE server', () => {
-    const { conditions, bindings } = getChartFilterConditions({ server: 'PL_OFFLINE' });
+  it('should filter by PL_OFFLINE server, exclude ULT charts, and cap version at PARADISE LOST', () => {
+    const { conditions, bindings } = getChartFilterConditions({ server: 'PL_OFFLINE', version: 'LUMINOUS' });
     expect(conditions).toContain("songs.is_pl_offline_active = 1");
+    expect(conditions).toContain("charts.difficulty != 'ULT'");
     expect(conditions).not.toContain("songs.is_jp_active = 1");
-    expect(bindings).toEqual([]);
+    expect(bindings).not.toContain('LUMINOUS');
+    expect(bindings).toContain('PARADISE LOST');
   });
 
   it('should exclude AOMN_REMOVE song IDs for OMNI server', () => {

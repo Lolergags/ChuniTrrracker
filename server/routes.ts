@@ -83,7 +83,7 @@ router.get('/leaderboard', (req, res) => {
   const sUpper = (server as string).toUpperCase();
   if (sUpper === 'JP') serverCondition = 'AND songs.is_jp_active = 1';
   else if (sUpper === 'INTL' || sUpper === 'INT') serverCondition = 'AND songs.is_intl_active = 1';
-  else if (sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE') serverCondition = 'AND songs.is_pl_offline_active = 1';
+  else if (sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE') serverCondition = "AND songs.is_pl_offline_active = 1 AND c.difficulty != 'ULT'";
   else if (sUpper === 'OMNI') serverCondition = `AND songs.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`;
   
   const VERSION_ORDER = [
@@ -96,7 +96,12 @@ router.get('/leaderboard', (req, res) => {
   let versionFilter = '';
   const versionParams: any[] = [];
   let selectedVersionIdx = VERSION_ORDER.indexOf(version as string);
-  if (selectedVersionIdx < 0) selectedVersionIdx = VERSION_ORDER.length - 1; // Default to all if invalid
+  const plMaxIdx = VERSION_ORDER.indexOf('PARADISE LOST');
+  const isPl = sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE';
+
+  if (selectedVersionIdx < 0 || (isPl && selectedVersionIdx > plMaxIdx)) {
+    selectedVersionIdx = isPl ? plMaxIdx : VERSION_ORDER.length - 1;
+  }
   
   const includedVersions = VERSION_ORDER.slice(0, selectedVersionIdx + 1);
   const placeholders = includedVersions.map(() => '?').join(',');

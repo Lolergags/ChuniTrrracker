@@ -903,7 +903,7 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
     const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true';
     const repoUrl = 'https://github.com/Lolergags/ChuniTrrracker.git';
     const gitCmd = `${safeGit} && git fetch ${repoUrl} ${targetBranch} && git reset --hard FETCH_HEAD && npm install && npm run build`;
-    const tarballCmd = `curl -sL https://codeload.github.com/Lolergags/ChuniTrrracker/tar.gz/refs/heads/${targetBranch} | tar -xz --strip-components=1 -C ${process.cwd()} && npm install && npm run build`;
+    const tarballCmd = `(curl -sL https://codeload.github.com/Lolergags/ChuniTrrracker/tar.gz/refs/heads/${targetBranch} 2>/dev/null || wget -qO- https://codeload.github.com/Lolergags/ChuniTrrracker/tar.gz/refs/heads/${targetBranch}) | tar -xz --strip-components=1 -C ${process.cwd()} && npm install && npm run build`;
       
     const gitEnv = {
       ...process.env,

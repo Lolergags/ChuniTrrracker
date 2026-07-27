@@ -5,8 +5,8 @@ WORKDIR /app
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install git for the Update Manager, then install ALL dependencies
-RUN apk add --no-cache git
+# Install git, curl, and wget for the Update Manager, then install ALL dependencies
+RUN apk add --no-cache git curl wget
 RUN git config --global --add safe.directory '*'
 ENV GIT_TERMINAL_PROMPT=0
 RUN npm install

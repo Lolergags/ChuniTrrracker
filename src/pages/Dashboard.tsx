@@ -287,9 +287,9 @@ export function Dashboard() {
                   angle={-45}
                   textAnchor="end"
                   height={60}
-                  tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }}
+                  tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
                 />
-                <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
+                <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 13, fill: 'var(--text-secondary)' }} tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
                 <Tooltip content={<LampTooltip />} />
                 <Legend content={(props: any) => {
                   const { payload } = props;
@@ -506,7 +506,7 @@ export function Dashboard() {
                   name="Level Constant" 
                   domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
-                  tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }}
+                  tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => val.toFixed(1)}
                 />
                 <YAxis 
@@ -516,7 +516,7 @@ export function Dashboard() {
                   domain={scatterZoomY || [(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
                   ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                   stroke="var(--text-secondary)"
-                  tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+                  tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {
                     if (val === 1010000) return '1010k (AJC)';
                     if (val === 1009000) return '1009k (SSS+)';

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useDeferredValue } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
-import { Search, ChevronRight } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid, Brush } from 'recharts';
+import { Search, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
@@ -12,6 +12,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const [scatterZoomX, setScatterZoomX] = useState<[number, number] | null>(null);
+  const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
   
   const filteredPlayers = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -310,12 +313,63 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ marginTop: '2rem', height: '500px', width: '100%', minWidth: 0 }}>
-        <h2 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Personal Performance Scatter</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-          All imported plays. Correlation between Score and Chart Constant. Bubble size represents chart play count.
-        </p>
-        <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 70px)' }}>
+      <div className="glass-panel" style={{ marginTop: '2rem', height: '530px', width: '100%', minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Personal Performance Scatter</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              All imported plays. Correlation between Score and Chart Constant. Bubble size represents chart play count.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                const constants = uniqueScores.map(s => s.constant);
+                const currentX = scatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
+                const currentY = scatterZoomY || [975000, 1010000];
+                const midX = (currentX[0] + currentX[1]) / 2;
+                const spanX = (currentX[1] - currentX[0]) * 0.35;
+                const midY = (currentY[0] + currentY[1]) / 2;
+                const spanY = (currentY[1] - currentY[0]) * 0.35;
+                setScatterZoomX([midX - spanX, midX + spanX]);
+                setScatterZoomY([midY - spanY, midY + spanY]);
+              }}
+              title="Zoom In"
+              style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+            >
+              <ZoomIn size={14} /> Zoom In
+            </button>
+            <button
+              onClick={() => {
+                if (!scatterZoomX && !scatterZoomY) return;
+                const constants = uniqueScores.map(s => s.constant);
+                const currentX = scatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
+                const currentY = scatterZoomY || [975000, 1010000];
+                const midX = (currentX[0] + currentX[1]) / 2;
+                const spanX = (currentX[1] - currentX[0]) * 0.7;
+                const midY = (currentY[0] + currentY[1]) / 2;
+                const spanY = (currentY[1] - currentY[0]) * 0.7;
+                setScatterZoomX([Math.max(1, midX - spanX), midX + spanX]);
+                setScatterZoomY([Math.max(900000, midY - spanY), Math.min(1010000, midY + spanY)]);
+              }}
+              title="Zoom Out"
+              style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+            >
+              <ZoomOut size={14} /> Zoom Out
+            </button>
+            {(scatterZoomX || scatterZoomY) && (
+              <button
+                onClick={() => { setScatterZoomX(null); setScatterZoomY(null); }}
+                title="Reset Zoom"
+                style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold' }}
+              >
+                <RotateCcw size={14} /> Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 80px)' }}>
           <div className="chart-min-width-md">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -324,7 +378,7 @@ export function Dashboard() {
                   type="number" 
                   dataKey="constant" 
                   name="Level Constant" 
-                  domain={['dataMin - 0.5', 'dataMax + 0.2']} 
+                  domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
                   tickFormatter={(val) => val.toFixed(1)}
                 />
@@ -332,7 +386,7 @@ export function Dashboard() {
                   type="number" 
                   dataKey="score" 
                   name="Score" 
-                  domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
+                  domain={scatterZoomY || [(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
                   ticks={[975000, 990000, 1000000, 1005000, 1007500, 1010000]}
                   stroke="var(--text-secondary)"
                   tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
@@ -362,6 +416,7 @@ export function Dashboard() {
                   fill="var(--accent-primary)" 
                   fillOpacity={0.6} 
                 />
+                <Brush dataKey="constant" height={25} stroke="var(--accent-primary)" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

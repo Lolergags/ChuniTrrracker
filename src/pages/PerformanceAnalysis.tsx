@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush } from 'recharts';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
@@ -17,6 +18,8 @@ const PerformanceAnalysis: React.FC = () => {
   const [playerOpData, setPlayerOpData] = useState<ApiPlayerOpDistribution[]>([]);
   
   const { filters } = useGlobal();
+  const [globalScatterZoomX, setGlobalScatterZoomX] = useState<[number, number] | null>(null);
+  const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   useEffect(() => {
@@ -240,6 +243,7 @@ const PerformanceAnalysis: React.FC = () => {
                     <Legend />
                     <Line type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
                     <Line type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
+                    <Brush dataKey="constant" height={25} stroke="var(--accent-primary)" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -335,13 +339,66 @@ const PerformanceAnalysis: React.FC = () => {
           </div>
 
           {/* Bubble Chart */}
-          <div className="glass-panel">
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Global Chart Meta</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
-            </p>
-            <div className="scrollable-content-wrapper">
-              <div className="chart-min-width-md" style={{ height: '500px' }}>
+          <div className="glass-panel" style={{ height: '530px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Global Chart Meta</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                    const constants = validMeta.map((d: any) => d.constant);
+                    const currentX = globalScatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
+                    const currentY = globalScatterZoomY || [975000, 1010000];
+                    const midX = (currentX[0] + currentX[1]) / 2;
+                    const spanX = (currentX[1] - currentX[0]) * 0.35;
+                    const midY = (currentY[0] + currentY[1]) / 2;
+                    const spanY = (currentY[1] - currentY[0]) * 0.35;
+                    setGlobalScatterZoomX([midX - spanX, midX + spanX]);
+                    setGlobalScatterZoomY([midY - spanY, midY + spanY]);
+                  }}
+                  title="Zoom In"
+                  style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+                >
+                  <ZoomIn size={14} /> Zoom In
+                </button>
+                <button
+                  onClick={() => {
+                    if (!globalScatterZoomX && !globalScatterZoomY) return;
+                    const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                    const constants = validMeta.map((d: any) => d.constant);
+                    const currentX = globalScatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
+                    const currentY = globalScatterZoomY || [975000, 1010000];
+                    const midX = (currentX[0] + currentX[1]) / 2;
+                    const spanX = (currentX[1] - currentX[0]) * 0.7;
+                    const midY = (currentY[0] + currentY[1]) / 2;
+                    const spanY = (currentY[1] - currentY[0]) * 0.7;
+                    setGlobalScatterZoomX([Math.max(1, midX - spanX), midX + spanX]);
+                    setGlobalScatterZoomY([Math.max(900000, midY - spanY), Math.min(1010000, midY + spanY)]);
+                  }}
+                  title="Zoom Out"
+                  style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+                >
+                  <ZoomOut size={14} /> Zoom Out
+                </button>
+                {(globalScatterZoomX || globalScatterZoomY) && (
+                  <button
+                    onClick={() => { setGlobalScatterZoomX(null); setGlobalScatterZoomY(null); }}
+                    title="Reset Zoom"
+                    style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold' }}
+                  >
+                    <RotateCcw size={14} /> Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 80px)' }}>
+              <div className="chart-min-width-md">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -350,14 +407,14 @@ const PerformanceAnalysis: React.FC = () => {
                       dataKey="constant" 
                       name="Chart Constant" 
                       stroke="var(--text-secondary)"
-                      domain={['dataMin', 'dataMax']}
+                      domain={globalScatterZoomX || ['dataMin', 'dataMax']}
                       label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
                     />
                     <YAxis 
                       type="number" 
                       dataKey="avgScore" 
                       name="Avg Score" 
-                      domain={[975000, 1010000]}
+                      domain={globalScatterZoomY || [975000, 1010000]}
                       ticks={[975000, 990000, 1000000, 1005000, 1007500, 1010000]}
                       stroke="var(--text-secondary)" 
                       tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
@@ -375,6 +432,7 @@ const PerformanceAnalysis: React.FC = () => {
                     <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                     <Tooltip content={<CustomTooltip />} />
                     <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
+                    <Brush dataKey="constant" height={25} stroke="#ff66ff" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>

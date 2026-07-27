@@ -8,20 +8,20 @@ import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
-
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const GlobalStats: React.FC = () => {
+export function GlobalStats() {
+  const { filters } = useGlobal();
   const [heatmapData, setHeatmapData] = useState<ApiHeatmapData[]>([]);
   const [metaData, setMetaData] = useState<ApiChartMeta[]>([]);
   const [lampData, setLampData] = useState<ApiLampDistribution[]>([]);
   const [opYieldData, setOpYieldData] = useState<ApiOpYield[]>([]);
   const [playerOpData, setPlayerOpData] = useState<ApiPlayerOpDistribution[]>([]);
   
-  const { filters } = useGlobal();
   const [globalScatterZoomX, setGlobalScatterZoomX] = useState<[number, number] | null>(null);
   const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
+  const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
@@ -208,7 +208,6 @@ const GlobalStats: React.FC = () => {
     const handleTouchStart = (e: TouchEvent) => {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
-        e.preventDefault();
         const t = e.touches[0];
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
@@ -245,8 +244,11 @@ const GlobalStats: React.FC = () => {
     const handleTouchMove = (e: TouchEvent) => {
       const { defX, defY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
-        e.preventDefault();
         const t = e.touches[0];
+        const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
+        if (moveDist < 6) return;
+
+        e.preventDefault();
 
         if (elem.scrollWidth > elem.clientWidth && !globalScatterZoomXRef.current) {
           elem.scrollLeft = panRef.current.startScrollLeft - (t.clientX - panRef.current.startX);
@@ -798,11 +800,70 @@ const GlobalStats: React.FC = () => {
                     />
                     <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                     <Tooltip content={<CustomTooltip />} />
-                    <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
+                    <Scatter 
+                      name="Charts" 
+                      data={metaData.filter((d: any) => d.avgScore >= 975000)} 
+                      fill="#ff66ff" 
+                      fillOpacity={0.6} 
+                      onClick={(node: any) => {
+                        if (node && (node.payload || node.title)) {
+                          setSelectedDot(node.payload || node);
+                        }
+                      }}
+                    />
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {selectedDot && (
+              <div style={{
+                marginTop: '0.75rem',
+                padding: '0.75rem 1rem',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--accent-primary)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                    {selectedDot.title || selectedDot.name}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                    Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.round(selectedDot.avgScore || selectedDot.score || 0).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {selectedDot.difficulty && (
+                    <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
+                      {selectedDot.difficulty}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setSelectedDot(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

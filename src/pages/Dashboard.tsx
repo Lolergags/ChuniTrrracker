@@ -23,6 +23,7 @@ export function Dashboard() {
   const [scatterZoomX, setScatterZoomX] = useState<[number, number] | null>(null);
   const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
+  const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
   
   const filteredPlayers = useMemo(() => {
@@ -268,7 +269,6 @@ export function Dashboard() {
     const handleTouchStart = (e: TouchEvent) => {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
-        e.preventDefault();
         const t = e.touches[0];
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
@@ -305,8 +305,11 @@ export function Dashboard() {
     const handleTouchMove = (e: TouchEvent) => {
       const { defX, defY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
-        e.preventDefault();
         const t = e.touches[0];
+        const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
+        if (moveDist < 6) return;
+
+        e.preventDefault();
 
         if (elem.scrollWidth > elem.clientWidth && !scatterZoomXRef.current) {
           elem.scrollLeft = panRef.current.startScrollLeft - (t.clientX - panRef.current.startX);
@@ -823,12 +826,66 @@ export function Dashboard() {
                     lamp: s.lamp
                   }))} 
                   fill="var(--accent-primary)" 
-                  fillOpacity={0.6} 
+                  fillOpacity={0.6}
+                  onClick={(node: any) => {
+                    if (node && (node.payload || node.name)) {
+                      setSelectedDot(node.payload || node);
+                    }
+                  }} 
                 />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
         </div>
+
+        {selectedDot && (
+          <div style={{
+            marginTop: '0.75rem',
+            padding: '0.75rem 1rem',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--accent-primary)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                {selectedDot.name || selectedDot.title}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Score: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.score?.toLocaleString()}</strong> {selectedDot.opDisplay ? `| OP: ${selectedDot.opDisplay}` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {selectedDot.lamp && (
+                <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
+                  {selectedDot.lamp}
+                </span>
+              )}
+              <button
+                onClick={() => setSelectedDot(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.8rem'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <h2 className="text-gradient" style={{ marginTop: '3rem', marginBottom: '1rem' }}>All Plays (by OP)</h2>

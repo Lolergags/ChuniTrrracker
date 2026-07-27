@@ -2,7 +2,7 @@ export function clampDomainX(rawMinX: number, rawMaxX: number, defX: [number, nu
   let minX = rawMinX;
   let maxX = rawMaxX;
 
-  const minAllowedSpan = 0.2;
+  const minAllowedSpan = 0.02;
   if (maxX - minX < minAllowedSpan) {
     const mid = (minX + maxX) / 2;
     minX = mid - minAllowedSpan / 2;
@@ -17,14 +17,14 @@ export function clampDomainX(rawMinX: number, rawMaxX: number, defX: [number, nu
   minX = Math.max(defX[0], minX);
   maxX = Math.min(defX[1], maxX);
 
-  return [Number(minX.toFixed(1)), Number(maxX.toFixed(1))];
+  return [Number(minX.toFixed(2)), Number(maxX.toFixed(2))];
 }
 
 export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, number] = [975000, 1010000]): [number, number] {
   let minY = rawMinY;
   let maxY = rawMaxY;
 
-  const minAllowedSpan = 1000;
+  const minAllowedSpan = 100;
   if (maxY - minY < minAllowedSpan) {
     const mid = (minY + maxY) / 2;
     minY = mid - minAllowedSpan / 2;

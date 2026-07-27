@@ -433,8 +433,8 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     { min: 1000000, max: 1004999, label: '1000k (SS)', count: 0 },
     { min: 1005000, max: 1007499, label: '1005k (SS+)', count: 0 },
     { min: 1007500, max: 1008999, label: '1007.5k (SSS)', count: 0 },
-    { min: 1009000, max: 1009899, label: '1009k (SSS+)', count: 0 },
-    { min: 1009900, max: 1009999, label: '1009.9k (99AJ)', count: 0 },
+    { min: 1009000, max: 1009799, label: '1009k (SSS+)', count: 0 },
+    { min: 1009800, max: 1009999, label: '1009.8k (98AJ)', count: 0 },
     { min: 1010000, max: 1010000, label: '1010k (AJC)', count: 0 }
   ];
 

@@ -447,7 +447,7 @@ const SongAnalytics: React.FC = () => {
                 <div style={{ marginTop: '3rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score Distribution Bell Curve</h3>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                    Frequency of player scores across score buckets, with high granularity for SSS, SSS+, 99AJ (100.99k), and AJC thresholds.
+                    Frequency of player scores across score buckets, with high granularity for SSS, SSS+, 98AJ (100.98k), and AJC thresholds.
                   </p>
                   <div className="scrollable-content-wrapper">
                     <div className="chart-min-width-sm" style={{ height: '250px' }}>

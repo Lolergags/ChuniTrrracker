@@ -318,6 +318,7 @@ export function Dashboard() {
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
         const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
+        if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
         setScatterZoomX([newMinX, newMaxX]);
         setScatterZoomY([newMinY, newMaxY]);
       } else if (e.touches.length === 2) {
@@ -358,6 +359,8 @@ export function Dashboard() {
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
         const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
+
+        if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
 
         if (newMinX <= defX[0] && newMaxX >= defX[1]) {
           setScatterZoomX(null);

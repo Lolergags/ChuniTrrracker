@@ -36,8 +36,8 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
     return [defY[0], defY[1]];
   }
 
-  minY = Math.max(defY[0], minY);
-  maxY = Math.min(defY[1], maxY);
+  minY = Math.max(0, Math.max(defY[0], minY));
+  maxY = Math.min(1010000, Math.min(defY[1], maxY));
 
   return [Math.round(minY), Math.round(maxY)];
 }

@@ -153,8 +153,19 @@ export function Dashboard() {
 
     const getDomains = () => {
       const constants = uniqueScores.map(s => s.constant);
-      const defX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.5] : [1.0, 15.5];
-      const defY: [number, number] = [975000, 1010000];
+      const minConst = constants.length ? Math.min(...constants) : 1.0;
+      const maxConst = constants.length ? Math.max(...constants) : 15.4;
+
+      const defX: [number, number] = [
+        Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
+        Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
+      ];
+
+      const scores = uniqueScores.map(s => s.score);
+      const minScore = scores.length ? Math.min(...scores) : 975000;
+      const defYMin = minScore < 975000 ? Math.max(0, Math.floor(minScore / 5000) * 5000) : 975000;
+      const defY: [number, number] = [defYMin, 1010000];
+
       defaultXRef.current = defX;
       defaultYRef.current = defY;
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
-import { Search, ChevronRight, RotateCcw } from 'lucide-react';
+import { Search, ChevronRight, RotateCcw, User, UserX } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
@@ -477,33 +477,86 @@ export function Dashboard() {
 
   return (
     <div className="glass-panel">
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="text-gradient">Player Dashboard</h1>
-        <GlobalFilterBar />
-      </div>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Showing statistics for <strong style={{ color: 'var(--text-primary)' }}>{stats.username}</strong> based on {stats.scoreCount.toLocaleString()} logged scores.
-        </p>
-        <button
-          onClick={() => setActivePlayer(null)}
-          className="hover-card"
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: 'var(--text-secondary)',
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          Clear Selected User
-        </button>
+      {/* Dashboard Control Header */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+        marginBottom: '1.5rem',
+        paddingBottom: '1.25rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+      }}>
+        {/* Row 1: Dashboard Title & Player Selector */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="text-gradient" style={{ margin: 0 }}>Player Dashboard</h1>
+            <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+              Showing statistics for <strong style={{ color: 'var(--text-primary)' }}>{stats.username}</strong> ({stats.scoreCount.toLocaleString()} logged scores)
+            </p>
+          </div>
+
+          {/* Quick Player Dropdown Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              background: 'rgba(255, 255, 255, 0.05)', 
+              padding: '0.4rem 0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              border: '1px solid rgba(255, 255, 255, 0.1)' 
+            }}>
+              <User size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <select
+                value={activePlayer || ''}
+                onChange={(e) => {
+                  if (e.target.value) setActivePlayer(e.target.value);
+                }}
+                style={{
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  paddingRight: '0.5rem'
+                }}
+              >
+                {playersList.map(p => (
+                  <option key={p} value={p} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setActivePlayer(null)}
+              className="hover-card"
+              title="Clear selected player"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-secondary)',
+                padding: '0.45rem 0.85rem',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <UserX size={15} /> Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Global Filters Bar */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <GlobalFilterBar showRating={true} />
+        </div>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '2rem' }}>

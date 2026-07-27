@@ -10,6 +10,8 @@ import { ImportDataForm } from './components/ImportDataForm.js';
 import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
+import { Footer } from './components/Footer.js';
+
 const AppContent = () => {
   const { playersList, activePlayer, setActivePlayer, isAdmin } = useContext(GlobalContext);
   const [searchInput, setSearchInput] = useState('');
@@ -179,6 +181,7 @@ const AppContent = () => {
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
+      <Footer />
     </>
   );
 };

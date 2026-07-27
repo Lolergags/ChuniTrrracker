@@ -21,8 +21,6 @@ const PerformanceAnalysis: React.FC = () => {
   const [globalScatterZoomX, setGlobalScatterZoomX] = useState<[number, number] | null>(null);
   const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
-  const [panDomain, setPanDomain] = useState<{ x: [number, number]; y: [number, number] } | null>(null);
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
@@ -53,20 +51,59 @@ const PerformanceAnalysis: React.FC = () => {
     });
   }, [filters]);
 
+  const panRef = useRef<{
+    isDragging: boolean;
+    startX: number;
+    startY: number;
+    startDomainX: [number, number];
+    startDomainY: [number, number];
+    touchStartDist: number | null;
+    touchStartZoomX: [number, number] | null;
+    touchStartZoomY: [number, number] | null;
+    touchFocalX: number;
+    touchFocalY: number;
+  }>({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    startDomainX: [1.0, 15.4],
+    startDomainY: [975000, 1010000],
+    touchStartDist: null,
+    touchStartZoomX: null,
+    touchStartZoomY: null,
+    touchFocalX: 0,
+    touchFocalY: 0
+  });
+
+  const globalScatterZoomXRef = useRef(globalScatterZoomX);
+  globalScatterZoomXRef.current = globalScatterZoomX;
+
+  const globalScatterZoomYRef = useRef(globalScatterZoomY);
+  globalScatterZoomYRef.current = globalScatterZoomY;
+
+  const defaultXRef = useRef<[number, number]>([1.0, 15.4]);
+  const defaultYRef = useRef<[number, number]>([975000, 1010000]);
+
   useEffect(() => {
     const elem = globalScatterContainerRef.current;
     if (!elem) return;
 
-    const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
-    const constants = validMeta.map((d: any) => d.constant);
-    const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
-    const defaultY: [number, number] = [975000, 1010000];
+    const getDomains = () => {
+      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+      const constants = validMeta.map((d: any) => d.constant);
+      const defX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+      const defY: [number, number] = [975000, 1010000];
+      defaultXRef.current = defX;
+      defaultYRef.current = defY;
 
-    const currentX = globalScatterZoomX || defaultX;
-    const currentY = globalScatterZoomY || defaultY;
+      const curX = globalScatterZoomXRef.current || defX;
+      const curY = globalScatterZoomYRef.current || defY;
+      return { defX, defY, curX, curY };
+    };
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      const { defX, defY, curX, curY } = getDomains();
 
       const rect = elem.getBoundingClientRect();
       const plotLeft = rect.left + 85;
@@ -77,12 +114,12 @@ const PerformanceAnalysis: React.FC = () => {
       const xFrac = Math.max(0, Math.min(1, (e.clientX - plotLeft) / plotWidth));
       const yFrac = Math.max(0, Math.min(1, 1 - (e.clientY - plotTop) / plotHeight));
 
-      const focalX = currentX[0] + xFrac * (currentX[1] - currentX[0]);
-      const focalY = currentY[0] + yFrac * (currentY[1] - currentY[0]);
+      const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
+      const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
       const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-      const spanX = (currentX[1] - currentX[0]) * zoomFactor;
-      const spanY = (currentY[1] - currentY[0]) * zoomFactor;
+      const spanX = (curX[1] - curX[0]) * zoomFactor;
+      const spanY = (curY[1] - curY[0]) * zoomFactor;
 
       if (spanX < 0.2 && e.deltaY < 0) return;
       if (spanY < 1000 && e.deltaY < 0) return;
@@ -92,7 +129,7 @@ const PerformanceAnalysis: React.FC = () => {
       const newMinY = Math.max(0, Math.round(focalY - yFrac * spanY));
       const newMaxY = Math.min(1010000, Math.round(focalY + (1 - yFrac) * spanY));
 
-      if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
+      if (newMinX <= defX[0] && newMaxX >= defX[1] && newMinY <= defY[0] && newMaxY >= defY[1]) {
         setGlobalScatterZoomX(null);
         setGlobalScatterZoomY(null);
       } else {
@@ -101,20 +138,59 @@ const PerformanceAnalysis: React.FC = () => {
       }
     };
 
-    let touchStartDist: number | null = null;
-    let touchStartZoomX: [number, number] | null = null;
-    let touchStartZoomY: [number, number] | null = null;
-    let touchFocalX = 0;
-    let touchFocalY = 0;
-    let touchPanStart: { x: number; y: number } | null = null;
-    let touchPanDomain: { x: [number, number]; y: [number, number] } | null = null;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      const { curX, curY } = getDomains();
+      panRef.current.isDragging = true;
+      panRef.current.startX = e.clientX;
+      panRef.current.startY = e.clientY;
+      panRef.current.startDomainX = curX;
+      panRef.current.startDomainY = curY;
+      setIsPanDragging(true);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!panRef.current.isDragging) return;
+      e.preventDefault();
+
+      const rect = elem.getBoundingClientRect();
+      const plotWidth = Math.max(100, rect.width - 105);
+      const plotHeight = Math.max(100, rect.height - 60);
+
+      const deltaX = -((e.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
+      const deltaY = ((e.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
+
+      const newMinX = Number((panRef.current.startDomainX[0] + deltaX).toFixed(1));
+      const newMaxX = Number((panRef.current.startDomainX[1] + deltaX).toFixed(1));
+      const newMinY = Math.max(0, Math.round(panRef.current.startDomainY[0] + deltaY));
+      const newMaxY = Math.min(1010000, Math.round(panRef.current.startDomainY[1] + deltaY));
+
+      setGlobalScatterZoomX([newMinX, newMaxX]);
+      setGlobalScatterZoomY([newMinY, newMaxY]);
+    };
+
+    const handleMouseUp = () => {
+      if (panRef.current.isDragging) {
+        panRef.current.isDragging = false;
+        setIsPanDragging(false);
+      }
+    };
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
+      const { curX, curY } = getDomains();
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        panRef.current.isDragging = true;
+        panRef.current.startX = t.clientX;
+        panRef.current.startY = t.clientY;
+        panRef.current.startDomainX = curX;
+        panRef.current.startDomainY = curY;
+        setIsPanDragging(true);
+      } else if (e.touches.length === 2) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
-        touchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        panRef.current.touchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
         const midX = (t1.clientX + t2.clientX) / 2;
         const midY = (t1.clientY + t2.clientY) / 2;
@@ -128,28 +204,41 @@ const PerformanceAnalysis: React.FC = () => {
         const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
         const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
 
-        touchStartZoomX = currentX;
-        touchStartZoomY = currentY;
-        touchFocalX = currentX[0] + xFrac * (currentX[1] - currentX[0]);
-        touchFocalY = currentY[0] + yFrac * (currentY[1] - currentY[0]);
-      } else if (e.touches.length === 1) {
-        const t = e.touches[0];
-        touchPanStart = { x: t.clientX, y: t.clientY };
-        touchPanDomain = { x: currentX, y: currentY };
+        panRef.current.touchStartZoomX = curX;
+        panRef.current.touchStartZoomY = curY;
+        panRef.current.touchFocalX = curX[0] + xFrac * (curX[1] - curX[0]);
+        panRef.current.touchFocalY = curY[0] + yFrac * (curY[1] - curY[0]);
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && touchStartDist !== null && touchStartZoomX && touchStartZoomY) {
+      if (e.touches.length === 1 && panRef.current.isDragging) {
+        e.preventDefault();
+        const t = e.touches[0];
+        const rect = elem.getBoundingClientRect();
+        const plotWidth = Math.max(100, rect.width - 105);
+        const plotHeight = Math.max(100, rect.height - 60);
+
+        const deltaX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
+        const deltaY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
+
+        const newMinX = Number((panRef.current.startDomainX[0] + deltaX).toFixed(1));
+        const newMaxX = Number((panRef.current.startDomainX[1] + deltaX).toFixed(1));
+        const newMinY = Math.max(0, Math.round(panRef.current.startDomainY[0] + deltaY));
+        const newMaxY = Math.min(1010000, Math.round(panRef.current.startDomainY[1] + deltaY));
+
+        setGlobalScatterZoomX([newMinX, newMaxX]);
+        setGlobalScatterZoomY([newMinY, newMaxY]);
+      } else if (e.touches.length === 2 && panRef.current.touchStartDist !== null && panRef.current.touchStartZoomX && panRef.current.touchStartZoomY) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         if (currentDist === 0) return;
 
-        const scale = touchStartDist / currentDist;
-        const spanX = (touchStartZoomX[1] - touchStartZoomX[0]) * scale;
-        const spanY = (touchStartZoomY[1] - touchStartZoomY[0]) * scale;
+        const scale = panRef.current.touchStartDist / currentDist;
+        const spanX = (panRef.current.touchStartZoomX[1] - panRef.current.touchStartZoomX[0]) * scale;
+        const spanY = (panRef.current.touchStartZoomY[1] - panRef.current.touchStartZoomY[0]) * scale;
 
         const midX = (t1.clientX + t2.clientX) / 2;
         const midY = (t1.clientY + t2.clientY) / 2;
@@ -163,27 +252,10 @@ const PerformanceAnalysis: React.FC = () => {
         const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
         const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
 
-        const newMinX = Number((touchFocalX - xFrac * spanX).toFixed(1));
-        const newMaxX = Number((touchFocalX + (1 - xFrac) * spanX).toFixed(1));
-        const newMinY = Math.max(0, Math.round(touchFocalY - yFrac * spanY));
-        const newMaxY = Math.min(1010000, Math.round(touchFocalY + (1 - yFrac) * spanY));
-
-        setGlobalScatterZoomX([newMinX, newMaxX]);
-        setGlobalScatterZoomY([newMinY, newMaxY]);
-      } else if (e.touches.length === 1 && touchPanStart && touchPanDomain) {
-        e.preventDefault();
-        const t = e.touches[0];
-        const rect = elem.getBoundingClientRect();
-        const plotWidth = Math.max(100, rect.width - 105);
-        const plotHeight = Math.max(100, rect.height - 60);
-
-        const deltaX = -((t.clientX - touchPanStart.x) / plotWidth) * (touchPanDomain.x[1] - touchPanDomain.x[0]);
-        const deltaY = ((t.clientY - touchPanStart.y) / plotHeight) * (touchPanDomain.y[1] - touchPanDomain.y[0]);
-
-        const newMinX = Number((touchPanDomain.x[0] + deltaX).toFixed(1));
-        const newMaxX = Number((touchPanDomain.x[1] + deltaX).toFixed(1));
-        const newMinY = Math.max(0, Math.round(touchPanDomain.y[0] + deltaY));
-        const newMaxY = Math.min(1010000, Math.round(touchPanDomain.y[1] + deltaY));
+        const newMinX = Number((panRef.current.touchFocalX - xFrac * spanX).toFixed(1));
+        const newMaxX = Number((panRef.current.touchFocalX + (1 - xFrac) * spanX).toFixed(1));
+        const newMinY = Math.max(0, Math.round(panRef.current.touchFocalY - yFrac * spanY));
+        const newMaxY = Math.min(1010000, Math.round(panRef.current.touchFocalY + (1 - yFrac) * spanY));
 
         setGlobalScatterZoomX([newMinX, newMaxX]);
         setGlobalScatterZoomY([newMinY, newMaxY]);
@@ -192,17 +264,21 @@ const PerformanceAnalysis: React.FC = () => {
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length < 2) {
-        touchStartDist = null;
-        touchStartZoomX = null;
-        touchStartZoomY = null;
+        panRef.current.touchStartDist = null;
+        panRef.current.touchStartZoomX = null;
+        panRef.current.touchStartZoomY = null;
       }
       if (e.touches.length === 0) {
-        touchPanStart = null;
-        touchPanDomain = null;
+        panRef.current.isDragging = false;
+        setIsPanDragging(false);
       }
     };
 
     elem.addEventListener('wheel', handleWheel, { passive: false });
+    elem.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
     elem.addEventListener('touchstart', handleTouchStart, { passive: false });
     elem.addEventListener('touchmove', handleTouchMove, { passive: false });
     elem.addEventListener('touchend', handleTouchEnd);
@@ -210,12 +286,16 @@ const PerformanceAnalysis: React.FC = () => {
 
     return () => {
       elem.removeEventListener('wheel', handleWheel);
+      elem.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+
       elem.removeEventListener('touchstart', handleTouchStart);
       elem.removeEventListener('touchmove', handleTouchMove);
       elem.removeEventListener('touchend', handleTouchEnd);
       elem.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [globalScatterZoomX, globalScatterZoomY, metaData]);
+  }, [metaData]);
 
   const getConstantLabel = (constant: number) => {
     return constant.toFixed(1);
@@ -620,53 +700,15 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart 
                     margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                    onMouseDown={(e: any) => {
-                      if (e && e.chartX !== undefined && e.chartY !== undefined) {
-                        setIsPanDragging(true);
-                        setPanStart({ x: e.chartX, y: e.chartY });
-                        const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
-                        const constants = validMeta.map((d: any) => d.constant);
-                        const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
-                        const defaultY: [number, number] = [975000, 1010000];
-                        setPanDomain({ x: globalScatterZoomX || defaultX, y: globalScatterZoomY || defaultY });
-                      }
-                    }}
-                    onMouseMove={(e: any) => {
-                      if (isPanDragging && panStart && panDomain && e && e.chartX !== undefined && e.chartY !== undefined) {
-                        const elem = globalScatterContainerRef.current;
-                        if (!elem) return;
-                        const rect = elem.getBoundingClientRect();
-                        const plotWidth = Math.max(100, rect.width - 105);
-                        const plotHeight = Math.max(100, rect.height - 60);
-
-                        const deltaX = -((e.chartX - panStart.x) / plotWidth) * (panDomain.x[1] - panDomain.x[0]);
-                        const deltaY = ((e.chartY - panStart.y) / plotHeight) * (panDomain.y[1] - panDomain.y[0]);
-
-                        const newMinX = Number((panDomain.x[0] + deltaX).toFixed(1));
-                        const newMaxX = Number((panDomain.x[1] + deltaX).toFixed(1));
-                        const newMinY = Math.max(0, Math.round(panDomain.y[0] + deltaY));
-                        const newMaxY = Math.min(1010000, Math.round(panDomain.y[1] + deltaY));
-
-                        setGlobalScatterZoomX([newMinX, newMaxX]);
-                        setGlobalScatterZoomY([newMinY, newMaxY]);
-                      }
-                    }}
-                    onMouseUp={() => {
-                      setIsPanDragging(false);
-                      setPanStart(null);
-                      setPanDomain(null);
-                    }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis 
                       type="number" 
                       dataKey="constant" 
-                      name="Chart Constant" 
                       allowDataOverflow={true}
                       stroke="var(--text-secondary)"
                       tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
                       domain={globalScatterZoomX || ['dataMin', 'dataMax']}
-                      label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
                     />
                     <YAxis 
                       type="number" 

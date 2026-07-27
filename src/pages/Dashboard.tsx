@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useDeferredValue } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid, Brush } from 'recharts';
-import { Search, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Search, ChevronRight, RotateCcw } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
@@ -14,7 +14,6 @@ export function Dashboard() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const [scatterZoomX, setScatterZoomX] = useState<[number, number] | null>(null);
-  const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
   
   const filteredPlayers = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -316,7 +315,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ marginTop: '2rem', height: '530px', width: '100%', minWidth: 0 }}>
+      <div className="glass-panel" style={{ marginTop: '2rem', width: '100%', minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score vs Level Constant Scatter</h2>
@@ -324,56 +323,50 @@ export function Dashboard() {
               Individual played charts plotted by Level Constant and Score. Bubble size represents chart play count.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button
-              onClick={() => {
-                const constants = uniqueScores.map(s => s.constant);
-                const currentX = scatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
-                const currentY = scatterZoomY || [975000, 1010000];
-                const midX = (currentX[0] + currentX[1]) / 2;
-                const spanX = (currentX[1] - currentX[0]) * 0.35;
-                const midY = (currentY[0] + currentY[1]) / 2;
-                const spanY = (currentY[1] - currentY[0]) * 0.35;
-                setScatterZoomX([midX - spanX, midX + spanX]);
-                setScatterZoomY([midY - spanY, midY + spanY]);
-              }}
-              title="Zoom In"
-              style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
-            >
-              <ZoomIn size={14} /> Zoom In
-            </button>
-            <button
-              onClick={() => {
-                if (!scatterZoomX && !scatterZoomY) return;
-                const constants = uniqueScores.map(s => s.constant);
-                const currentX = scatterZoomX || [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2];
-                const currentY = scatterZoomY || [975000, 1010000];
-                const midX = (currentX[0] + currentX[1]) / 2;
-                const spanX = (currentX[1] - currentX[0]) * 0.7;
-                const midY = (currentY[0] + currentY[1]) / 2;
-                const spanY = (currentY[1] - currentY[0]) * 0.7;
-                setScatterZoomX([Math.max(1, midX - spanX), midX + spanX]);
-                setScatterZoomY([Math.max(900000, midY - spanY), Math.min(1010000, midY + spanY)]);
-              }}
-              title="Zoom Out"
-              style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
-            >
-              <ZoomOut size={14} /> Zoom Out
-            </button>
-            {(scatterZoomX || scatterZoomY) && (
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.2rem' }}>Filter Level:</span>
+            {[
+              { label: 'All', range: null },
+              { label: '1-12+', range: [1.0, 12.9] },
+              { label: '13-13+', range: [13.0, 13.9] },
+              { label: '14-14+', range: [14.0, 14.9] },
+              { label: '15+', range: [15.0, 15.4] }
+            ].map(preset => {
+              const isActive = preset.range === null ? !scatterZoomX : (scatterZoomX && scatterZoomX[0] === preset.range[0] && scatterZoomX[1] === preset.range[1]);
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => setScatterZoomX(preset.range as [number, number] | null)}
+                  style={{
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '4px',
+                    background: isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)',
+                    border: '1px solid ' + (isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.15)'),
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: isActive ? 'bold' : 'normal',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+            {scatterZoomX && (
               <button
-                onClick={() => { setScatterZoomX(null); setScatterZoomY(null); }}
+                onClick={() => setScatterZoomX(null)}
                 title="Reset Zoom"
-                style={{ padding: '0.35rem 0.65rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold' }}
+                style={{ padding: '0.3rem 0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem' }}
               >
-                <RotateCcw size={14} /> Reset
+                <RotateCcw size={13} /> Reset
               </button>
             )}
           </div>
         </div>
 
-        <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 80px)' }}>
-          <div className="chart-min-width-md">
+        <div className="scrollable-content-wrapper" style={{ overflowY: 'hidden' }}>
+          <div className="chart-min-width-md" style={{ height: '430px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -390,7 +383,7 @@ export function Dashboard() {
                   type="number" 
                   dataKey="score" 
                   name="Score" 
-                  domain={scatterZoomY || [(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
+                  domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
                   ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                   stroke="var(--text-secondary)"
                   tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}

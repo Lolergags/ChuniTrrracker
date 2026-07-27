@@ -399,7 +399,7 @@ export function Dashboard() {
                   }}
                   width={85}
                 />
-                <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[30, 400]} name="Play Count" />
+                <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
                 <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                 <Scatter 
                   name="Scores" 

@@ -4,6 +4,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import { api } from '../lib/api/client.js';
 import type { ApiSong, ChartLeaderboardResponse } from '../lib/types/index.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
+import { ALL_VERSIONS } from '../lib/constants.js';
 
 const SongAnalytics: React.FC = () => {
   const [songs, setSongs] = useState<ApiSong[]>([]);
@@ -243,27 +244,9 @@ const SongAnalytics: React.FC = () => {
             >
 
               <option value="ALL">All Versions</option>
-              <option value="X-VERSE-X">X-VERSE-X</option>
-              <option value="X-VERSE">X-VERSE</option>
-              <option value="VERSE">VERSE</option>
-              <option value="LUMINOUS PLUS">LUMINOUS PLUS</option>
-              <option value="LUMINOUS">LUMINOUS</option>
-              <option value="SUN PLUS">SUN PLUS</option>
-              <option value="SUN">SUN</option>
-              <option value="NEW PLUS">NEW PLUS</option>
-              <option value="NEW">NEW</option>
-              <option value="PARADISE LOST">PARADISE LOST</option>
-              <option value="PARADISE">PARADISE</option>
-              <option value="CRYSTAL PLUS">CRYSTAL PLUS</option>
-              <option value="CRYSTAL">CRYSTAL</option>
-              <option value="AMAZON PLUS">AMAZON PLUS</option>
-              <option value="AMAZON">AMAZON</option>
-              <option value="STAR PLUS">STAR PLUS</option>
-              <option value="STAR">STAR</option>
-              <option value="AIR PLUS">AIR PLUS</option>
-              <option value="AIR">AIR</option>
-              <option value="CHUNITHM PLUS">CHUNITHM PLUS</option>
-              <option value="CHUNITHM">CHUNITHM</option>
+              {ALL_VERSIONS.map(v => (
+                <option key={v} value={v}>{v}</option>
+              ))}
             </select>
 
             <button 

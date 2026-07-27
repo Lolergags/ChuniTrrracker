@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import type { ApiPlayer } from '../lib/types/index.js';
+import { ALL_VERSIONS } from '../lib/constants.js';
 
 const Leaderboard: React.FC = () => {
   const { setActivePlayer, filters, setFilters } = useContext(GlobalContext);
@@ -61,30 +62,6 @@ const Leaderboard: React.FC = () => {
     navigate('/dashboard');
   };
 
-  const VERSIONS = [
-    'X-VERSE-X',
-    'X-VERSE',
-    'VERSE',
-    'LUMINOUS PLUS',
-    'LUMINOUS',
-    'SUN PLUS',
-    'SUN',
-    'NEW PLUS',
-    'NEW',
-    'PARADISE LOST',
-    'PARADISE',
-    'CRYSTAL PLUS',
-    'CRYSTAL',
-    'AMAZON PLUS',
-    'AMAZON',
-    'STAR PLUS',
-    'STAR',
-    'AIR PLUS',
-    'AIR',
-    'CHUNITHM PLUS',
-    'CHUNITHM'
-  ];
-
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Global Leaderboard</h1>
@@ -113,7 +90,7 @@ const Leaderboard: React.FC = () => {
             onChange={e => setVersion(e.target.value)}
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
           >
-            {VERSIONS.map(v => (
+            {ALL_VERSIONS.map(v => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>

@@ -220,6 +220,8 @@ export function GlobalStats() {
         setIsPanDragging(true);
       } else if (e.touches.length === 2) {
         e.preventDefault();
+        panRef.current.isDragging = false;
+        setIsPanDragging(false);
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         panRef.current.lastTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -313,8 +315,6 @@ export function GlobalStats() {
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length < 2) {
         panRef.current.lastTouchDist = null;
-      }
-      if (e.touches.length === 0) {
         panRef.current.isDragging = false;
         setIsPanDragging(false);
       }

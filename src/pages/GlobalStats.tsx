@@ -6,7 +6,7 @@ import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, Api
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
-import { clampDomainX, clampDomainY, getSmartYTicks } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -206,16 +206,20 @@ export function GlobalStats() {
       const deltaX = -((e.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
       const deltaY = ((e.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-      const rawMinX = panRef.current.startDomainX[0] + deltaX;
-      const rawMaxX = panRef.current.startDomainX[1] + deltaX;
-      const rawMinY = panRef.current.startDomainY[0] + deltaY;
-      const rawMaxY = panRef.current.startDomainY[1] + deltaY;
+      const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, deltaX, defX, true);
+      const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
 
-      const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
+      if (newMinX <= defX[0] && newMaxX >= defX[1]) {
+        setGlobalScatterZoomX(null);
+      } else {
+        setGlobalScatterZoomX([newMinX, newMaxX]);
+      }
 
-      setGlobalScatterZoomX([newMinX, newMaxX]);
-      setGlobalScatterZoomY([newMinY, newMaxY]);
+      if (newMinY <= defY[0] && newMaxY >= defY[1]) {
+        setGlobalScatterZoomY(null);
+      } else {
+        setGlobalScatterZoomY([newMinY, newMaxY]);
+      }
     };
 
     const handleMouseUp = () => {
@@ -267,17 +271,21 @@ export function GlobalStats() {
         const deltaX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
         const deltaY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-        const rawMinX = panRef.current.startDomainX[0] + deltaX;
-        const rawMaxX = panRef.current.startDomainX[1] + deltaX;
-        const rawMinY = panRef.current.startDomainY[0] + deltaY;
-        const rawMaxY = panRef.current.startDomainY[1] + deltaY;
-
-        const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
+        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, deltaX, defX, true);
+        const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
 
         if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
-        setGlobalScatterZoomX([newMinX, newMaxX]);
-        setGlobalScatterZoomY([newMinY, newMaxY]);
+        if (newMinX <= defX[0] && newMaxX >= defX[1]) {
+          setGlobalScatterZoomX(null);
+        } else {
+          setGlobalScatterZoomX([newMinX, newMaxX]);
+        }
+
+        if (newMinY <= defY[0] && newMaxY >= defY[1]) {
+          setGlobalScatterZoomY(null);
+        } else {
+          setGlobalScatterZoomY([newMinY, newMaxY]);
+        }
       } else if (e.touches.length === 2) {
         e.preventDefault();
         const t1 = e.touches[0];

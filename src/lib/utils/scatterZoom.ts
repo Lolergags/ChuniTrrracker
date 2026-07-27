@@ -42,6 +42,30 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
   return [Math.round(minY), Math.round(maxY)];
 }
 
+export function panDomain(
+  startDomain: [number, number],
+  rawDelta: number,
+  defDomain: [number, number],
+  isFloat = false
+): [number, number] {
+  const minAllowedDelta = defDomain[0] - startDomain[0];
+  const maxAllowedDelta = defDomain[1] - startDomain[1];
+  const clampedDelta = Math.max(minAllowedDelta, Math.min(maxAllowedDelta, rawDelta));
+
+  let minVal = startDomain[0] + clampedDelta;
+  let maxVal = startDomain[1] + clampedDelta;
+
+  if (isFloat) {
+    minVal = Number(minVal.toFixed(2));
+    maxVal = Number(maxVal.toFixed(2));
+  } else {
+    minVal = Math.round(minVal);
+    maxVal = Math.round(maxVal);
+  }
+
+  return [minVal, maxVal];
+}
+
 export function getSmartYTicks(yMin: number, yMax: number, defaultYMin: number = 975000): number[] {
   if (yMin <= defaultYMin && yMax >= 1010000) {
     const rawTicks = [

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY, getSmartYTicks } from './scatterZoom';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -63,6 +63,31 @@ describe('scatterZoom utilities', () => {
       expect(ticks.length).toBeGreaterThan(0);
       expect(ticks.every(t => t % 500 === 0)).toBe(true);
       expect(new Set(ticks).size).toBe(ticks.length);
+    });
+  });
+
+  describe('panDomain', () => {
+    const defX: [number, number] = [1.0, 15.5];
+
+    it('should preserve span when panning within bounds', () => {
+      const [minX, maxX] = panDomain([3.0, 7.0], 2.0, defX, true);
+      expect(minX).toBe(5.0);
+      expect(maxX).toBe(9.0);
+      expect(maxX - minX).toBeCloseTo(4.0);
+    });
+
+    it('should clamp delta when panning against lower boundary without altering span', () => {
+      const [minX, maxX] = panDomain([3.0, 7.0], -10.0, defX, true);
+      expect(minX).toBe(1.0);
+      expect(maxX).toBe(5.0);
+      expect(maxX - minX).toBeCloseTo(4.0);
+    });
+
+    it('should prevent panning or zooming when unzoomed at default boundary', () => {
+      const [minX, maxX] = panDomain([1.0, 15.5], 5.0, defX, true);
+      expect(minX).toBe(1.0);
+      expect(maxX).toBe(15.5);
+      expect(maxX - minX).toBeCloseTo(14.5);
     });
   });
 });

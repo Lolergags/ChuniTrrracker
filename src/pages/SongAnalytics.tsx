@@ -428,8 +428,8 @@ const SongAnalytics: React.FC = () => {
                     <div className="chart-min-width-sm" style={{ height: '250px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 12, dy: 6 }} />
-                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                          <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                             itemStyle={{ color: 'var(--text-primary)' }}
@@ -453,8 +453,8 @@ const SongAnalytics: React.FC = () => {
                     <div className="chart-min-width-sm" style={{ height: '250px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 12, dy: 6 }} />
-                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 12 }} />
+                          <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                             itemStyle={{ color: 'var(--text-primary)' }}

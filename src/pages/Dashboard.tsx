@@ -282,9 +282,9 @@ export function Dashboard() {
                   angle={-45}
                   textAnchor="end"
                   height={60}
-                  tick={{ fontSize: 12, dy: 6 }}
+                  tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }}
                 />
-                <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
+                <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
                 <Tooltip content={<LampTooltip />} />
                 <Legend content={(props: any) => {
                   const { payload } = props;
@@ -376,7 +376,7 @@ export function Dashboard() {
                   name="Level Constant" 
                   domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
-                  tick={{ dy: 6 }}
+                  tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => val.toFixed(1)}
                 />
                 <YAxis 

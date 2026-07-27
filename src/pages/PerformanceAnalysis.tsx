@@ -227,8 +227,8 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={survivalData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constant" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
-                    <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
+                    <XAxis dataKey="constant" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} />
+                    <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(val) => `${val}%`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                       itemStyle={{ color: 'var(--text-primary)' }}
@@ -255,8 +255,8 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} stackOffset="expand">
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
-                    <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} />
+                    <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(val) => `${Math.round(val * 100)}%`} />
                     <Tooltip content={<LampTooltip />} /><Legend content={(props: any) => {
                       const { payload } = props;
                       const order = ['All Justice Critical', 'All Justice', 'Full Combo', 'Clear', 'Failed'];
@@ -294,8 +294,8 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
-                    <YAxis stroke="var(--text-secondary)" domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} />
+                    <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                       itemStyle={{ color: 'var(--text-primary)' }}
@@ -319,8 +319,8 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6, fontSize: 11 }} interval={19} />
-                    <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
+                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }} interval={19} />
+                    <YAxis stroke="var(--text-secondary)" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} allowDecimals={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                       itemStyle={{ color: 'var(--text-primary)' }}
@@ -393,7 +393,7 @@ const PerformanceAnalysis: React.FC = () => {
                       dataKey="constant" 
                       name="Chart Constant" 
                       stroke="var(--text-secondary)"
-                      tick={{ dy: 6 }}
+                      tick={{ fontSize: 11, dy: 6, fill: 'var(--text-secondary)' }}
                       domain={globalScatterZoomX || ['dataMin', 'dataMax']}
                       label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
                     />

@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { DualSlider } from './DualSlider.js';
 import { ALL_VERSIONS } from '../lib/constants.js';
 
 export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }) {
   const { filters, setFilters } = useGlobal();
+  const previousVersionRef = useRef<string | null>(null);
 
   const PL_OFFLINE_INDEX = ALL_VERSIONS.indexOf('PARADISE LOST');
   const availableVersions = filters.server === 'PL_OFFLINE'
@@ -15,13 +17,22 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
       const plIndex = ALL_VERSIONS.indexOf('PARADISE LOST');
       const plVersions = ALL_VERSIONS.slice(plIndex);
       const isCurrentVersionValid = (plVersions as readonly string[]).includes(filters.version);
+      if (!isCurrentVersionValid) {
+        previousVersionRef.current = filters.version;
+      }
       setFilters({
         ...filters,
         server: newServer,
         version: isCurrentVersionValid ? filters.version : 'PARADISE LOST'
       });
     } else {
-      setFilters({ ...filters, server: newServer });
+      const restoredVersion = previousVersionRef.current;
+      previousVersionRef.current = null;
+      setFilters({
+        ...filters,
+        server: newServer,
+        version: (restoredVersion && filters.server === 'PL_OFFLINE') ? restoredVersion : filters.version
+      });
     }
   };
 

@@ -155,5 +155,45 @@ describe('Chart Query Logic & Ghost Chart Exclusions', () => {
     expect(chartsPl.some(c => c.id === 2001)).toBe(true);
     expect(chartsPl.some(c => c.id === 2002)).toBe(false);
   });
+
+  it('should correctly calculate userRank and userPage for chart leaderboards', () => {
+    db.exec(`
+      CREATE TABLE players (id INTEGER PRIMARY KEY, username TEXT NOT NULL);
+      CREATE TABLE scores (id INTEGER PRIMARY KEY, player_id INTEGER, chart_id INTEGER, score INTEGER, lamp TEXT, op INTEGER, time_achieved INTEGER);
+    `);
+
+    db.prepare('INSERT INTO players (id, username) VALUES (?, ?)').run(1, 'Alice');
+    db.prepare('INSERT INTO players (id, username) VALUES (?, ?)').run(2, 'Bob');
+    db.prepare('INSERT INTO players (id, username) VALUES (?, ?)').run(3, 'Charlie');
+
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved) VALUES (?, 1, 1009000, 'AJ', 10000, 100)").run(1);
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved) VALUES (?, 1, 1007500, 'FC', 9000, 200)").run(2);
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved) VALUES (?, 1, 1000000, 'Clear', 8000, 300)").run(3);
+
+    const allScores = db.prepare(`
+      SELECT p.username, s.score
+      FROM scores s
+      JOIN players p ON s.player_id = p.id
+      WHERE s.chart_id = 1
+      ORDER BY s.score DESC, s.time_achieved ASC
+    `).all() as { username: string; score: number }[];
+
+    const limit = 2; // 2 rows per page
+    const bobIndex = allScores.findIndex(r => r.username === 'Bob');
+    expect(bobIndex).toBe(1); // 2nd place (0-indexed 1)
+    const bobRank = bobIndex + 1; // #2
+    const bobPage = Math.floor(bobIndex / limit) + 1; // Page 1 (limit 2)
+
+    expect(bobRank).toBe(2);
+    expect(bobPage).toBe(1);
+
+    const charlieIndex = allScores.findIndex(r => r.username === 'Charlie');
+    expect(charlieIndex).toBe(2); // 3rd place (0-indexed 2)
+    const charlieRank = charlieIndex + 1; // #3
+    const charliePage = Math.floor(charlieIndex / limit) + 1; // Page 2 (limit 2)
+
+    expect(charlieRank).toBe(3);
+    expect(charliePage).toBe(2);
+  });
 });
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo, useContext, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api/client.js';
 import type { ApiSong, ChartLeaderboardResponse } from '../lib/types/index.js';
@@ -7,6 +7,11 @@ import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { ALL_VERSIONS } from '../lib/constants.js';
 
 const SongAnalytics: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const urlSongId = searchParams.get('songId');
+  const urlDiff = searchParams.get('diff');
+  const urlPlayer = searchParams.get('player');
+
   const [songs, setSongs] = useState<ApiSong[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
@@ -18,6 +23,8 @@ const SongAnalytics: React.FC = () => {
   const [serverFilter, setServerFilter] = useState<string>('JP');
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
+
+  const initialPlayerRef = useRef<string | null>(urlPlayer);
 
   useEffect(() => {
     setChartPage(1);
@@ -45,6 +52,17 @@ const SongAnalytics: React.FC = () => {
       .catch(err => console.error(err));
   }, []);
 
+  // Sync searchParams to selectedSongId
+  useEffect(() => {
+    if (urlSongId && urlDiff) {
+      const target = `${urlSongId}-${urlDiff}`;
+      setSelectedSongId(target);
+      if (urlPlayer) {
+        initialPlayerRef.current = urlPlayer;
+      }
+    }
+  }, [urlSongId, urlDiff, urlPlayer]);
+
   // Reset page when chart changes
   useEffect(() => {
     setPage(1);
@@ -60,12 +78,17 @@ const SongAnalytics: React.FC = () => {
     }
     const [songId, difficulty] = selectedSongId.split('-');
     setIsLoadingBoard(true);
-    api.getChartLeaderboard(Number(songId), difficulty, page, 10)
+    const targetPlayer = initialPlayerRef.current;
+    api.getChartLeaderboard(Number(songId), difficulty, page, 10, targetPlayer || undefined)
       .then(response => {
         setLeaderboard(response.data);
         setTotalPages(response.totalPages || 1);
         setGradeDistribution(response.gradeDistribution);
         setNormalDistribution(response.normalDistribution);
+        if (targetPlayer && response.userPage && page === 1) {
+          setPage(response.userPage);
+          initialPlayerRef.current = null;
+        }
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoadingBoard(false));
@@ -356,22 +379,36 @@ const SongAnalytics: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((row, idx) => (
-                        <tr 
-                          key={row.username} 
-                          onClick={() => handleRowClick(row.username)}
-                          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
-                          <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
-                          <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
-                          <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
-                          <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
-                          <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
-                        </tr>
-                      ))}
+                      {leaderboard.map((row, idx) => {
+                        const isHighlighted = !!(urlPlayer && row.username.toLowerCase() === urlPlayer.toLowerCase());
+                        return (
+                          <tr 
+                            key={row.username} 
+                            onClick={() => handleRowClick(row.username)}
+                            style={{ 
+                              borderBottom: '1px solid rgba(255,255,255,0.05)', 
+                              transition: 'background 0.2s', 
+                              cursor: 'pointer',
+                              background: isHighlighted ? 'rgba(255, 102, 255, 0.15)' : 'transparent',
+                              boxShadow: isHighlighted ? 'inset 4px 0 0 var(--accent-primary)' : 'none'
+                            }}
+                            onMouseEnter={(e) => { if (!isHighlighted) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }} 
+                            onMouseLeave={(e) => { if (!isHighlighted) e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
+                            <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {row.username}
+                              {isHighlighted && (
+                                <span className="badge badge-aj" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>You</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
+                            <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
+                            <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
+                            <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

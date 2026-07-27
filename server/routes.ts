@@ -385,16 +385,30 @@ router.get('/songs', (req, res) => {
 router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   const { songId, difficulty } = req.params;
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 50;
+  const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
+  const playerQuery = (req.query.player as string) || (req.query.username as string);
 
-  // Fetch all scores for calculating accurate distributions
+  // Fetch all scores for calculating accurate distributions and player rank
   const allScoresQuery = db.prepare(`
-    SELECT s.score
+    SELECT p.username, s.score
     FROM scores s
+    JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-  `).all(songId, difficulty) as { score: number }[];
+    ORDER BY s.score DESC, s.time_achieved ASC
+  `).all(songId, difficulty) as { username: string; score: number }[];
+
+  let userRank: number | null = null;
+  let userPage: number | null = null;
+
+  if (playerQuery) {
+    const userIndex = allScoresQuery.findIndex(row => row.username.toLowerCase() === playerQuery.toLowerCase());
+    if (userIndex !== -1) {
+      userRank = userIndex + 1;
+      userPage = Math.floor(userIndex / limit) + 1;
+    }
+  }
 
   const leaderboard = db.prepare(`
     SELECT p.username, s.score, s.lamp, s.op, s.time_achieved as timeAchieved,
@@ -465,7 +479,9 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     limit,
     totalPages: Math.ceil(allScoresQuery.length / limit),
     gradeDistribution,
-    normalDistribution
+    normalDistribution,
+    userRank,
+    userPage
   });
 });
 

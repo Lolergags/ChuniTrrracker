@@ -65,8 +65,12 @@ export const api = {
     return res.json();
   },
 
-  getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 10): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
-    const res = await fetch(`${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard?page=${page}&limit=${limit}`);
+  getChartLeaderboard: async (songId: number, difficulty: string, page = 1, limit = 10, player?: string): Promise<import('../types/index.js').ChartLeaderboardResponse> => {
+    let url = `${API_BASE}/songs/${songId}/charts/${difficulty}/leaderboard?page=${page}&limit=${limit}`;
+    if (player) {
+      url += `&player=${encodeURIComponent(player)}`;
+    }
+    const res = await fetch(url);
     return res.json();
   },
 

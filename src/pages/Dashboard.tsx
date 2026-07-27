@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { Search, ChevronRight, RotateCcw, UserX } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
@@ -10,6 +11,7 @@ import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -826,7 +828,9 @@ export function Dashboard() {
                     constant: s.constant,
                     opDisplay: Number((s.op / 10000).toFixed(2)),
                     playCount: s.playCount || 1,
-                    lamp: s.lamp
+                    lamp: s.lamp,
+                    songId: s.songId,
+                    difficulty: s.difficulty
                   }))} 
                   fill="var(--accent-primary)" 
                   fillOpacity={0.6}
@@ -867,6 +871,26 @@ export function Dashboard() {
                 <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
                   {selectedDot.lamp}
                 </span>
+              )}
+              {selectedDot.songId && selectedDot.difficulty && (
+                <button
+                  onClick={() => navigate(`/analytics?songId=${selectedDot.songId}&diff=${selectedDot.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  View Leaderboard ➔
+                </button>
               )}
               <button
                 onClick={() => setSelectedDot(null)}
@@ -915,7 +939,14 @@ export function Dashboard() {
           </thead>
           <tbody>
             {sortedScores.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((score, idx) => (
-              <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
+              <tr 
+                key={idx} 
+                onClick={() => navigate(`/analytics?songId=${score.songId}&diff=${score.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                title="Click to view on Song Leaderboard"
+              >
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
                   <span style={{ 

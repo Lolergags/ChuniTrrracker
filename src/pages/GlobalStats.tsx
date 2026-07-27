@@ -768,7 +768,7 @@ export function GlobalStats() {
                   >
                     <defs>
                       <clipPath id="custom-scatter-clip">
-                        <rect x="105" y="-500" width="10000" height="875" />
+                        <rect x="75" y="-500" width="10000" height="875" />
                       </clipPath>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -790,16 +790,11 @@ export function GlobalStats() {
                       stroke="var(--text-secondary)" 
                       tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
                       tickFormatter={(val) => {
-                        if (val === 1010000) return '1010k (AJC)';
-                        if (val === 1009000) return '1009k (SSS+)';
-                        if (val === 1007500) return '1007.5k (SSS)';
-                        if (val === 1005000) return '1005k (SS+)';
-                        if (val === 1000000) return '1000k (SS)';
-                        if (val === 990000) return '990k (S+)';
-                        if (val === 975000) return '975k (S)';
-                        return (val / 1000).toFixed(0) + 'k';
+                        if (typeof val !== 'number') return val;
+                        if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
+                        return (val / 1000).toFixed(1) + 'k';
                       }}
-                      width={85}
+                      width={55}
                     />
                     <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                     <Tooltip content={<CustomTooltip />} />

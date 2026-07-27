@@ -396,12 +396,7 @@ const SongAnalytics: React.FC = () => {
                             onMouseLeave={(e) => { if (!isHighlighted) e.currentTarget.style.background = 'transparent'; }}
                           >
                             <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
-                            <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              {row.username}
-                              {isHighlighted && (
-                                <span className="badge badge-aj" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>You</span>
-                              )}
-                            </td>
+                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
                             <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
                             <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
                             <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>

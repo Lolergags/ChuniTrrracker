@@ -203,7 +203,7 @@ const SongAnalytics: React.FC = () => {
             <select 
               value={serverFilter}
               onChange={e => setServerFilter(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none' }}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none' }}
             >
               <option value="JP">Japan (JP)</option>
               <option value="INT">International (Intl)</option>
@@ -215,22 +215,24 @@ const SongAnalytics: React.FC = () => {
               placeholder="Min CC"
               value={minConst}
               onChange={e => setMinConst(e.target.value)}
-              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none' }}
+              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none' }}
               step="0.1"
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
             />
             <input 
               type="number"
               placeholder="Max CC"
               value={maxConst}
               onChange={e => setMaxConst(e.target.value)}
-              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none' }}
+              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none' }}
               step="0.1"
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
             />
 
             <select 
               value={sortType}
               onChange={(e) => setSortType(e.target.value as 'title' | 'constant' | 'notes')}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', cursor: 'pointer' }}
             >
               <option value="constant">Sort: Constant</option>
               <option value="title">Sort: Name</option>
@@ -240,9 +242,8 @@ const SongAnalytics: React.FC = () => {
             <select 
               value={versionFilter}
               onChange={(e) => setVersionFilter(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', cursor: 'pointer' }}
             >
-
               <option value="ALL">All Versions</option>
               {ALL_VERSIONS.map(v => (
                 <option key={v} value={v}>{v}</option>
@@ -251,7 +252,7 @@ const SongAnalytics: React.FC = () => {
 
             <button 
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'background 0.2s' }}
+              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'background 0.2s' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
             >

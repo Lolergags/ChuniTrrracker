@@ -106,19 +106,20 @@ const PerformanceAnalysis: React.FC = () => {
   }, [opYieldData]);
 
   const opDistribution = useMemo(() => {
-    const BUCKET_SIZE = 5;
+    const PERCENT_BUCKET_SIZE = 0.5;
     const buckets: Record<string, number> = {};
 
-    for (let b = 0; b < 100; b += BUCKET_SIZE) {
-      const label = `${b}-${b + BUCKET_SIZE}%`;
-      buckets[label] = 0;
+    for (let i = 0; i <= 200; i++) {
+      const val = (i * PERCENT_BUCKET_SIZE).toFixed(1);
+      buckets[`${val}%`] = 0;
     }
 
     playerOpData.forEach(p => {
-      const percent = Math.min(99.9, Math.max(0, p.opPercent || 0));
-      const b = Math.floor(percent / BUCKET_SIZE) * BUCKET_SIZE;
-      const label = `${b}-${b + BUCKET_SIZE}%`;
-      buckets[label] = (buckets[label] || 0) + 1;
+      const percent = Math.min(100, Math.max(0, p.opPercent || 0));
+      const bucketIndex = Math.min(200, Math.floor(percent / PERCENT_BUCKET_SIZE));
+      const b = (bucketIndex * PERCENT_BUCKET_SIZE).toFixed(1);
+      const key = `${b}%`;
+      buckets[key] = (buckets[key] || 0) + 1;
     });
 
     return Object.entries(buckets).map(([bucket, count]) => ({
@@ -318,7 +319,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6, fontSize: 11 }} interval={1} />
+                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6, fontSize: 11 }} interval={19} />
                     <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}

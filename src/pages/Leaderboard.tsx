@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
@@ -9,6 +9,7 @@ const Leaderboard: React.FC = () => {
   const { setActivePlayer, filters, setFilters } = useContext(GlobalContext);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const previousVersionRef = useRef<string | null>(null);
   
   // The URL takes precedence. If no URL, fallback to GlobalContext, else defaults.
   const page = parseInt(searchParams.get('page') || '1', 10);
@@ -17,6 +18,10 @@ const Leaderboard: React.FC = () => {
   const getContextServer = () => ctxServerMap[filters.server] || 'jp';
   const server = searchParams.get('server') || getContextServer();
   const version = searchParams.get('version') || filters.version || 'X-VERSE-X';
+
+  const isPlOffline = server === 'pl_offline';
+  const plIndex = ALL_VERSIONS.indexOf('PARADISE LOST');
+  const versionOptions = isPlOffline && plIndex !== -1 ? ALL_VERSIONS.slice(plIndex) : ALL_VERSIONS;
 
   // Sync to GlobalContext whenever server or version changes
   useEffect(() => {
@@ -34,7 +39,22 @@ const Leaderboard: React.FC = () => {
   };
   
   const setServer = (s: string) => {
-    setSearchParams(prev => { prev.set('server', s); prev.set('page', '1'); return prev; });
+    setSearchParams(prev => {
+      prev.set('server', s);
+      prev.set('page', '1');
+      if (s === 'pl_offline') {
+        const activeVer = prev.get('version') || filters.version || 'X-VERSE-X';
+        const activeIdx = ALL_VERSIONS.indexOf(activeVer as any);
+        if (activeIdx !== -1 && activeIdx < plIndex) {
+          previousVersionRef.current = activeVer;
+          prev.set('version', 'PARADISE LOST');
+        }
+      } else if (previousVersionRef.current) {
+        prev.set('version', previousVersionRef.current);
+        previousVersionRef.current = null;
+      }
+      return prev;
+    });
   };
   
   const setVersion = (v: string) => {
@@ -91,7 +111,7 @@ const Leaderboard: React.FC = () => {
             onChange={e => setVersion(e.target.value)}
             style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
           >
-            {ALL_VERSIONS.map(v => (
+            {versionOptions.map(v => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>

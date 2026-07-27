@@ -1,11 +1,11 @@
 import React, { useContext, useState, useDeferredValue, useMemo, useEffect } from 'react';
-import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
 import SongAnalytics from './pages/SongAnalytics.js';
-import PerformanceAnalysis from './pages/PerformanceAnalysis.js';
+import GlobalStats from './pages/GlobalStats.js';
 import { ImportDataForm } from './components/ImportDataForm.js';
 import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
@@ -24,7 +24,8 @@ const AppContent = () => {
       '/dashboard': activePlayer ? `${activePlayer} - Dashboard | ChuniTrrracker` : 'Player Dashboard | ChuniTrrracker',
       '/leaderboard': 'Global Leaderboard | ChuniTrrracker',
       '/analytics': 'Song Analytics & Leaderboards | ChuniTrrracker',
-      '/performance': 'Server Meta & Skill Analytics | ChuniTrrracker',
+      '/global-stats': 'Global Stats | ChuniTrrracker',
+      '/performance': 'Global Stats | ChuniTrrracker',
       '/import': 'Import Kamaitachi Data | ChuniTrrracker',
       '/admin': 'Admin & System Automation | ChuniTrrracker'
     };
@@ -93,8 +94,8 @@ const AppContent = () => {
           <NavLink to="/analytics" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><BarChart2 size={18} /> Song Leaderboards</span>
           </NavLink>
-          <NavLink to="/performance" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Activity size={18} /> Performance</span>
+          <NavLink to="/global-stats" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Activity size={18} /> Global Stats</span>
           </NavLink>
           <NavLink to="/import" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><DownloadCloud size={18} /> Import Data</span>
@@ -172,7 +173,8 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/analytics" element={<SongAnalytics />} />
-          <Route path="/performance" element={<PerformanceAnalysis />} />
+          <Route path="/global-stats" element={<GlobalStats />} />
+          <Route path="/performance" element={<Navigate to="/global-stats" replace />} />
           <Route path="/import" element={<ImportDataForm />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

@@ -11,7 +11,7 @@ import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const PerformanceAnalysis: React.FC = () => {
+const GlobalStats: React.FC = () => {
   const [heatmapData, setHeatmapData] = useState<ApiHeatmapData[]>([]);
   const [metaData, setMetaData] = useState<ApiChartMeta[]>([]);
   const [lampData, setLampData] = useState<ApiLampDistribution[]>([]);
@@ -416,7 +416,7 @@ const PerformanceAnalysis: React.FC = () => {
       {/* Global Meta Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Server Meta & Skill Analytics</h1>
+          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Global Stats</h1>
           <p style={{ color: 'var(--text-secondary)' }}>
             Universal statistics aggregated across all players and songs on the server.
           </p>
@@ -770,4 +770,4 @@ const PerformanceAnalysis: React.FC = () => {
   );
 };
 
-export default PerformanceAnalysis;
+export default GlobalStats;

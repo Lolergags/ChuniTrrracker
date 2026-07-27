@@ -47,6 +47,7 @@ export interface ApiProcessedScore {
   lamp: LampType;
   op: number;
   timeAchieved: number;
+  playCount?: number;
 }
 
 export interface ApiSong {

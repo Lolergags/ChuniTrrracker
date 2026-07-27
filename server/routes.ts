@@ -327,11 +327,17 @@ router.get('/players/:username/scores', (req, res) => {
       s.score,
       s.lamp,
       s.op,
-      s.time_achieved as timeAchieved
+      s.time_achieved as timeAchieved,
+      COALESCE(cp.playCount, 1) as playCount
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
+    LEFT JOIN (
+      SELECT chart_id, COUNT(*) as playCount
+      FROM scores
+      GROUP BY chart_id
+    ) cp ON cp.chart_id = c.id
     WHERE p.username = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?

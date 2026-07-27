@@ -65,6 +65,13 @@ export const ScatterTooltip = ({ active, payload }: any) => {
           <span style={{ color: 'var(--text-secondary)' }}>OP Yield:</span>
           <span style={{ fontWeight: 'bold', color: 'var(--accent-secondary)' }}>{data.opDisplay}</span>
           
+          {data.playCount !== undefined && (
+            <>
+              <span style={{ color: 'var(--text-secondary)' }}>Play Count:</span>
+              <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>{data.playCount}</span>
+            </>
+          )}
+
           <span style={{ color: 'var(--text-secondary)' }}>Lamp:</span>
           <span style={{ fontWeight: 'bold', color: `var(--rank-${data.lamp?.toLowerCase() || 'clear'})` }}>{data.lamp || 'CLEAR'}</span>
           

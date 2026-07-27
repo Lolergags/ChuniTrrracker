@@ -313,7 +313,7 @@ export function Dashboard() {
       <div className="glass-panel" style={{ marginTop: '2rem', height: '500px', width: '100%', minWidth: 0 }}>
         <h2 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Personal Performance Scatter</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-          All imported plays. Correlation between Score and Chart Constant. Bubble size represents OP.
+          All imported plays. Correlation between Score and Chart Constant. Bubble size represents chart play count.
         </p>
         <div className="scrollable-content-wrapper" style={{ height: 'calc(100% - 70px)' }}>
           <div className="chart-min-width-md">
@@ -347,7 +347,7 @@ export function Dashboard() {
                   }}
                   width={100}
                 />
-                <ZAxis type="number" dataKey="opDisplay" range={[20, 150]} name="OP" />
+                <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[30, 400]} name="Play Count" />
                 <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                 <Scatter 
                   name="Scores" 
@@ -356,6 +356,7 @@ export function Dashboard() {
                     score: s.score,
                     constant: s.constant,
                     opDisplay: Number((s.op / 10000).toFixed(2)),
+                    playCount: s.playCount || 1,
                     lamp: s.lamp
                   }))} 
                   fill="var(--accent-primary)" 

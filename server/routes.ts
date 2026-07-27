@@ -941,7 +941,8 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
           console.log(`Update stdout (tarball fallback): ${fbStdout}`);
           db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
           db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
-          process.exit(0);
+          console.log('[Update Manager] Update completed successfully (tarball). Triggering supervisor/container restart (exit 100)...');
+          process.exit(100);
         });
         return;
       }
@@ -949,7 +950,8 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
       console.error(`Update stderr: ${stderr}`);
       db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
       db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
-      process.exit(0);
+      console.log('[Update Manager] Update completed successfully. Triggering supervisor/container restart (exit 100)...');
+      process.exit(100);
     });
   }, 1000);
 });

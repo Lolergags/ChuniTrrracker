@@ -6,6 +6,8 @@
 
 echo "[ChuniTrrracker] Starting application supervisor..."
 
+cd /app || exit 1
+
 while true; do
   echo "[ChuniTrrracker] Starting server process..."
   npx tsx server/index.ts

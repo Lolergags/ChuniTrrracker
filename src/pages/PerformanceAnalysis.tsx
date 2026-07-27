@@ -58,15 +58,28 @@ const PerformanceAnalysis: React.FC = () => {
     const elem = globalScatterContainerRef.current;
     if (!elem) return;
 
+    const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+    const constants = validMeta.map((d: any) => d.constant);
+    const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+    const defaultY: [number, number] = [975000, 1010000];
+
+    const currentX = globalScatterZoomX || defaultX;
+    const currentY = globalScatterZoomY || defaultY;
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
-      const constants = validMeta.map((d: any) => d.constant);
-      const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
-      const defaultY: [number, number] = [975000, 1010000];
 
-      const currentX = globalScatterZoomX || defaultX;
-      const currentY = globalScatterZoomY || defaultY;
+      const rect = elem.getBoundingClientRect();
+      const plotLeft = rect.left + 85;
+      const plotWidth = Math.max(100, rect.width - 105);
+      const plotTop = rect.top + 20;
+      const plotHeight = Math.max(100, rect.height - 60);
+
+      const xFrac = Math.max(0, Math.min(1, (e.clientX - plotLeft) / plotWidth));
+      const yFrac = Math.max(0, Math.min(1, 1 - (e.clientY - plotTop) / plotHeight));
+
+      const focalX = currentX[0] + xFrac * (currentX[1] - currentX[0]);
+      const focalY = currentY[0] + yFrac * (currentY[1] - currentY[0]);
 
       const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
       const spanX = (currentX[1] - currentX[0]) * zoomFactor;
@@ -75,13 +88,10 @@ const PerformanceAnalysis: React.FC = () => {
       if (spanX < 0.2 && e.deltaY < 0) return;
       if (spanY < 1000 && e.deltaY < 0) return;
 
-      const midX = (currentX[0] + currentX[1]) / 2;
-      const midY = (currentY[0] + currentY[1]) / 2;
-
-      const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
-      const newMaxX = Number((midX + spanX / 2).toFixed(1));
-      const newMinY = Math.max(0, Math.round(midY - spanY / 2));
-      const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
+      const newMinX = Number((focalX - xFrac * spanX).toFixed(1));
+      const newMaxX = Number((focalX + (1 - xFrac) * spanX).toFixed(1));
+      const newMinY = Math.max(0, Math.round(focalY - yFrac * spanY));
+      const newMaxY = Math.min(1010000, Math.round(focalY + (1 - yFrac) * spanY));
 
       if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
         setGlobalScatterZoomX(null);
@@ -92,9 +102,92 @@ const PerformanceAnalysis: React.FC = () => {
       }
     };
 
+    let touchStartDist: number | null = null;
+    let touchStartZoomX: [number, number] | null = null;
+    let touchStartZoomY: [number, number] | null = null;
+    let touchFocalX = 0;
+    let touchFocalY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        touchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+
+        const rect = elem.getBoundingClientRect();
+        const plotLeft = rect.left + 85;
+        const plotWidth = Math.max(100, rect.width - 105);
+        const plotTop = rect.top + 20;
+        const plotHeight = Math.max(100, rect.height - 60);
+
+        const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
+        const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
+
+        touchStartZoomX = currentX;
+        touchStartZoomY = currentY;
+        touchFocalX = currentX[0] + xFrac * (currentX[1] - currentX[0]);
+        touchFocalY = currentY[0] + yFrac * (currentY[1] - currentY[0]);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDist !== null && touchStartZoomX && touchStartZoomY) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        if (currentDist === 0) return;
+
+        const scale = touchStartDist / currentDist;
+        const spanX = (touchStartZoomX[1] - touchStartZoomX[0]) * scale;
+        const spanY = (touchStartZoomY[1] - touchStartZoomY[0]) * scale;
+
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+
+        const rect = elem.getBoundingClientRect();
+        const plotLeft = rect.left + 85;
+        const plotWidth = Math.max(100, rect.width - 105);
+        const plotTop = rect.top + 20;
+        const plotHeight = Math.max(100, rect.height - 60);
+
+        const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
+        const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
+
+        const newMinX = Number((touchFocalX - xFrac * spanX).toFixed(1));
+        const newMaxX = Number((touchFocalX + (1 - xFrac) * spanX).toFixed(1));
+        const newMinY = Math.max(0, Math.round(touchFocalY - yFrac * spanY));
+        const newMaxY = Math.min(1010000, Math.round(touchFocalY + (1 - yFrac) * spanY));
+
+        setGlobalScatterZoomX([newMinX, newMaxX]);
+        setGlobalScatterZoomY([newMinY, newMaxY]);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        touchStartDist = null;
+        touchStartZoomX = null;
+        touchStartZoomY = null;
+      }
+    };
+
     elem.addEventListener('wheel', handleWheel, { passive: false });
+    elem.addEventListener('touchstart', handleTouchStart, { passive: false });
+    elem.addEventListener('touchmove', handleTouchMove, { passive: false });
+    elem.addEventListener('touchend', handleTouchEnd);
+    elem.addEventListener('touchcancel', handleTouchEnd);
+
     return () => {
       elem.removeEventListener('wheel', handleWheel);
+      elem.removeEventListener('touchstart', handleTouchStart);
+      elem.removeEventListener('touchmove', handleTouchMove);
+      elem.removeEventListener('touchend', handleTouchEnd);
+      elem.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [globalScatterZoomX, globalScatterZoomY, metaData]);
 

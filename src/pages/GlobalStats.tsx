@@ -25,6 +25,17 @@ export function GlobalStats() {
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const globalScatterYWidth = globalScatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
+  const globalScatterClipX = 20 + globalScatterYWidth;
+
   useEffect(() => {
     setIsLoadingGlobal(true);
     // Fetch global data
@@ -105,7 +116,7 @@ export function GlobalStats() {
 
       const scores = metaData.map(d => d.avgScore);
       const minScore = scores.length ? Math.min(...scores) : 975000;
-      const defYMin = minScore < 975000 ? Math.max(0, Math.floor(minScore / 5000) * 5000) : 975000;
+      const defYMin = Math.max(975000, Math.floor(minScore / 5000) * 5000);
       const defY: [number, number] = [defYMin, 1010000];
 
       defaultXRef.current = defX;
@@ -768,7 +779,7 @@ export function GlobalStats() {
                   >
                     <defs>
                       <clipPath id="custom-scatter-clip">
-                        <rect x="75" y="-500" width="10000" height="875" />
+                        <rect x={globalScatterClipX} y="-500" width="10000" height="875" />
                       </clipPath>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -777,7 +788,7 @@ export function GlobalStats() {
                       dataKey="constant" 
                       allowDataOverflow={true}
                       stroke="var(--text-secondary)"
-                      tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
+                      tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
                       domain={globalScatterZoomX || ['dataMin', 'dataMax']}
                     />
                     <YAxis 
@@ -785,16 +796,16 @@ export function GlobalStats() {
                       dataKey="avgScore" 
                       name="Avg Score" 
                       allowDataOverflow={true}
-                      domain={globalScatterZoomY || [975000, 1010000]}
-                      ticks={globalScatterZoomY ? undefined : [975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                      domain={globalScatterZoomY || [defaultYRef.current[0], 1010000]}
+                      ticks={globalScatterZoomY ? undefined : (defaultYRef.current[0] >= 975000 ? [defaultYRef.current[0], 990000, 1000000, 1005000, 1007500, 1009000, 1010000].filter(t => t >= defaultYRef.current[0]) : undefined)}
                       stroke="var(--text-secondary)" 
-                      tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
+                      tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                       tickFormatter={(val) => {
                         if (typeof val !== 'number') return val;
                         if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
                         return (val / 1000).toFixed(1) + 'k';
                       }}
-                      width={55}
+                      width={globalScatterYWidth}
                     />
                     <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                     <Tooltip content={<CustomTooltip />} />
@@ -863,7 +874,6 @@ export function GlobalStats() {
               </div>
             )}
           </div>
-
         </div>
       )}
 

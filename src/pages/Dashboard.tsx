@@ -27,6 +27,17 @@ export function Dashboard() {
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
+
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const scatterYWidth = scatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
+  const scatterClipX = 20 + scatterYWidth;
   
   const filteredPlayers = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -168,7 +179,7 @@ export function Dashboard() {
 
       const scores = uniqueScores.map(s => s.score);
       const minScore = scores.length ? Math.min(...scores) : 975000;
-      const defYMin = minScore < 975000 ? Math.max(0, Math.floor(minScore / 5000) * 5000) : 975000;
+      const defYMin = scores.length ? Math.max(0, Math.floor(minScore / 5000) * 5000) : 975000;
       const defY: [number, number] = [defYMin, 1010000];
 
       defaultXRef.current = defX;
@@ -784,7 +795,7 @@ export function Dashboard() {
               >
                 <defs>
                   <clipPath id="custom-scatter-clip">
-                    <rect x="75" y="-500" width="10000" height="875" />
+                    <rect x={scatterClipX} y="-500" width="10000" height="875" />
                   </clipPath>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -794,7 +805,7 @@ export function Dashboard() {
                   allowDataOverflow={true}
                   domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
-                  tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
+                  tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
                 />
                 <YAxis 
@@ -802,16 +813,16 @@ export function Dashboard() {
                   dataKey="score" 
                   name="Score" 
                   allowDataOverflow={true}
-                  domain={scatterZoomY || [975000, 1010000]} 
-                  ticks={scatterZoomY ? undefined : [975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                  domain={scatterZoomY || [defaultYRef.current[0], 1010000]} 
+                  ticks={scatterZoomY ? undefined : (defaultYRef.current[0] >= 975000 ? [defaultYRef.current[0], 990000, 1000000, 1005000, 1007500, 1009000, 1010000].filter(t => t >= defaultYRef.current[0]) : undefined)}
                   stroke="var(--text-secondary)"
-                  tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
+                  tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {
                     if (typeof val !== 'number') return val;
                     if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
                     return (val / 1000).toFixed(1) + 'k';
                   }}
-                  width={55}
+                  width={scatterYWidth}
                 />
                 <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
                 <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />

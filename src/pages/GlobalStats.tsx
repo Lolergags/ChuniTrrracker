@@ -414,15 +414,31 @@ const GlobalStats: React.FC = () => {
   return (
     <div className="container animate-fade-in" style={{ padding: '2rem 0' }}>
       
-      {/* Global Meta Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* Global Meta Section Header */}
+      <div className="glass-panel" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+        marginBottom: '2rem'
+      }}>
+        {/* Row 1: Title & Description */}
         <div>
-          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Global Stats</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <h1 className="text-gradient" style={{ margin: 0 }}>Global Stats</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
             Universal statistics aggregated across all players and songs on the server.
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+
+        {/* Row 2: Global Filters Bar */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          alignItems: 'center', 
+          flexWrap: 'wrap', 
+          gap: '0.5rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+        }}>
           <GlobalFilterBar showRating={true} />
         </div>
       </div>

@@ -333,19 +333,18 @@ export function Dashboard() {
                   dataKey="score" 
                   name="Score" 
                   domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
-                  ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                  ticks={[975000, 1000000, 1005000, 1007500, 1010000]}
                   stroke="var(--text-secondary)"
+                  tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {
-                    if (val === 1010000) return 'AJC (1010k)';
-                    if (val === 1009000) return 'SSS+ (1009k)';
-                    if (val === 1007500) return 'SSS (1007.5k)';
-                    if (val === 1005000) return 'SS+ (1005k)';
-                    if (val === 1000000) return 'SS (1000k)';
-                    if (val === 990000) return 'S+ (990k)';
-                    if (val === 975000) return 'S (975k)';
+                    if (val === 1010000) return '1010k (AJC)';
+                    if (val === 1007500) return '1007.5k (SSS)';
+                    if (val === 1005000) return '1005k (SS+)';
+                    if (val === 1000000) return '1000k (SS)';
+                    if (val === 975000) return '975k (S)';
                     return (val / 1000).toFixed(0) + 'k';
                   }}
-                  width={100}
+                  width={85}
                 />
                 <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[30, 400]} name="Play Count" />
                 <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />

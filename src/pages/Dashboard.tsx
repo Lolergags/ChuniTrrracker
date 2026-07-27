@@ -6,7 +6,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
-import { shouldResetZoomOut } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
 export function Dashboard() {
   const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
@@ -155,62 +155,6 @@ export function Dashboard() {
       return { defX, defY, curX, curY };
     };
 
-    const clampDomainX = (minX: number, maxX: number, defX: [number, number]): [number, number] => {
-      const minAllowedX = 1.0;
-      const maxAllowedX = Math.max(defX[1], 15.5);
-      const spanX = maxX - minX;
-
-      let finalMinX = minX;
-      let finalMaxX = maxX;
-
-      if (finalMinX < minAllowedX) {
-        finalMinX = minAllowedX;
-        if (spanX <= maxAllowedX - minAllowedX) {
-          finalMaxX = finalMinX + spanX;
-        } else {
-          finalMaxX = maxAllowedX;
-        }
-      }
-      if (finalMaxX > maxAllowedX) {
-        finalMaxX = maxAllowedX;
-        if (spanX <= maxAllowedX - minAllowedX) {
-          finalMinX = Math.max(minAllowedX, finalMaxX - spanX);
-        } else {
-          finalMinX = minAllowedX;
-        }
-      }
-
-      return [Number(finalMinX.toFixed(1)), Number(finalMaxX.toFixed(1))];
-    };
-
-    const clampDomainY = (minY: number, maxY: number): [number, number] => {
-      const minAllowedY = 0;
-      const maxAllowedY = 1010000;
-      const spanY = maxY - minY;
-
-      let finalMinY = minY;
-      let finalMaxY = maxY;
-
-      if (finalMinY < minAllowedY) {
-        finalMinY = minAllowedY;
-        if (spanY <= maxAllowedY - minAllowedY) {
-          finalMaxY = finalMinY + spanY;
-        } else {
-          finalMaxY = maxAllowedY;
-        }
-      }
-      if (finalMaxY > maxAllowedY) {
-        finalMaxY = maxAllowedY;
-        if (spanY <= maxAllowedY - minAllowedY) {
-          finalMinY = Math.max(minAllowedY, finalMaxY - spanY);
-        } else {
-          finalMinY = minAllowedY;
-        }
-      }
-
-      return [Math.round(finalMinY), Math.round(finalMaxY)];
-    };
-
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { defX, defY, curX, curY } = getDomains();
@@ -227,25 +171,11 @@ export function Dashboard() {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
-      const defSpanX = defX[1] - defX[0];
-      const defSpanY = defY[1] - defY[0];
-      const curSpanX = curX[1] - curX[0];
-      const curSpanY = curY[1] - curY[0];
-
       const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-      const spanX = curSpanX * zoomFactor;
-      const spanY = curSpanY * zoomFactor;
+      const spanX = (curX[1] - curX[0]) * zoomFactor;
+      const spanY = (curY[1] - curY[0]) * zoomFactor;
 
-      if (e.deltaY > 0) {
-        if (shouldResetZoomOut(curSpanX, curSpanY, defSpanX, defSpanY, zoomFactor)) {
-          setScatterZoomX(null);
-          setScatterZoomY(null);
-          return;
-        }
-      }
-
-      if (spanX < 0.2 && e.deltaY < 0) return;
-      if (spanY < 1000 && e.deltaY < 0) return;
+      if (spanX < 0.2 && spanY < 1000 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;
@@ -253,13 +183,17 @@ export function Dashboard() {
       const rawMaxY = focalY + (1 - yFrac) * spanY;
 
       const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
-      if (newMinX <= defX[0] && newMaxX >= defX[1] && newMinY <= defY[0] && newMaxY >= defY[1]) {
+      if (newMinX <= defX[0] && newMaxX >= defX[1]) {
         setScatterZoomX(null);
-        setScatterZoomY(null);
       } else {
         setScatterZoomX([newMinX, newMaxX]);
+      }
+
+      if (newMinY <= defY[0] && newMaxY >= defY[1]) {
+        setScatterZoomY(null);
+      } else {
         setScatterZoomY([newMinY, newMaxY]);
       }
     };

@@ -6,6 +6,7 @@ import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, Api
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
+import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
@@ -101,62 +102,6 @@ const PerformanceAnalysis: React.FC = () => {
       return { defX, defY, curX, curY };
     };
 
-    const clampDomainX = (minX: number, maxX: number, defX: [number, number]): [number, number] => {
-      const minAllowedX = 1.0;
-      const maxAllowedX = Math.max(defX[1], 15.5);
-      const spanX = maxX - minX;
-
-      let finalMinX = minX;
-      let finalMaxX = maxX;
-
-      if (finalMinX < minAllowedX) {
-        finalMinX = minAllowedX;
-        if (spanX <= maxAllowedX - minAllowedX) {
-          finalMaxX = finalMinX + spanX;
-        } else {
-          finalMaxX = maxAllowedX;
-        }
-      }
-      if (finalMaxX > maxAllowedX) {
-        finalMaxX = maxAllowedX;
-        if (spanX <= maxAllowedX - minAllowedX) {
-          finalMinX = Math.max(minAllowedX, finalMaxX - spanX);
-        } else {
-          finalMinX = minAllowedX;
-        }
-      }
-
-      return [Number(finalMinX.toFixed(1)), Number(finalMaxX.toFixed(1))];
-    };
-
-    const clampDomainY = (minY: number, maxY: number): [number, number] => {
-      const minAllowedY = 0;
-      const maxAllowedY = 1010000;
-      const spanY = maxY - minY;
-
-      let finalMinY = minY;
-      let finalMaxY = maxY;
-
-      if (finalMinY < minAllowedY) {
-        finalMinY = minAllowedY;
-        if (spanY <= maxAllowedY - minAllowedY) {
-          finalMaxY = finalMinY + spanY;
-        } else {
-          finalMaxY = maxAllowedY;
-        }
-      }
-      if (finalMaxY > maxAllowedY) {
-        finalMaxY = maxAllowedY;
-        if (spanY <= maxAllowedY - minAllowedY) {
-          finalMinY = Math.max(minAllowedY, finalMaxY - spanY);
-        } else {
-          finalMinY = minAllowedY;
-        }
-      }
-
-      return [Math.round(finalMinY), Math.round(finalMaxY)];
-    };
-
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { defX, defY, curX, curY } = getDomains();
@@ -173,27 +118,11 @@ const PerformanceAnalysis: React.FC = () => {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
-      const defSpanX = defX[1] - defX[0];
-      const defSpanY = defY[1] - defY[0];
-      const curSpanX = curX[1] - curX[0];
-      const curSpanY = curY[1] - curY[0];
-
       const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-      const spanX = curSpanX * zoomFactor;
-      const spanY = curSpanY * zoomFactor;
+      const spanX = (curX[1] - curX[0]) * zoomFactor;
+      const spanY = (curY[1] - curY[0]) * zoomFactor;
 
-      if (e.deltaY > 0) {
-        const ratioX = spanX / defSpanX;
-        const ratioY = spanY / defSpanY;
-        if (ratioX >= 0.95 || ratioY >= 0.95) {
-          setGlobalScatterZoomX(null);
-          setGlobalScatterZoomY(null);
-          return;
-        }
-      }
-
-      if (spanX < 0.2 && e.deltaY < 0) return;
-      if (spanY < 1000 && e.deltaY < 0) return;
+      if (spanX < 0.2 && spanY < 1000 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;
@@ -201,13 +130,17 @@ const PerformanceAnalysis: React.FC = () => {
       const rawMaxY = focalY + (1 - yFrac) * spanY;
 
       const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
-      if (newMinX <= defX[0] && newMaxX >= defX[1] && newMinY <= defY[0] && newMaxY >= defY[1]) {
+      if (newMinX <= defX[0] && newMaxX >= defX[1]) {
         setGlobalScatterZoomX(null);
-        setGlobalScatterZoomY(null);
       } else {
         setGlobalScatterZoomX([newMinX, newMaxX]);
+      }
+
+      if (newMinY <= defY[0] && newMaxY >= defY[1]) {
+        setGlobalScatterZoomY(null);
+      } else {
         setGlobalScatterZoomY([newMinY, newMaxY]);
       }
     };
@@ -290,7 +223,7 @@ const PerformanceAnalysis: React.FC = () => {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      const { defX } = getDomains();
+      const { defX, defY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         e.preventDefault();
         const t = e.touches[0];
@@ -307,7 +240,7 @@ const PerformanceAnalysis: React.FC = () => {
         const rawMaxY = panRef.current.startDomainY[1] + deltaY;
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
         setGlobalScatterZoomX([newMinX, newMaxX]);
         setGlobalScatterZoomY([newMinY, newMaxY]);
@@ -340,7 +273,7 @@ const PerformanceAnalysis: React.FC = () => {
         const rawMaxY = panRef.current.touchFocalY + (1 - yFrac) * spanY;
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
         setGlobalScatterZoomX([newMinX, newMaxX]);
         setGlobalScatterZoomY([newMinY, newMaxY]);

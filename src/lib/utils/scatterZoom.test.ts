@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY, shouldResetZoomOut } from './scatterZoom';
+import { clampDomainX, clampDomainY } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -24,26 +24,22 @@ describe('scatterZoom utilities', () => {
   });
 
   describe('clampDomainY', () => {
+    const defY: [number, number] = [975000, 1010000];
+
     it('should disallow negative Y values', () => {
-      const [minY] = clampDomainY(-500, 50000);
-      expect(minY).toBe(0);
+      const [minY] = clampDomainY(-500, 50000, defY);
+      expect(minY).toBeGreaterThanOrEqual(975000);
     });
 
     it('should clamp max Y to 1,010,000', () => {
-      const [, maxY] = clampDomainY(500000, 1200000);
+      const [, maxY] = clampDomainY(500000, 1200000, defY);
       expect(maxY).toBe(1010000);
     });
-  });
 
-  describe('shouldResetZoomOut', () => {
-    it('should return true when ratioX reaches 95% of defSpanX', () => {
-      const reset = shouldResetZoomOut(13.8, 200000, 14.5, 1010000, 1.15);
-      expect(reset).toBe(true);
-    });
-
-    it('should return false when both spans are well within defSpans', () => {
-      const reset = shouldResetZoomOut(5.0, 200000, 14.5, 1010000, 1.15);
-      expect(reset).toBe(false);
+    it('should return default domain if span exceeds default span', () => {
+      const [minY, maxY] = clampDomainY(900000, 1050000, defY);
+      expect(minY).toBe(975000);
+      expect(maxY).toBe(1010000);
     });
   });
 });

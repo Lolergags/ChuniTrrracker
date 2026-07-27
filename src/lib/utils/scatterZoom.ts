@@ -23,19 +23,16 @@ export function clampDomainX(rawMinX: number, rawMaxX: number, defX: [number, nu
   }
 
   minX = Math.max(1.0, minX);
-  return [minX, maxX];
+  return [Number(minX.toFixed(1)), Number(maxX.toFixed(1))];
 }
 
-export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, number] = [0, 1010000]): [number, number] {
-  let minY = Math.max(0, rawMinY);
-  let maxY = Math.min(1010000, rawMaxY);
+export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, number] = [975000, 1010000]): [number, number] {
+  let minY = rawMinY;
+  let maxY = rawMaxY;
 
   const minAllowedSpan = 1000;
   if (maxY - minY < minAllowedSpan) {
-    maxY = Math.min(1010000, minY + minAllowedSpan);
-    if (maxY - minY < minAllowedSpan) {
-      minY = Math.max(0, maxY - minAllowedSpan);
-    }
+    maxY = minY + minAllowedSpan;
   }
 
   const defSpan = defY[1] - defY[0];
@@ -43,19 +40,17 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
     return [defY[0], defY[1]];
   }
 
-  return [minY, maxY];
-}
+  if (minY < defY[0]) {
+    const diff = defY[0] - minY;
+    minY = defY[0];
+    maxY = Math.min(defY[1], maxY + diff);
+  } else if (maxY > defY[1]) {
+    const diff = maxY - defY[1];
+    maxY = defY[1];
+    minY = Math.max(defY[0], minY - diff);
+  }
 
-export function shouldResetZoomOut(
-  curSpanX: number,
-  curSpanY: number,
-  defSpanX: number,
-  defSpanY: number,
-  zoomFactor: number
-): boolean {
-  const nextSpanX = curSpanX * zoomFactor;
-  const nextSpanY = curSpanY * zoomFactor;
-  const ratioX = nextSpanX / defSpanX;
-  const ratioY = nextSpanY / defSpanY;
-  return ratioX >= 0.95 || ratioY >= 0.95;
+  minY = Math.max(0, minY);
+  maxY = Math.min(1010000, maxY);
+  return [Math.round(minY), Math.round(maxY)];
 }

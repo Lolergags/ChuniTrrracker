@@ -64,6 +64,7 @@ export function GlobalStats() {
     touchFocalX: number;
     touchFocalY: number;
     startScrollLeft: number;
+    lastTouchDist: number | null;
   }>({
     isDragging: false,
     startX: 0,
@@ -75,7 +76,8 @@ export function GlobalStats() {
     touchStartZoomY: null,
     touchFocalX: 0,
     touchFocalY: 0,
-    startScrollLeft: 0
+    startScrollLeft: 0,
+    lastTouchDist: null
   });
 
   const globalScatterZoomXRef = useRef(globalScatterZoomX);
@@ -220,29 +222,12 @@ export function GlobalStats() {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
-        panRef.current.touchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-
-        const midX = (t1.clientX + t2.clientX) / 2;
-        const midY = (t1.clientY + t2.clientY) / 2;
-
-        const rect = elem.getBoundingClientRect();
-        const plotLeft = rect.left + 85;
-        const plotWidth = Math.max(100, rect.width - 105);
-        const plotTop = rect.top + 20;
-        const plotHeight = Math.max(100, rect.height - 60);
-
-        const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
-        const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
-
-        panRef.current.touchStartZoomX = curX;
-        panRef.current.touchStartZoomY = curY;
-        panRef.current.touchFocalX = curX[0] + xFrac * (curX[1] - curX[0]);
-        panRef.current.touchFocalY = curY[0] + yFrac * (curY[1] - curY[0]);
+        panRef.current.lastTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      const { defX, defY } = getDomains();
+      const { defX, defY, curX, curY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         const t = e.touches[0];
         const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
@@ -272,16 +257,18 @@ export function GlobalStats() {
 
         setGlobalScatterZoomX([newMinX, newMaxX]);
         setGlobalScatterZoomY([newMinY, newMaxY]);
-      } else if (e.touches.length === 2 && panRef.current.touchStartDist !== null && panRef.current.touchStartZoomX && panRef.current.touchStartZoomY) {
+      } else if (e.touches.length === 2) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        if (currentDist === 0) return;
+        if (currentDist < 15) return;
 
-        const scale = panRef.current.touchStartDist / currentDist;
-        const spanX = (panRef.current.touchStartZoomX[1] - panRef.current.touchStartZoomX[0]) * scale;
-        const spanY = (panRef.current.touchStartZoomY[1] - panRef.current.touchStartZoomY[0]) * scale;
+        const lastDist = panRef.current.lastTouchDist || currentDist;
+        panRef.current.lastTouchDist = currentDist;
+
+        const rawScale = lastDist / currentDist;
+        const scale = 1 + (rawScale - 1) * 0.85;
 
         const midX = (t1.clientX + t2.clientX) / 2;
         const midY = (t1.clientY + t2.clientY) / 2;
@@ -295,24 +282,37 @@ export function GlobalStats() {
         const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
         const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
 
-        const rawMinX = panRef.current.touchFocalX - xFrac * spanX;
-        const rawMaxX = panRef.current.touchFocalX + (1 - xFrac) * spanX;
-        const rawMinY = panRef.current.touchFocalY - yFrac * spanY;
-        const rawMaxY = panRef.current.touchFocalY + (1 - yFrac) * spanY;
+        const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
+        const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
+
+        const spanX = (curX[1] - curX[0]) * scale;
+        const spanY = (curY[1] - curY[0]) * scale;
+
+        const rawMinX = focalX - xFrac * spanX;
+        const rawMaxX = focalX + (1 - xFrac) * spanX;
+        const rawMinY = focalY - yFrac * spanY;
+        const rawMaxY = focalY + (1 - yFrac) * spanY;
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
         const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
-        setGlobalScatterZoomX([newMinX, newMaxX]);
-        setGlobalScatterZoomY([newMinY, newMaxY]);
+        if (newMinX <= defX[0] && newMaxX >= defX[1]) {
+          setGlobalScatterZoomX(null);
+        } else {
+          setGlobalScatterZoomX([newMinX, newMaxX]);
+        }
+
+        if (newMinY <= defY[0] && newMaxY >= defY[1]) {
+          setGlobalScatterZoomY(null);
+        } else {
+          setGlobalScatterZoomY([newMinY, newMaxY]);
+        }
       }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length < 2) {
-        panRef.current.touchStartDist = null;
-        panRef.current.touchStartZoomX = null;
-        panRef.current.touchStartZoomY = null;
+        panRef.current.lastTouchDist = null;
       }
       if (e.touches.length === 0) {
         panRef.current.isDragging = false;

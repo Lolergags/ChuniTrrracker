@@ -106,37 +106,25 @@ const PerformanceAnalysis: React.FC = () => {
   }, [opYieldData]);
 
   const opDistribution = useMemo(() => {
+    const BUCKET_SIZE = 5;
     const buckets: Record<string, number> = {};
-    const PERCENT_BUCKET_SIZE = 0.5;
-    let minBucket = Infinity;
-    let maxBucket = 0;
+
+    for (let b = 0; b < 100; b += BUCKET_SIZE) {
+      const label = `${b}-${b + BUCKET_SIZE}%`;
+      buckets[label] = 0;
+    }
 
     playerOpData.forEach(p => {
-      const percent = p.opPercent || 0;
-      const bucketIndex = Math.floor(percent / PERCENT_BUCKET_SIZE);
-      const b = bucketIndex * PERCENT_BUCKET_SIZE;
-      const formattedB = b.toFixed(1);
-      
-      buckets[formattedB] = (buckets[formattedB] || 0) + 1;
-      if (b < minBucket) minBucket = b;
-      if (b > maxBucket) maxBucket = b;
+      const percent = Math.min(99.9, Math.max(0, p.opPercent || 0));
+      const b = Math.floor(percent / BUCKET_SIZE) * BUCKET_SIZE;
+      const label = `${b}-${b + BUCKET_SIZE}%`;
+      buckets[label] = (buckets[label] || 0) + 1;
     });
 
-    if (minBucket === Infinity) return [];
-
-    const result = [];
-    const minIndex = Math.floor(minBucket / PERCENT_BUCKET_SIZE);
-    const maxIndex = Math.floor(maxBucket / PERCENT_BUCKET_SIZE);
-
-    for (let i = minIndex; i <= maxIndex; i++) {
-      const val = i * PERCENT_BUCKET_SIZE;
-      const key = val.toFixed(1);
-      result.push({
-        bucket: `${key}%`,
-        count: buckets[key] || 0
-      });
-    }
-    return result;
+    return Object.entries(buckets).map(([bucket, count]) => ({
+      bucket,
+      count
+    }));
   }, [playerOpData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -330,7 +318,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
+                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6, fontSize: 11 }} interval={1} />
                     <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}

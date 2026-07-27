@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY } from './scatterZoom';
+import { clampDomainX, clampDomainY, getSmartYTicks } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -47,6 +47,22 @@ describe('scatterZoom utilities', () => {
       const [minY, maxY] = clampDomainY(900000, 1050000, defY);
       expect(minY).toBe(975000);
       expect(maxY).toBe(1010000);
+    });
+  });
+
+  describe('getSmartYTicks', () => {
+    it('should deduplicate standard ticks when unzoomed and defaultYMin is 990000', () => {
+      const ticks = getSmartYTicks(990000, 1010000, 990000);
+      expect(ticks).toEqual([990000, 1000000, 1005000, 1007500, 1009000, 1010000]);
+      // Verify no duplicates
+      expect(new Set(ticks).size).toBe(ticks.length);
+    });
+
+    it('should generate clean rounded ticks when zoomed in', () => {
+      const ticks = getSmartYTicks(985420, 1002100, 975000);
+      expect(ticks.length).toBeGreaterThan(0);
+      expect(ticks.every(t => t % 500 === 0)).toBe(true);
+      expect(new Set(ticks).size).toBe(ticks.length);
     });
   });
 });

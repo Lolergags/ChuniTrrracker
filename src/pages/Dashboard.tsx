@@ -8,7 +8,7 @@ import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
-import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY, getSmartYTicks } from '../lib/utils/scatterZoom.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -820,8 +820,8 @@ export function Dashboard() {
                   dataKey="score" 
                   name="Score" 
                   allowDataOverflow={true}
-                  domain={scatterZoomY || [defaultYRef.current[0], 1010000]} 
-                  ticks={scatterZoomY ? undefined : (defaultYRef.current[0] >= 975000 ? [defaultYRef.current[0], 990000, 1000000, 1005000, 1007500, 1009000, 1010000].filter(t => t >= defaultYRef.current[0]) : undefined)}
+                  domain={scatterZoomY || defaultYDomain} 
+                  ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
                   stroke="var(--text-secondary)"
                   tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {

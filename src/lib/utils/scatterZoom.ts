@@ -41,3 +41,40 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
 
   return [Math.round(minY), Math.round(maxY)];
 }
+
+export function getSmartYTicks(yMin: number, yMax: number, defaultYMin: number = 975000): number[] {
+  if (yMin <= defaultYMin && yMax >= 1010000) {
+    const rawTicks = [
+      defaultYMin,
+      990000,
+      1000000,
+      1005000,
+      1007500,
+      1009000,
+      1010000
+    ].filter(t => t >= defaultYMin && t <= 1010000);
+    return Array.from(new Set(rawTicks));
+  }
+
+  const span = yMax - yMin;
+  if (span <= 0) return [Math.round(yMin)];
+
+  const roughStep = span / 5;
+  const steps = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+  let step = steps[steps.length - 1];
+  for (let i = 0; i < steps.length; i++) {
+    if (steps[i] >= roughStep) {
+      step = steps[i];
+      break;
+    }
+  }
+
+  const startTick = Math.ceil(yMin / step) * step;
+  const ticks: number[] = [];
+
+  for (let t = startTick; t <= yMax; t += step) {
+    ticks.push(t);
+  }
+
+  return Array.from(new Set(ticks));
+}

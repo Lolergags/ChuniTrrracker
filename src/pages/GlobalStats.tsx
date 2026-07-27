@@ -6,7 +6,7 @@ import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, Api
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
-import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY, getSmartYTicks } from '../lib/utils/scatterZoom.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -803,8 +803,8 @@ export function GlobalStats() {
                       dataKey="avgScore" 
                       name="Avg Score" 
                       allowDataOverflow={true}
-                      domain={globalScatterZoomY || [defaultYRef.current[0], 1010000]}
-                      ticks={globalScatterZoomY ? undefined : (defaultYRef.current[0] >= 975000 ? [defaultYRef.current[0], 990000, 1000000, 1005000, 1007500, 1009000, 1010000].filter(t => t >= defaultYRef.current[0]) : undefined)}
+                      domain={globalScatterZoomY || defaultYDomain}
+                      ticks={getSmartYTicks(globalScatterZoomY ? globalScatterZoomY[0] : defaultYDomain[0], globalScatterZoomY ? globalScatterZoomY[1] : 1010000, defaultYDomain[0])}
                       stroke="var(--text-secondary)" 
                       tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                       tickFormatter={(val) => {

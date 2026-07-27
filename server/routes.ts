@@ -422,28 +422,35 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   });
   const gradeDistribution = gradeBins.reverse();
 
-  // Compute Normal Distribution (Line Chart)
-  const normalBinsMap = new Map<number, number>();
-  for (let i = 975000; i <= 1010000; i += 5000) {
-    normalBinsMap.set(i, 0);
-  }
-  normalBinsMap.set(0, 0); // Catch-all for < 975k
+  // Compute Normal Distribution (Line Chart) with extra granularity for SSS, SSS+, 99AJ, and AJC
+  const normalBins = [
+    { min: 0, max: 974999, label: '< 975k', count: 0 },
+    { min: 975000, max: 979999, label: '975k', count: 0 },
+    { min: 980000, max: 984999, label: '980k', count: 0 },
+    { min: 985000, max: 989999, label: '985k', count: 0 },
+    { min: 990000, max: 994999, label: '990k', count: 0 },
+    { min: 995000, max: 999999, label: '995k', count: 0 },
+    { min: 1000000, max: 1004999, label: '1000k (SS)', count: 0 },
+    { min: 1005000, max: 1007499, label: '1005k (SS+)', count: 0 },
+    { min: 1007500, max: 1008999, label: '1007.5k (SSS)', count: 0 },
+    { min: 1009000, max: 1009899, label: '1009k (SSS+)', count: 0 },
+    { min: 1009900, max: 1009999, label: '1009.9k (99AJ)', count: 0 },
+    { min: 1010000, max: 1010000, label: '1010k (AJC)', count: 0 }
+  ];
 
   allScoresQuery.forEach(row => {
-    let bucket = 0;
-    if (row.score >= 975000) {
-      bucket = Math.floor(row.score / 5000) * 5000;
-      if (bucket > 1010000) bucket = 1010000;
+    for (let i = 0; i < normalBins.length; i++) {
+      if (row.score >= normalBins[i].min && row.score <= normalBins[i].max) {
+        normalBins[i].count++;
+        break;
+      }
     }
-    normalBinsMap.set(bucket, (normalBinsMap.get(bucket) || 0) + 1);
   });
 
-  const normalDistribution = Array.from(normalBinsMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([bucket, count]) => ({
-      bucket: bucket === 0 ? '< 975k' : (bucket / 1000).toString() + 'k',
-      count
-    }));
+  const normalDistribution = normalBins.map(b => ({
+    bucket: b.label,
+    count: b.count
+  }));
 
   res.json({
     data: leaderboard,

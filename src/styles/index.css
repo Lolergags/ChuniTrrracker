@@ -245,3 +245,19 @@ select option {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
 }
+
+/* Remove SVG element click focus outlines & bounding boxes */
+.recharts-wrapper *,
+.recharts-surface *,
+.recharts-layer *,
+.recharts-bar-rectangle,
+.recharts-rectangle,
+.recharts-active-bar,
+svg *:focus,
+svg *:active,
+path:focus,
+rect:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

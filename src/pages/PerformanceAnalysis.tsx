@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush, ReferenceArea } from 'recharts';
 import { RotateCcw } from 'lucide-react';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
@@ -19,6 +19,11 @@ const PerformanceAnalysis: React.FC = () => {
   
   const { filters } = useGlobal();
   const [globalScatterZoomX, setGlobalScatterZoomX] = useState<[number, number] | null>(null);
+  const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
+  const [refAreaLeft, setRefAreaLeft] = useState<number | null>(null);
+  const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
+  const [refAreaTop, setRefAreaTop] = useState<number | null>(null);
+  const [refAreaBottom, setRefAreaBottom] = useState<number | null>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   useEffect(() => {
@@ -338,55 +343,158 @@ const PerformanceAnalysis: React.FC = () => {
               <div>
                 <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Chart Level Constant vs Average Score Scatter</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
+                  Click and drag a box to zoom into any area. Scroll mouse wheel to zoom in/out.
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.2rem' }}>Filter Level:</span>
-                {[
-                  { label: 'All', range: null },
-                  { label: '1-12+', range: [1.0, 12.9] },
-                  { label: '13-13+', range: [13.0, 13.9] },
-                  { label: '14-14+', range: [14.0, 14.9] },
-                  { label: '15+', range: [15.0, 15.4] }
-                ].map(preset => {
-                  const isActive = preset.range === null ? !globalScatterZoomX : (globalScatterZoomX && globalScatterZoomX[0] === preset.range[0] && globalScatterZoomX[1] === preset.range[1]);
-                  return (
-                    <button
-                      key={preset.label}
-                      onClick={() => setGlobalScatterZoomX(preset.range as [number, number] | null)}
-                      style={{
-                        padding: '0.3rem 0.6rem',
-                        borderRadius: '4px',
-                        background: isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.08)',
-                        border: '1px solid ' + (isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.15)'),
-                        color: 'white',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: isActive ? 'bold' : 'normal',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-                {globalScatterZoomX && (
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Level:</span>
+                  {[
+                    { label: 'All', range: null },
+                    { label: '1-12+', range: [1.0, 12.9] },
+                    { label: '13-13+', range: [13.0, 13.9] },
+                    { label: '14-14+', range: [14.0, 14.9] },
+                    { label: '15+', range: [15.0, 15.4] }
+                  ].map(preset => {
+                    const isActive = preset.range === null ? !globalScatterZoomX : (globalScatterZoomX && globalScatterZoomX[0] === preset.range[0] && globalScatterZoomX[1] === preset.range[1]);
+                    return (
+                      <button
+                        key={preset.label}
+                        onClick={() => setGlobalScatterZoomX(preset.range as [number, number] | null)}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          background: isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.08)',
+                          border: '1px solid ' + (isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.15)'),
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: isActive ? 'bold' : 'normal',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Score:</span>
+                  {[
+                    { label: 'All', range: null },
+                    { label: 'S+ (990k+)', range: [990000, 1010000] },
+                    { label: 'SS+ (1005k+)', range: [1005000, 1010000] },
+                    { label: 'SSS+ (1009k+)', range: [1009000, 1010000] }
+                  ].map(preset => {
+                    const isActive = preset.range === null ? !globalScatterZoomY : (globalScatterZoomY && globalScatterZoomY[0] === preset.range[0] && globalScatterZoomY[1] === preset.range[1]);
+                    return (
+                      <button
+                        key={preset.label}
+                        onClick={() => setGlobalScatterZoomY(preset.range as [number, number] | null)}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          background: isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.08)',
+                          border: '1px solid ' + (isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.15)'),
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: isActive ? 'bold' : 'normal',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {(globalScatterZoomX || globalScatterZoomY) && (
                   <button
-                    onClick={() => setGlobalScatterZoomX(null)}
+                    onClick={() => { setGlobalScatterZoomX(null); setGlobalScatterZoomY(null); }}
                     title="Reset Zoom"
-                    style={{ padding: '0.3rem 0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-secondary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', fontWeight: 'bold' }}
                   >
-                    <RotateCcw size={13} /> Reset
+                    <RotateCcw size={12} /> Reset
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="scrollable-content-wrapper" style={{ overflowY: 'hidden' }}>
+            <div 
+              className="scrollable-content-wrapper" 
+              style={{ overflowY: 'hidden' }}
+              onWheel={(e) => {
+                e.preventDefault();
+                const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                const constants = validMeta.map((d: any) => d.constant);
+                const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+                const defaultY: [number, number] = [975000, 1010000];
+
+                const currentX = globalScatterZoomX || defaultX;
+                const currentY = globalScatterZoomY || defaultY;
+
+                const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
+                const spanX = (currentX[1] - currentX[0]) * zoomFactor;
+                const spanY = (currentY[1] - currentY[0]) * zoomFactor;
+
+                if (spanX < 0.2 && e.deltaY < 0) return;
+                if (spanY < 1000 && e.deltaY < 0) return;
+
+                const midX = (currentX[0] + currentX[1]) / 2;
+                const midY = (currentY[0] + currentY[1]) / 2;
+
+                const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
+                const newMaxX = Number((midX + spanX / 2).toFixed(1));
+                const newMinY = Math.max(800000, Math.round(midY - spanY / 2));
+                const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
+
+                if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
+                  setGlobalScatterZoomX(null);
+                  setGlobalScatterZoomY(null);
+                } else {
+                  setGlobalScatterZoomX([newMinX, newMaxX]);
+                  setGlobalScatterZoomY([newMinY, newMaxY]);
+                }
+              }}
+            >
               <div className="chart-min-width-md" style={{ height: '430px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                  <ScatterChart 
+                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.xValue !== undefined && e.yValue !== undefined) {
+                        setRefAreaLeft(e.xValue);
+                        setRefAreaTop(e.yValue);
+                        setRefAreaRight(e.xValue);
+                        setRefAreaBottom(e.yValue);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (refAreaLeft !== null && e && e.xValue !== undefined && e.yValue !== undefined) {
+                        setRefAreaRight(e.xValue);
+                        setRefAreaBottom(e.yValue);
+                      }
+                    }}
+                    onMouseUp={() => {
+                      if (refAreaLeft !== null && refAreaRight !== null && refAreaTop !== null && refAreaBottom !== null) {
+                        const minX = Math.min(refAreaLeft, refAreaRight);
+                        const maxX = Math.max(refAreaLeft, refAreaRight);
+                        const minY = Math.min(refAreaTop, refAreaBottom);
+                        const maxY = Math.max(refAreaTop, refAreaBottom);
+
+                        if (maxX - minX >= 0.1 && maxY - minY >= 500) {
+                          setGlobalScatterZoomX([Number(minX.toFixed(1)), Number(maxX.toFixed(1))]);
+                          setGlobalScatterZoomY([Math.round(minY), Math.round(maxY)]);
+                        }
+                      }
+                      setRefAreaLeft(null);
+                      setRefAreaRight(null);
+                      setRefAreaTop(null);
+                      setRefAreaBottom(null);
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis 
                       type="number" 
@@ -401,7 +509,7 @@ const PerformanceAnalysis: React.FC = () => {
                       type="number" 
                       dataKey="avgScore" 
                       name="Avg Score" 
-                      domain={[975000, 1010000]}
+                      domain={globalScatterZoomY || [975000, 1010000]}
                       ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                       stroke="var(--text-secondary)" 
                       tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
@@ -420,6 +528,17 @@ const PerformanceAnalysis: React.FC = () => {
                     <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
                     <Tooltip content={<CustomTooltip />} />
                     <Scatter name="Charts" data={metaData.filter((d: any) => d.avgScore >= 975000)} fill="#ff66ff" fillOpacity={0.6} />
+                    {refAreaLeft !== null && refAreaRight !== null && refAreaTop !== null && refAreaBottom !== null && (
+                      <ReferenceArea
+                        x1={refAreaLeft}
+                        x2={refAreaRight}
+                        y1={refAreaTop}
+                        y2={refAreaBottom}
+                        fill="rgba(255, 102, 255, 0.25)"
+                        stroke="rgba(255, 102, 255, 0.8)"
+                        strokeDasharray="3 3"
+                      />
+                    )}
                     <Brush dataKey="constant" height={25} stroke="#ff66ff" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
                   </ScatterChart>
                 </ResponsiveContainer>

@@ -1,5 +1,5 @@
-import React, { useContext, useState, useDeferredValue, useMemo } from 'react';
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
+import React, { useContext, useState, useDeferredValue, useMemo, useEffect } from 'react';
+import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
@@ -11,11 +11,25 @@ import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 const AppContent = () => {
-  const { playersList, setActivePlayer, isAdmin } = useContext(GlobalContext);
+  const { playersList, activePlayer, setActivePlayer, isAdmin } = useContext(GlobalContext);
   const [searchInput, setSearchInput] = useState('');
   const deferredSearchInput = useDeferredValue(searchInput);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const titleMap: Record<string, string> = {
+      '/': 'ChuniTrrracker - Chunithm Statistics & OP Tracker',
+      '/dashboard': activePlayer ? `${activePlayer} - Dashboard | ChuniTrrracker` : 'Player Dashboard | ChuniTrrracker',
+      '/leaderboard': 'Global Leaderboard | ChuniTrrracker',
+      '/analytics': 'Song Analytics & Leaderboards | ChuniTrrracker',
+      '/performance': 'Server Meta & Skill Analytics | ChuniTrrracker',
+      '/import': 'Import Kamaitachi Data | ChuniTrrracker',
+      '/admin': 'Admin & System Automation | ChuniTrrracker'
+    };
+    document.title = titleMap[location.pathname] || 'ChuniTrrracker - Chunithm Statistics & OP Tracker';
+  }, [location.pathname, activePlayer]);
 
   const searchResults = useMemo(() => {
     if (!deferredSearchInput.trim()) return [];

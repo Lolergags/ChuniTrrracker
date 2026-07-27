@@ -5,6 +5,26 @@ import { ALL_VERSIONS } from '../lib/constants.js';
 export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }) {
   const { filters, setFilters } = useGlobal();
 
+  const PL_OFFLINE_INDEX = ALL_VERSIONS.indexOf('PARADISE LOST');
+  const availableVersions = filters.server === 'PL_OFFLINE'
+    ? ALL_VERSIONS.slice(PL_OFFLINE_INDEX)
+    : ALL_VERSIONS;
+
+  const handleServerChange = (newServer: string) => {
+    if (newServer === 'PL_OFFLINE') {
+      const plIndex = ALL_VERSIONS.indexOf('PARADISE LOST');
+      const plVersions = ALL_VERSIONS.slice(plIndex);
+      const isCurrentVersionValid = (plVersions as readonly string[]).includes(filters.version);
+      setFilters({
+        ...filters,
+        server: newServer,
+        version: isCurrentVersionValid ? filters.version : 'PARADISE LOST'
+      });
+    } else {
+      setFilters({ ...filters, server: newServer });
+    }
+  };
+
   const toggleDiff = (diff: string) => {
     const current = Array.isArray(filters.diff) ? filters.diff : ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'];
     if (current.includes(diff)) {
@@ -21,7 +41,7 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
       <select 
         value={filters.server}
-        onChange={(e) => setFilters({ ...filters, server: e.target.value })}
+        onChange={(e) => handleServerChange(e.target.value)}
         style={selectStyle}
       >
         <option value="JP">Standard (JP Active)</option>
@@ -35,7 +55,7 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
         onChange={(e) => setFilters({ ...filters, version: e.target.value })}
         style={selectStyle}
       >
-        {ALL_VERSIONS.map(v => (
+        {availableVersions.map(v => (
           <option key={v} value={v}>{v}</option>
         ))}
       </select>

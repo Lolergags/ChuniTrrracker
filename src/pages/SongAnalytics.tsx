@@ -272,7 +272,7 @@ const SongAnalytics: React.FC = () => {
               style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', cursor: 'pointer' }}
             >
               <option value="ALL">All Versions</option>
-              {ALL_VERSIONS.map(v => (
+              {(serverFilter === 'PL_OFFLINE' ? ALL_VERSIONS.slice(ALL_VERSIONS.indexOf('PARADISE LOST')) : ALL_VERSIONS).map(v => (
                 <option key={v} value={v}>{v}</option>
               ))}
             </select>

@@ -1,5 +1,5 @@
 import { useContext, useState, useDeferredValue, useMemo } from 'react';
-import { Activity, Trophy, BarChart2, DownloadCloud, ChevronRight, Search } from 'lucide-react';
+import { Activity, Trophy, BarChart2, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 
@@ -59,12 +59,12 @@ export function Landing() {
           <p style={{ color: 'var(--text-secondary)' }}>Discover the easiest charts to farm, average server scores, and regional completion rates.</p>
         </div>
 
-        <div className="glass-panel hover-card" onClick={() => navigate('/import')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="glass-panel hover-card" onClick={() => navigate('/global-stats')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ padding: '1rem', background: 'rgba(255, 102, 255, 0.1)', borderRadius: '50%', color: 'var(--accent-secondary)', marginBottom: '1rem' }}>
-            <DownloadCloud size={32} />
+            <Activity size={32} />
           </div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Import Data</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>Sync your scores directly from Kamaitachi to instantly populate your personal dashboard.</p>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Global Stats</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>Explore grade heatmaps, clear rate distributions, and server-wide Overpower statistics.</p>
         </div>
       </div>
 

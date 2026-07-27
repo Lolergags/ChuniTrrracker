@@ -99,12 +99,12 @@ export function GlobalStats() {
 
   const defaultXDomain = useMemo<[number, number]>(() => {
     const constants = metaData.map((d: any) => d.constant);
-    if (!constants.length) return [1.0, 15.4];
+    if (!constants.length) return [1.0, 16.0];
     const minConst = Math.min(...constants);
     const maxConst = Math.max(...constants);
     return [
       Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
-      Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
+      Math.min(16.0, Number((maxConst + 0.6).toFixed(1)))
     ];
   }, [metaData]);
 
@@ -370,7 +370,7 @@ export function GlobalStats() {
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [metaData]);
+  }, [isLoadingGlobal, metaData]);
 
   const getConstantLabel = (constant: number) => {
     return constant.toFixed(1);
@@ -804,7 +804,7 @@ export function GlobalStats() {
                       allowDataOverflow={true}
                       stroke="var(--text-secondary)"
                       tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
-                      domain={globalScatterZoomX || ['dataMin', 'dataMax']}
+                      domain={globalScatterZoomX || defaultXDomain}
                     />
                     <YAxis 
                       type="number" 

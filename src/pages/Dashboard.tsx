@@ -162,12 +162,12 @@ export function Dashboard() {
 
   const defaultXDomain = useMemo<[number, number]>(() => {
     const constants = uniqueScores.map(s => s.constant);
-    if (!constants.length) return [1.0, 15.4];
+    if (!constants.length) return [1.0, 16.0];
     const minConst = Math.min(...constants);
     const maxConst = Math.max(...constants);
     return [
       Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
-      Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
+      Math.min(16.0, Number((maxConst + 0.6).toFixed(1)))
     ];
   }, [uniqueScores]);
 
@@ -431,9 +431,8 @@ export function Dashboard() {
       elem.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [uniqueScores]);
+  }, [isLoading, stats, uniqueScores]);
 
   const requestSort = (key: keyof ApiProcessedScore | 'lampValue') => {
     let direction: 'asc' | 'desc' = 'desc';
@@ -818,7 +817,7 @@ export function Dashboard() {
                   type="number" 
                   dataKey="constant" 
                   allowDataOverflow={true}
-                  domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
+                  domain={scatterZoomX || defaultXDomain} 
                   stroke="var(--text-secondary)" 
                   tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}

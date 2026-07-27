@@ -6,6 +6,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
+import { shouldResetZoomOut } from '../lib/utils/scatterZoom.js';
 
 export function Dashboard() {
   const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
@@ -236,9 +237,7 @@ export function Dashboard() {
       const spanY = curSpanY * zoomFactor;
 
       if (e.deltaY > 0) {
-        const ratioX = spanX / defSpanX;
-        const ratioY = spanY / defSpanY;
-        if (ratioX >= 0.95 || ratioY >= 0.95) {
+        if (shouldResetZoomOut(curSpanX, curSpanY, defSpanX, defSpanY, zoomFactor)) {
           setScatterZoomX(null);
           setScatterZoomY(null);
           return;

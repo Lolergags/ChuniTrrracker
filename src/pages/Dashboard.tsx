@@ -333,7 +333,7 @@ export function Dashboard() {
                   dataKey="score" 
                   name="Score" 
                   domain={[(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
-                  ticks={[975000, 1000000, 1005000, 1007500, 1010000]}
+                  ticks={[975000, 990000, 1000000, 1005000, 1007500, 1010000]}
                   stroke="var(--text-secondary)"
                   tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {
@@ -341,6 +341,7 @@ export function Dashboard() {
                     if (val === 1007500) return '1007.5k (SSS)';
                     if (val === 1005000) return '1005k (SS+)';
                     if (val === 1000000) return '1000k (SS)';
+                    if (val === 990000) return '990k (S+)';
                     if (val === 975000) return '975k (S)';
                     return (val / 1000).toFixed(0) + 'k';
                   }}

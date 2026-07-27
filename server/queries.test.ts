@@ -110,4 +110,50 @@ describe('Chart Query Logic & Ghost Chart Exclusions', () => {
     expect(level1Row).toBeDefined();
     expect(level1Row.count).toBe(1);
   });
+
+  it('should correctly count ULTIMA charts based on chart.version instead of song.version', () => {
+    // Schema with version columns
+    db.exec(`
+      ALTER TABLE charts ADD COLUMN version TEXT NOT NULL DEFAULT '';
+      ALTER TABLE songs ADD COLUMN is_pl_offline_active INTEGER NOT NULL DEFAULT 1;
+    `);
+
+    const insertSong = db.prepare('INSERT INTO songs (id, title, artist, version, is_jp_active, is_pl_offline_active) VALUES (?, ?, ?, ?, 1, 1)');
+    const insertChart = db.prepare('INSERT INTO charts (id, song_id, difficulty, constant, level, version) VALUES (?, ?, ?, ?, ?, ?)');
+
+    // Song released in CHUNITHM
+    insertSong.run(200, 'Legacy Song', 'Artist B', 'CHUNITHM');
+    // MAS chart added in CHUNITHM
+    insertChart.run(2001, 200, 'MAS', 13.0, '13', 'CHUNITHM');
+    // ULT chart added much later in SUN
+    insertChart.run(2002, 200, 'ULT', 14.8, '14+', 'SUN');
+
+    // 1. Querying at AIR version (CHUNITHM -> AIR)
+    const filterAir = getChartFilterConditions({ server: 'JP', version: 'AIR' }, 'songs', 'c');
+    const whereAir = `WHERE ${filterAir.conditions.join(' AND ')}`;
+    const chartsAir = db.prepare(`SELECT c.id FROM charts c JOIN songs ON c.song_id = songs.id ${whereAir}`).all(...filterAir.bindings) as any[];
+
+    // AIR version should include the MAS chart (CHUNITHM) but exclude the ULT chart (SUN)
+    expect(chartsAir.some(c => c.id === 2001)).toBe(true);
+    expect(chartsAir.some(c => c.id === 2002)).toBe(false);
+
+    // 2. Querying at SUN version for JP server (CHUNITHM -> SUN)
+    const filterSun = getChartFilterConditions({ server: 'JP', version: 'SUN' }, 'songs', 'c');
+    const whereSun = `WHERE ${filterSun.conditions.join(' AND ')}`;
+    const chartsSun = db.prepare(`SELECT c.id FROM charts c JOIN songs ON c.song_id = songs.id ${whereSun}`).all(...filterSun.bindings) as any[];
+
+    // SUN version should include both MAS and ULT charts
+    expect(chartsSun.some(c => c.id === 2001)).toBe(true);
+    expect(chartsSun.some(c => c.id === 2002)).toBe(true);
+
+    // 3. Querying for PL_OFFLINE server even with LUMINOUS version selected
+    const filterPl = getChartFilterConditions({ server: 'PL_OFFLINE', version: 'LUMINOUS' }, 'songs', 'c');
+    const wherePl = `WHERE ${filterPl.conditions.join(' AND ')}`;
+    const chartsPl = db.prepare(`SELECT c.id FROM charts c JOIN songs ON c.song_id = songs.id ${wherePl}`).all(...filterPl.bindings) as any[];
+
+    // PL_OFFLINE should include MAS chart (CHUNITHM) but strictly exclude ULT chart (SUN)
+    expect(chartsPl.some(c => c.id === 2001)).toBe(true);
+    expect(chartsPl.some(c => c.id === 2002)).toBe(false);
+  });
 });
+

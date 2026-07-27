@@ -246,7 +246,19 @@ select option {
   color: var(--text-primary) !important;
 }
 
-/* Remove SVG element click focus outlines & bounding boxes */
+/* Remove SVG element click focus outlines & bounding boxes, and prevent text selection while dragging */
+.scrollable-content-wrapper,
+.recharts-wrapper,
+.recharts-surface,
+.recharts-layer,
+.recharts-cartesian-axis-tick-value,
+svg text {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
 .recharts-wrapper *,
 .recharts-surface *,
 .recharts-layer *,

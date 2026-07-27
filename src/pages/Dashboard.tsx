@@ -154,6 +154,62 @@ export function Dashboard() {
       return { defX, defY, curX, curY };
     };
 
+    const clampDomainX = (minX: number, maxX: number, defX: [number, number]): [number, number] => {
+      const minAllowedX = 1.0;
+      const maxAllowedX = Math.max(defX[1], 15.4);
+      const spanX = maxX - minX;
+
+      let finalMinX = minX;
+      let finalMaxX = maxX;
+
+      if (finalMinX < minAllowedX) {
+        finalMinX = minAllowedX;
+        if (spanX <= maxAllowedX - minAllowedX) {
+          finalMaxX = finalMinX + spanX;
+        } else {
+          finalMaxX = maxAllowedX;
+        }
+      }
+      if (finalMaxX > maxAllowedX) {
+        finalMaxX = maxAllowedX;
+        if (spanX <= maxAllowedX - minAllowedX) {
+          finalMinX = Math.max(minAllowedX, finalMaxX - spanX);
+        } else {
+          finalMinX = minAllowedX;
+        }
+      }
+
+      return [Number(finalMinX.toFixed(1)), Number(finalMaxX.toFixed(1))];
+    };
+
+    const clampDomainY = (minY: number, maxY: number): [number, number] => {
+      const minAllowedY = 0;
+      const maxAllowedY = 1010000;
+      const spanY = maxY - minY;
+
+      let finalMinY = minY;
+      let finalMaxY = maxY;
+
+      if (finalMinY < minAllowedY) {
+        finalMinY = minAllowedY;
+        if (spanY <= maxAllowedY - minAllowedY) {
+          finalMaxY = finalMinY + spanY;
+        } else {
+          finalMaxY = maxAllowedY;
+        }
+      }
+      if (finalMaxY > maxAllowedY) {
+        finalMaxY = maxAllowedY;
+        if (spanY <= maxAllowedY - minAllowedY) {
+          finalMinY = Math.max(minAllowedY, finalMaxY - spanY);
+        } else {
+          finalMinY = minAllowedY;
+        }
+      }
+
+      return [Math.round(finalMinY), Math.round(finalMaxY)];
+    };
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { defX, defY, curX, curY } = getDomains();
@@ -177,10 +233,13 @@ export function Dashboard() {
       if (spanX < 0.2 && e.deltaY < 0) return;
       if (spanY < 1000 && e.deltaY < 0) return;
 
-      const newMinX = Number((focalX - xFrac * spanX).toFixed(1));
-      const newMaxX = Number((focalX + (1 - xFrac) * spanX).toFixed(1));
-      const newMinY = Math.max(0, Math.round(focalY - yFrac * spanY));
-      const newMaxY = Math.min(1010000, Math.round(focalY + (1 - yFrac) * spanY));
+      const rawMinX = focalX - xFrac * spanX;
+      const rawMaxX = focalX + (1 - xFrac) * spanX;
+      const rawMinY = focalY - yFrac * spanY;
+      const rawMaxY = focalY + (1 - yFrac) * spanY;
+
+      const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
+      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
 
       if (newMinX <= defX[0] && newMaxX >= defX[1] && newMinY <= defY[0] && newMaxY >= defY[1]) {
         setScatterZoomX(null);
@@ -205,6 +264,7 @@ export function Dashboard() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!panRef.current.isDragging) return;
       e.preventDefault();
+      const { defX } = getDomains();
 
       const rect = elem.getBoundingClientRect();
       const plotWidth = Math.max(100, rect.width - 105);
@@ -213,10 +273,13 @@ export function Dashboard() {
       const deltaX = -((e.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
       const deltaY = ((e.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-      const newMinX = Number((panRef.current.startDomainX[0] + deltaX).toFixed(1));
-      const newMaxX = Number((panRef.current.startDomainX[1] + deltaX).toFixed(1));
-      const newMinY = Math.max(0, Math.round(panRef.current.startDomainY[0] + deltaY));
-      const newMaxY = Math.min(1010000, Math.round(panRef.current.startDomainY[1] + deltaY));
+      const rawMinX = panRef.current.startDomainX[0] + deltaX;
+      const rawMaxX = panRef.current.startDomainX[1] + deltaX;
+      const rawMinY = panRef.current.startDomainY[0] + deltaY;
+      const rawMaxY = panRef.current.startDomainY[1] + deltaY;
+
+      const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
+      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
 
       setScatterZoomX([newMinX, newMaxX]);
       setScatterZoomY([newMinY, newMaxY]);
@@ -265,6 +328,7 @@ export function Dashboard() {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      const { defX } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         e.preventDefault();
         const t = e.touches[0];
@@ -275,10 +339,13 @@ export function Dashboard() {
         const deltaX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
         const deltaY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-        const newMinX = Number((panRef.current.startDomainX[0] + deltaX).toFixed(1));
-        const newMaxX = Number((panRef.current.startDomainX[1] + deltaX).toFixed(1));
-        const newMinY = Math.max(0, Math.round(panRef.current.startDomainY[0] + deltaY));
-        const newMaxY = Math.min(1010000, Math.round(panRef.current.startDomainY[1] + deltaY));
+        const rawMinX = panRef.current.startDomainX[0] + deltaX;
+        const rawMaxX = panRef.current.startDomainX[1] + deltaX;
+        const rawMinY = panRef.current.startDomainY[0] + deltaY;
+        const rawMaxY = panRef.current.startDomainY[1] + deltaY;
+
+        const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
 
         setScatterZoomX([newMinX, newMaxX]);
         setScatterZoomY([newMinY, newMaxY]);
@@ -305,10 +372,13 @@ export function Dashboard() {
         const xFrac = Math.max(0, Math.min(1, (midX - plotLeft) / plotWidth));
         const yFrac = Math.max(0, Math.min(1, 1 - (midY - plotTop) / plotHeight));
 
-        const newMinX = Number((panRef.current.touchFocalX - xFrac * spanX).toFixed(1));
-        const newMaxX = Number((panRef.current.touchFocalX + (1 - xFrac) * spanX).toFixed(1));
-        const newMinY = Math.max(0, Math.round(panRef.current.touchFocalY - yFrac * spanY));
-        const newMaxY = Math.min(1010000, Math.round(panRef.current.touchFocalY + (1 - yFrac) * spanY));
+        const rawMinX = panRef.current.touchFocalX - xFrac * spanX;
+        const rawMaxX = panRef.current.touchFocalX + (1 - xFrac) * spanX;
+        const rawMinY = panRef.current.touchFocalY - yFrac * spanY;
+        const rawMaxY = panRef.current.touchFocalY + (1 - yFrac) * spanY;
+
+        const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
 
         setScatterZoomX([newMinX, newMaxX]);
         setScatterZoomY([newMinY, newMaxY]);

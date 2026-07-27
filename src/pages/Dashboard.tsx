@@ -750,6 +750,11 @@ export function Dashboard() {
               <ScatterChart 
                 margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
               >
+                <defs>
+                  <clipPath id="custom-scatter-clip">
+                    <rect x="105" y="-500" width="10000" height="875" />
+                  </clipPath>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis 
                   type="number" 

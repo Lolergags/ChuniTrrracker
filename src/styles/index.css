@@ -277,7 +277,7 @@ rect:focus {
 /* Allow scatter plot data points to overflow past top and right edges, but strictly clip at left (Y-axis) and bottom (X-axis) bounds */
 .recharts-scatter,
 .recharts-layer.recharts-scatter {
-  clip-path: inset(-50px -50px 0px 0px) !important;
+  clip-path: url(#custom-scatter-clip) !important;
   overflow: visible !important;
 }
 

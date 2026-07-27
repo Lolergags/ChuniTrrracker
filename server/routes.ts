@@ -430,12 +430,12 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     { min: 985000, max: 989999, label: '985k', count: 0 },
     { min: 990000, max: 994999, label: '990k', count: 0 },
     { min: 995000, max: 999999, label: '995k', count: 0 },
-    { min: 1000000, max: 1004999, label: '1000k (SS)', count: 0 },
-    { min: 1005000, max: 1007499, label: '1005k (SS+)', count: 0 },
-    { min: 1007500, max: 1008999, label: '1007.5k (SSS)', count: 0 },
-    { min: 1009000, max: 1009799, label: '1009k (SSS+)', count: 0 },
-    { min: 1009800, max: 1009999, label: '1009.8k (98AJ)', count: 0 },
-    { min: 1010000, max: 1010000, label: '1010k (AJC)', count: 0 }
+    { min: 1000000, max: 1004999, label: '1000k', count: 0 },
+    { min: 1005000, max: 1007499, label: '1005k', count: 0 },
+    { min: 1007500, max: 1008999, label: '1007.5k', count: 0 },
+    { min: 1009000, max: 1009799, label: '1009k', count: 0 },
+    { min: 1009800, max: 1009999, label: '1009.8k', count: 0 },
+    { min: 1010000, max: 1010000, label: '1010k', count: 0 }
   ];
 
   allScoresQuery.forEach(row => {

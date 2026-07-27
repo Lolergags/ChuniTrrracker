@@ -58,24 +58,24 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="https://ko-fi.com"
+                  href="https://buymeacoffee.com/lolergags"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--text-secondary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ff66aa'}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffdd00'}
                   onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
                 >
-                  <Heart size={16} style={{ color: '#ff66aa' }} /> Support Project <ExternalLink size={12} />
+                  <Heart size={16} style={{ color: '#ffdd00' }} /> Support Project (Buy Me a Coffee) <ExternalLink size={12} />
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:contact@chunitrrracker.dev"
+                  href="mailto:lolergags@proton.me"
                   style={{ color: 'var(--text-secondary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: 'color 0.2s' }}
                   onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-primary)'}
                   onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
                 >
-                  <Mail size={16} /> Contact Developer
+                  <Mail size={16} /> Contact Developer (lolergags@proton.me)
                 </a>
               </li>
             </ul>

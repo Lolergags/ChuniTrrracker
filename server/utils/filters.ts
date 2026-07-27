@@ -82,6 +82,8 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
       const placeholders = diffArray.map(() => '?').join(', ');
       conditions.push(`${chartsAlias}.difficulty IN (${placeholders})`);
       bindings.push(...diffArray);
+    } else {
+      conditions.push('1 = 0');
     }
   }
 

@@ -70,4 +70,9 @@ describe('getChartFilterConditions', () => {
     expect(conditions).toContain("c.version IN (?, ?, ?)");
     expect(bindings).toEqual(['CHUNITHM', 'CHUNITHM PLUS', 'AIR']);
   });
+
+  it('should return 1 = 0 condition when selecting only ULT on PL_OFFLINE', () => {
+    const { conditions } = getChartFilterConditions({ server: 'PL_OFFLINE', diff: ['ULT'] });
+    expect(conditions).toContain("1 = 0");
+  });
 });

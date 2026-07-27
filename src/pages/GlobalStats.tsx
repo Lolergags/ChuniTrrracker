@@ -97,31 +97,38 @@ export function GlobalStats() {
   const globalScatterZoomYRef = useRef(globalScatterZoomY);
   globalScatterZoomYRef.current = globalScatterZoomY;
 
-  const defaultXRef = useRef<[number, number]>([1.0, 15.4]);
-  const defaultYRef = useRef<[number, number]>([975000, 1010000]);
+  const defaultXDomain = useMemo<[number, number]>(() => {
+    const constants = metaData.map((d: any) => d.constant);
+    if (!constants.length) return [1.0, 15.4];
+    const minConst = Math.min(...constants);
+    const maxConst = Math.max(...constants);
+    return [
+      Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
+      Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
+    ];
+  }, [metaData]);
+
+  const defaultYDomain = useMemo<[number, number]>(() => {
+    const scores = metaData.map((d: any) => d.avgScore);
+    if (!scores.length) return [975000, 1010000];
+    const lowest = Math.min(...scores);
+    const defYMin = Math.max(975000, Math.floor(lowest / 5000) * 5000);
+    return [defYMin, 1010000];
+  }, [metaData]);
+
+  const defaultXRef = useRef<[number, number]>(defaultXDomain);
+  defaultXRef.current = defaultXDomain;
+
+  const defaultYRef = useRef<[number, number]>(defaultYDomain);
+  defaultYRef.current = defaultYDomain;
 
   useEffect(() => {
     const elem = globalScatterContainerRef.current;
     if (!elem) return;
 
     const getDomains = () => {
-      const constants = metaData.map(d => d.constant);
-      const minConst = constants.length ? Math.min(...constants) : 1.0;
-      const maxConst = constants.length ? Math.max(...constants) : 15.4;
-
-      const defX: [number, number] = [
-        Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
-        Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
-      ];
-
-      const scores = metaData.map(d => d.avgScore);
-      const minScore = scores.length ? Math.min(...scores) : 975000;
-      const defYMin = Math.max(975000, Math.floor(minScore / 5000) * 5000);
-      const defY: [number, number] = [defYMin, 1010000];
-
-      defaultXRef.current = defX;
-      defaultYRef.current = defY;
-
+      const defX = defaultXRef.current;
+      const defY = defaultYRef.current;
       const curX = globalScatterZoomXRef.current || defX;
       const curY = globalScatterZoomYRef.current || defY;
       return { defX, defY, curX, curY };

@@ -160,31 +160,38 @@ export function Dashboard() {
   const scatterZoomYRef = useRef(scatterZoomY);
   scatterZoomYRef.current = scatterZoomY;
 
-  const defaultXRef = useRef<[number, number]>([1.0, 15.4]);
-  const defaultYRef = useRef<[number, number]>([975000, 1010000]);
+  const defaultXDomain = useMemo<[number, number]>(() => {
+    const constants = uniqueScores.map(s => s.constant);
+    if (!constants.length) return [1.0, 15.4];
+    const minConst = Math.min(...constants);
+    const maxConst = Math.max(...constants);
+    return [
+      Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
+      Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
+    ];
+  }, [uniqueScores]);
+
+  const defaultYDomain = useMemo<[number, number]>(() => {
+    const scores = uniqueScores.map(s => s.score);
+    if (!scores.length) return [975000, 1010000];
+    const lowest = Math.min(...scores);
+    const defYMin = Math.max(0, Math.floor(lowest / 5000) * 5000);
+    return [defYMin, 1010000];
+  }, [uniqueScores]);
+
+  const defaultXRef = useRef<[number, number]>(defaultXDomain);
+  defaultXRef.current = defaultXDomain;
+
+  const defaultYRef = useRef<[number, number]>(defaultYDomain);
+  defaultYRef.current = defaultYDomain;
 
   useEffect(() => {
     const elem = scatterContainerRef.current;
     if (!elem) return;
 
     const getDomains = () => {
-      const constants = uniqueScores.map(s => s.constant);
-      const minConst = constants.length ? Math.min(...constants) : 1.0;
-      const maxConst = constants.length ? Math.max(...constants) : 15.4;
-
-      const defX: [number, number] = [
-        Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
-        Math.min(15.5, Number((maxConst + 0.5).toFixed(1)))
-      ];
-
-      const scores = uniqueScores.map(s => s.score);
-      const minScore = scores.length ? Math.min(...scores) : 975000;
-      const defYMin = scores.length ? Math.max(0, Math.floor(minScore / 5000) * 5000) : 975000;
-      const defY: [number, number] = [defYMin, 1010000];
-
-      defaultXRef.current = defX;
-      defaultYRef.current = defY;
-
+      const defX = defaultXRef.current;
+      const defY = defaultYRef.current;
       const curX = scatterZoomXRef.current || defX;
       const curY = scatterZoomYRef.current || defY;
       return { defX, defY, curX, curY };

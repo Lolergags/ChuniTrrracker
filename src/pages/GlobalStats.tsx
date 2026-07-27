@@ -63,6 +63,7 @@ const GlobalStats: React.FC = () => {
     touchStartZoomY: [number, number] | null;
     touchFocalX: number;
     touchFocalY: number;
+    startScrollLeft: number;
   }>({
     isDragging: false,
     startX: 0,
@@ -73,7 +74,8 @@ const GlobalStats: React.FC = () => {
     touchStartZoomX: null,
     touchStartZoomY: null,
     touchFocalX: 0,
-    touchFocalY: 0
+    touchFocalY: 0,
+    startScrollLeft: 0
   });
 
   const globalScatterZoomXRef = useRef(globalScatterZoomX);
@@ -90,8 +92,7 @@ const GlobalStats: React.FC = () => {
     if (!elem) return;
 
     const getDomains = () => {
-      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
-      const constants = validMeta.map((d: any) => d.constant);
+      const constants = metaData.map(d => d.constant);
       const defX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.5] : [1.0, 15.5];
       const defY: [number, number] = [975000, 1010000];
       defaultXRef.current = defX;
@@ -151,6 +152,7 @@ const GlobalStats: React.FC = () => {
       panRef.current.isDragging = true;
       panRef.current.startX = e.clientX;
       panRef.current.startY = e.clientY;
+      panRef.current.startScrollLeft = elem.scrollLeft;
       panRef.current.startDomainX = curX;
       panRef.current.startDomainY = curY;
       setIsPanDragging(true);
@@ -159,7 +161,12 @@ const GlobalStats: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!panRef.current.isDragging) return;
       e.preventDefault();
-      const { defX } = getDomains();
+      const { defX, defY } = getDomains();
+
+      if (elem.scrollWidth > elem.clientWidth && !globalScatterZoomXRef.current) {
+        elem.scrollLeft = panRef.current.startScrollLeft - (e.clientX - panRef.current.startX);
+        return;
+      }
 
       const rect = elem.getBoundingClientRect();
       const plotWidth = Math.max(100, rect.width - 105);
@@ -174,7 +181,7 @@ const GlobalStats: React.FC = () => {
       const rawMaxY = panRef.current.startDomainY[1] + deltaY;
 
       const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+      const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
       setGlobalScatterZoomX([newMinX, newMaxX]);
       setGlobalScatterZoomY([newMinY, newMaxY]);
@@ -195,6 +202,7 @@ const GlobalStats: React.FC = () => {
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
         panRef.current.startY = t.clientY;
+        panRef.current.startScrollLeft = elem.scrollLeft;
         panRef.current.startDomainX = curX;
         panRef.current.startDomainY = curY;
         setIsPanDragging(true);
@@ -228,6 +236,12 @@ const GlobalStats: React.FC = () => {
       if (e.touches.length === 1 && panRef.current.isDragging) {
         e.preventDefault();
         const t = e.touches[0];
+
+        if (elem.scrollWidth > elem.clientWidth && !globalScatterZoomXRef.current) {
+          elem.scrollLeft = panRef.current.startScrollLeft - (t.clientX - panRef.current.startX);
+          return;
+        }
+
         const rect = elem.getBoundingClientRect();
         const plotWidth = Math.max(100, rect.width - 105);
         const plotHeight = Math.max(100, rect.height - 60);

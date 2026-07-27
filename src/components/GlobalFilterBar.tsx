@@ -30,6 +30,16 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
         <option value="OMNI">Omnimix (All Charts)</option>
       </select>
 
+      <select 
+        value={filters.version}
+        onChange={(e) => setFilters({ ...filters, version: e.target.value })}
+        style={selectStyle}
+      >
+        {ALL_VERSIONS.map(v => (
+          <option key={v} value={v}>{v}</option>
+        ))}
+      </select>
+
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
           <button
@@ -51,16 +61,6 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
           </button>
         ))}
       </div>
-
-      <select 
-        value={filters.version}
-        onChange={(e) => setFilters({ ...filters, version: e.target.value })}
-        style={selectStyle}
-      >
-        {ALL_VERSIONS.map(v => (
-          <option key={v} value={v}>{v}</option>
-        ))}
-      </select>
       
       {showRating && (
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '0.5rem' }}>

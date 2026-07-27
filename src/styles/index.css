@@ -98,6 +98,34 @@ h1, h2, h3, h4 {
   color: var(--text-primary);
 }
 
+.nav-search-form {
+  display: flex;
+  position: relative;
+}
+
+.nav-search-container {
+  position: relative;
+  width: 250px;
+}
+
+.nav-search-input {
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 2.2rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.nav-search-input:focus {
+  border-color: var(--accent-primary);
+  background: rgba(0, 0, 0, 0.5);
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -127,11 +155,12 @@ h1, h2, h3, h4 {
     padding: var(--spacing-md);
   }
   
-  /* Make navbar layout stack or scroll */
+  /* Make navbar layout stack cleanly with generous spacing */
   .navbar {
     flex-direction: column;
     align-items: flex-start;
     padding: var(--spacing-sm) var(--spacing-md);
+    gap: 0.5rem;
   }
   
   .nav-logo h2 {
@@ -143,14 +172,30 @@ h1, h2, h3, h4 {
     overflow-x: auto;
     flex-wrap: nowrap;
     white-space: nowrap;
-    padding-top: var(--spacing-sm);
-    padding-bottom: var(--spacing-xs);
+    padding-top: var(--spacing-xs);
+    padding-bottom: 0.6rem;
     /* Hide scrollbar for a cleaner look while keeping it scrollable */
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .nav-links::-webkit-scrollbar {
     display: none;
+  }
+
+  .nav-search-form {
+    width: 100%;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-search-container {
+    width: 100%;
+  }
+
+  .nav-search-input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.4rem;
+    font-size: 0.95rem;
   }
 }
 

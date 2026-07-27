@@ -92,11 +92,12 @@ const AppContent = () => {
           )}
         </div>
 
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', position: 'relative' }}>
-          <div>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-secondary)' }} />
+        <form onSubmit={handleSearch} className="nav-search-form">
+          <div className="nav-search-container">
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
             <input 
               type="search" 
+              className="nav-search-input"
               value={searchInput} 
               onChange={(e) => {
                 setSearchInput(e.target.value);
@@ -105,15 +106,6 @@ const AppContent = () => {
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
               placeholder="Search Players..."
-              style={{ 
-                padding: '0.5rem 1rem 0.5rem 2rem', 
-                borderRadius: 'var(--radius-full)', 
-                border: '1px solid rgba(255,255,255,0.2)',
-                background: 'rgba(0,0,0,0.3)',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                width: '250px'
-              }}
             />
             {showDropdown && deferredSearchInput.trim().length > 0 && (
               <ul style={{

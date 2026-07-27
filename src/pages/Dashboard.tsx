@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
-import { Search, ChevronRight, RotateCcw, User, UserX } from 'lucide-react';
+import { Search, ChevronRight, RotateCcw, UserX } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
 import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
+import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY } from '../lib/utils/scatterZoom.js';
 
@@ -13,6 +14,11 @@ export function Dashboard() {
   const [stats, setStats] = useState<ApiPlayerStats | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [playerInput, setPlayerInput] = useState(activePlayer || '');
+
+  useEffect(() => {
+    setPlayerInput(activePlayer || '');
+  }, [activePlayer]);
 
   const [scatterZoomX, setScatterZoomX] = useState<[number, number] | null>(null);
   const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
@@ -496,44 +502,33 @@ export function Dashboard() {
             </p>
           </div>
 
-          {/* Quick Player Dropdown Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              background: 'rgba(255, 255, 255, 0.05)', 
-              padding: '0.4rem 0.75rem', 
-              borderRadius: 'var(--radius-md)', 
-              border: '1px solid rgba(255, 255, 255, 0.1)' 
-            }}>
-              <User size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-              <select
-                value={activePlayer || ''}
-                onChange={(e) => {
-                  if (e.target.value) setActivePlayer(e.target.value);
-                }}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  paddingRight: '0.5rem'
-                }}
-              >
-                {playersList.map(p => (
-                  <option key={p} value={p} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Quick Player Autocomplete Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', minWidth: '240px' }}>
+            <PlayerAutocomplete
+              value={playerInput}
+              onChange={(val) => {
+                setPlayerInput(val);
+                if (playersList.includes(val)) {
+                  setActivePlayer(val);
+                }
+              }}
+              placeholder="Switch player..."
+              style={{
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '0.45rem 0.85rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.9rem',
+                outline: 'none'
+              }}
+            />
 
             <button
-              onClick={() => setActivePlayer(null)}
+              onClick={() => {
+                setActivePlayer(null);
+                setPlayerInput('');
+              }}
               className="hover-card"
               title="Clear selected player"
               style={{
@@ -546,7 +541,8 @@ export function Dashboard() {
                 fontSize: '0.9rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem'
+                gap: '0.35rem',
+                flexShrink: 0
               }}
             >
               <UserX size={15} /> Clear
@@ -554,9 +550,9 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Row 2: Global Filters Bar */}
+        {/* Row 2: Global Filters Bar (Server, Version, Difficulty) */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <GlobalFilterBar showRating={true} />
+          <GlobalFilterBar showRating={false} />
         </div>
       </div>
       

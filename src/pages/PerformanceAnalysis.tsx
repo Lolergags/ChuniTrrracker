@@ -173,9 +173,24 @@ const PerformanceAnalysis: React.FC = () => {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
+      const defSpanX = defX[1] - defX[0];
+      const defSpanY = defY[1] - defY[0];
+      const curSpanX = curX[1] - curX[0];
+      const curSpanY = curY[1] - curY[0];
+
       const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-      const spanX = (curX[1] - curX[0]) * zoomFactor;
-      const spanY = (curY[1] - curY[0]) * zoomFactor;
+      const spanX = curSpanX * zoomFactor;
+      const spanY = curSpanY * zoomFactor;
+
+      if (e.deltaY > 0) {
+        const ratioX = spanX / defSpanX;
+        const ratioY = spanY / defSpanY;
+        if (ratioX >= 0.95 || ratioY >= 0.95) {
+          setGlobalScatterZoomX(null);
+          setGlobalScatterZoomY(null);
+          return;
+        }
+      }
 
       if (spanX < 0.2 && e.deltaY < 0) return;
       if (spanY < 1000 && e.deltaY < 0) return;

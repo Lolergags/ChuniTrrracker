@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush, ReferenceArea } from 'recharts';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Move, ZoomIn } from 'lucide-react';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
@@ -20,6 +20,10 @@ const PerformanceAnalysis: React.FC = () => {
   const { filters } = useGlobal();
   const [globalScatterZoomX, setGlobalScatterZoomX] = useState<[number, number] | null>(null);
   const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
+  const [scatterMode, setScatterMode] = useState<'pan' | 'box'>('pan');
+  const [isPanDragging, setIsPanDragging] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
+  const [panDomain, setPanDomain] = useState<{ x: [number, number]; y: [number, number] } | null>(null);
   const [refAreaLeft, setRefAreaLeft] = useState<number | null>(null);
   const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
   const [refAreaTop, setRefAreaTop] = useState<number | null>(null);
@@ -107,6 +111,8 @@ const PerformanceAnalysis: React.FC = () => {
     let touchStartZoomY: [number, number] | null = null;
     let touchFocalX = 0;
     let touchFocalY = 0;
+    let touchPanStart: { x: number; y: number } | null = null;
+    let touchPanDomain: { x: [number, number]; y: [number, number] } | null = null;
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
@@ -131,6 +137,10 @@ const PerformanceAnalysis: React.FC = () => {
         touchStartZoomY = currentY;
         touchFocalX = currentX[0] + xFrac * (currentX[1] - currentX[0]);
         touchFocalY = currentY[0] + yFrac * (currentY[1] - currentY[0]);
+      } else if (e.touches.length === 1 && scatterMode === 'pan') {
+        const t = e.touches[0];
+        touchPanStart = { x: t.clientX, y: t.clientY };
+        touchPanDomain = { x: currentX, y: currentY };
       }
     };
 
@@ -165,6 +175,23 @@ const PerformanceAnalysis: React.FC = () => {
 
         setGlobalScatterZoomX([newMinX, newMaxX]);
         setGlobalScatterZoomY([newMinY, newMaxY]);
+      } else if (e.touches.length === 1 && touchPanStart && touchPanDomain && scatterMode === 'pan') {
+        e.preventDefault();
+        const t = e.touches[0];
+        const rect = elem.getBoundingClientRect();
+        const plotWidth = Math.max(100, rect.width - 105);
+        const plotHeight = Math.max(100, rect.height - 60);
+
+        const deltaX = -((t.clientX - touchPanStart.x) / plotWidth) * (touchPanDomain.x[1] - touchPanDomain.x[0]);
+        const deltaY = ((t.clientY - touchPanStart.y) / plotHeight) * (touchPanDomain.y[1] - touchPanDomain.y[0]);
+
+        const newMinX = Number((touchPanDomain.x[0] + deltaX).toFixed(1));
+        const newMaxX = Number((touchPanDomain.x[1] + deltaX).toFixed(1));
+        const newMinY = Math.max(0, Math.round(touchPanDomain.y[0] + deltaY));
+        const newMaxY = Math.min(1010000, Math.round(touchPanDomain.y[1] + deltaY));
+
+        setGlobalScatterZoomX([newMinX, newMaxX]);
+        setGlobalScatterZoomY([newMinY, newMaxY]);
       }
     };
 
@@ -173,6 +200,10 @@ const PerformanceAnalysis: React.FC = () => {
         touchStartDist = null;
         touchStartZoomX = null;
         touchStartZoomY = null;
+      }
+      if (e.touches.length === 0) {
+        touchPanStart = null;
+        touchPanDomain = null;
       }
     };
 
@@ -573,6 +604,47 @@ const PerformanceAnalysis: React.FC = () => {
                   />
                 </div>
 
+                <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--bg-secondary)', borderRadius: '4px', padding: '0.15rem', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <button
+                    onClick={() => setScatterMode('pan')}
+                    title="Drag to Pan"
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '3px',
+                      background: scatterMode === 'pan' ? 'var(--accent-secondary)' : 'transparent',
+                      border: 'none',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontSize: '0.8rem',
+                      fontWeight: scatterMode === 'pan' ? 'bold' : 'normal'
+                    }}
+                  >
+                    <Move size={13} /> Pan
+                  </button>
+                  <button
+                    onClick={() => setScatterMode('box')}
+                    title="Click & Drag Box to Zoom"
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '3px',
+                      background: scatterMode === 'box' ? 'var(--accent-secondary)' : 'transparent',
+                      border: 'none',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontSize: '0.8rem',
+                      fontWeight: scatterMode === 'box' ? 'bold' : 'normal'
+                    }}
+                  >
+                    <ZoomIn size={13} /> Box
+                  </button>
+                </div>
+
                 {(globalScatterZoomX || globalScatterZoomY) && (
                   <button
                     onClick={() => { setGlobalScatterZoomX(null); setGlobalScatterZoomY(null); }}
@@ -588,14 +660,24 @@ const PerformanceAnalysis: React.FC = () => {
             <div 
               ref={globalScatterContainerRef}
               className="scrollable-content-wrapper" 
-              style={{ overflowY: 'hidden' }}
+              style={{ overflowY: 'hidden', cursor: scatterMode === 'pan' ? (isPanDragging ? 'grabbing' : 'grab') : 'crosshair' }}
             >
               <div className="chart-min-width-md" style={{ height: '430px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart 
                     margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                     onMouseDown={(e: any) => {
-                      if (e && e.xValue !== undefined && e.yValue !== undefined) {
+                      if (scatterMode === 'pan') {
+                        if (e && e.chartX !== undefined && e.chartY !== undefined) {
+                          setIsPanDragging(true);
+                          setPanStart({ x: e.chartX, y: e.chartY });
+                          const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                          const constants = validMeta.map((d: any) => d.constant);
+                          const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+                          const defaultY: [number, number] = [975000, 1010000];
+                          setPanDomain({ x: globalScatterZoomX || defaultX, y: globalScatterZoomY || defaultY });
+                        }
+                      } else if (e && e.xValue !== undefined && e.yValue !== undefined) {
                         setRefAreaLeft(e.xValue);
                         setRefAreaTop(e.yValue);
                         setRefAreaRight(e.xValue);
@@ -603,13 +685,34 @@ const PerformanceAnalysis: React.FC = () => {
                       }
                     }}
                     onMouseMove={(e: any) => {
-                      if (refAreaLeft !== null && e && e.xValue !== undefined && e.yValue !== undefined) {
+                      if (scatterMode === 'pan' && isPanDragging && panStart && panDomain && e && e.chartX !== undefined && e.chartY !== undefined) {
+                        const elem = globalScatterContainerRef.current;
+                        if (!elem) return;
+                        const rect = elem.getBoundingClientRect();
+                        const plotWidth = Math.max(100, rect.width - 105);
+                        const plotHeight = Math.max(100, rect.height - 60);
+
+                        const deltaX = -((e.chartX - panStart.x) / plotWidth) * (panDomain.x[1] - panDomain.x[0]);
+                        const deltaY = ((e.chartY - panStart.y) / plotHeight) * (panDomain.y[1] - panDomain.y[0]);
+
+                        const newMinX = Number((panDomain.x[0] + deltaX).toFixed(1));
+                        const newMaxX = Number((panDomain.x[1] + deltaX).toFixed(1));
+                        const newMinY = Math.max(0, Math.round(panDomain.y[0] + deltaY));
+                        const newMaxY = Math.min(1010000, Math.round(panDomain.y[1] + deltaY));
+
+                        setGlobalScatterZoomX([newMinX, newMaxX]);
+                        setGlobalScatterZoomY([newMinY, newMaxY]);
+                      } else if (scatterMode === 'box' && refAreaLeft !== null && e && e.xValue !== undefined && e.yValue !== undefined) {
                         setRefAreaRight(e.xValue);
                         setRefAreaBottom(e.yValue);
                       }
                     }}
                     onMouseUp={() => {
-                      if (refAreaLeft !== null && refAreaRight !== null && refAreaTop !== null && refAreaBottom !== null) {
+                      if (scatterMode === 'pan') {
+                        setIsPanDragging(false);
+                        setPanStart(null);
+                        setPanDomain(null);
+                      } else if (refAreaLeft !== null && refAreaRight !== null && refAreaTop !== null && refAreaBottom !== null) {
                         const minX = Math.min(refAreaLeft, refAreaRight);
                         const maxX = Math.max(refAreaLeft, refAreaRight);
                         const minY = Math.min(refAreaTop, refAreaBottom);

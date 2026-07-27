@@ -847,7 +847,16 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
     const lastStatus = (db.prepare(`SELECT value FROM config WHERE key = 'update_status'`).get() as any)?.value || 'idle';
     const lastError = (db.prepare(`SELECT value FROM config WHERE key = 'update_error'`).get() as any)?.value || null;
 
-    exec('git config --global --add safe.directory "*" 2>/dev/null; git branch --show-current', (err, stdout) => {
+    const gitEnv = {
+      ...process.env,
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_SYSTEM: '/dev/null',
+      GIT_TERMINAL_PROMPT: '0',
+      GIT_ASKPASS: '',
+      SSH_ASKPASS: '',
+    };
+
+    exec('git config --global --add safe.directory "*" 2>/dev/null; git branch --show-current', { env: gitEnv }, (err, stdout) => {
       let currentBranch = 'main';
       if (!err && stdout.trim()) {
         currentBranch = stdout.trim();
@@ -858,7 +867,7 @@ router.get('/admin/update/check', adminAuth, async (req, res) => {
       }
       
       const checkCmd = isProd ? 'git describe --tags --exact-match || git rev-parse --short HEAD' : 'git rev-parse --short HEAD';
-      exec(checkCmd, (error, commitOut) => {
+      exec(checkCmd, { env: gitEnv }, (error, commitOut) => {
         let currentCommit = 'Unknown';
         if (!error) {
           currentCommit = commitOut.trim();
@@ -888,21 +897,39 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
   db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'in_progress')`).run();
   db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
   
-  const isProd = process.env.NODE_ENV === 'production';
   res.json({ success: true, message: `Update process started for branch ${targetBranch}. Server will restart shortly.` });
   
   setTimeout(() => {
     const safeGit = 'git config --global --add safe.directory "*" 2>/dev/null || true';
     const repoUrl = 'https://github.com/Lolergags/ChuniTrrracker.git';
-    const cmd = `${safeGit} && git fetch ${repoUrl} ${targetBranch} && git reset --hard FETCH_HEAD && npm install && npm run build`;
+    const gitCmd = `${safeGit} && git fetch ${repoUrl} ${targetBranch} && git reset --hard FETCH_HEAD && npm install && npm run build`;
+    const tarballCmd = `curl -sL https://codeload.github.com/Lolergags/ChuniTrrracker/tar.gz/refs/heads/${targetBranch} | tar -xz --strip-components=1 -C ${process.cwd()} && npm install && npm run build`;
       
-    const gitEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
-    exec(cmd, { env: gitEnv, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+    const gitEnv = {
+      ...process.env,
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_SYSTEM: '/dev/null',
+      GIT_TERMINAL_PROMPT: '0',
+      GIT_ASKPASS: '',
+      SSH_ASKPASS: '',
+    };
+
+    exec(gitCmd, { env: gitEnv, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
       if (error) {
-        const errMsg = error.message || stderr || 'Unknown update execution failure';
-        console.error(`Update error: ${errMsg}`);
-        db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'failed')`).run();
-        db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_error', ?)`).run(errMsg);
+        console.warn(`Git fetch update failed (${error.message || stderr}). Attempting direct tarball download fallback...`);
+        exec(tarballCmd, { env: gitEnv, maxBuffer: 1024 * 1024 * 10 }, (fallbackErr, fbStdout, fbStderr) => {
+          if (fallbackErr) {
+            const errMsg = fallbackErr.message || fbStderr || 'Unknown update execution failure';
+            console.error(`Update error (tarball fallback): ${errMsg}`);
+            db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'failed')`).run();
+            db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_error', ?)`).run(errMsg);
+            return;
+          }
+          console.log(`Update stdout (tarball fallback): ${fbStdout}`);
+          db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
+          db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
+          process.exit(0);
+        });
         return;
       }
       console.log(`Update stdout: ${stdout}`);

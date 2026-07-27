@@ -20,7 +20,10 @@ RUN mkdir -p server/data
 # Build the frontend via Vite
 RUN npm run build
 
+# Make entrypoint supervisor executable
+RUN chmod +x entrypoint.sh
+
 EXPOSE 3001
 
-# Execute the TypeScript server directly using tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Execute entrypoint supervisor loop to automatically restart when Node exits (e.g. after Update Manager updates)
+CMD ["/bin/sh", "entrypoint.sh"]

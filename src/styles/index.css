@@ -273,3 +273,12 @@ rect:focus {
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Allow scatter plot data points to render beyond plot box edges without being clipped */
+.recharts-scatter,
+.recharts-scatter-symbol,
+.recharts-symbols,
+.recharts-layer.recharts-scatter {
+  clip-path: none !important;
+  overflow: visible !important;
+}

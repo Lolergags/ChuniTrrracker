@@ -144,7 +144,7 @@ export function Dashboard() {
 
     const getDomains = () => {
       const constants = uniqueScores.map(s => s.constant);
-      const defX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+      const defX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.5] : [1.0, 15.5];
       const defY: [number, number] = [975000, 1010000];
       defaultXRef.current = defX;
       defaultYRef.current = defY;
@@ -156,7 +156,7 @@ export function Dashboard() {
 
     const clampDomainX = (minX: number, maxX: number, defX: [number, number]): [number, number] => {
       const minAllowedX = 1.0;
-      const maxAllowedX = Math.max(defX[1], 15.4);
+      const maxAllowedX = Math.max(defX[1], 15.5);
       const spanX = maxX - minX;
 
       let finalMinX = minX;
@@ -184,7 +184,7 @@ export function Dashboard() {
 
     const clampDomainY = (minY: number, maxY: number): [number, number] => {
       const minAllowedY = 0;
-      const maxAllowedY = 1010000;
+      const maxAllowedY = 1011000;
       const spanY = maxY - minY;
 
       let finalMinY = minY;
@@ -748,7 +748,7 @@ export function Dashboard() {
           <div className="chart-min-width-md" style={{ height: '430px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart 
-                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis 

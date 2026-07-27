@@ -243,6 +243,7 @@ export function Dashboard() {
     const handleTouchStart = (e: TouchEvent) => {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
+        e.preventDefault();
         const t = e.touches[0];
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
@@ -276,7 +277,7 @@ export function Dashboard() {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      const { defX } = getDomains();
+      const { defX, defY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         e.preventDefault();
         const t = e.touches[0];
@@ -293,7 +294,7 @@ export function Dashboard() {
         const rawMaxY = panRef.current.startDomainY[1] + deltaY;
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
         setScatterZoomX([newMinX, newMaxX]);
         setScatterZoomY([newMinY, newMaxY]);
@@ -326,7 +327,7 @@ export function Dashboard() {
         const rawMaxY = panRef.current.touchFocalY + (1 - yFrac) * spanY;
 
         const [newMinX, newMaxX] = clampDomainX(rawMinX, rawMaxX, defX);
-        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY);
+        const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
         setScatterZoomX([newMinX, newMaxX]);
         setScatterZoomY([newMinY, newMaxY]);
@@ -351,9 +352,9 @@ export function Dashboard() {
     window.addEventListener('mouseup', handleMouseUp);
 
     elem.addEventListener('touchstart', handleTouchStart, { passive: false });
-    elem.addEventListener('touchmove', handleTouchMove, { passive: false });
-    elem.addEventListener('touchend', handleTouchEnd);
-    elem.addEventListener('touchcancel', handleTouchEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
       elem.removeEventListener('wheel', handleWheel);
@@ -362,9 +363,9 @@ export function Dashboard() {
       window.removeEventListener('mouseup', handleMouseUp);
 
       elem.removeEventListener('touchstart', handleTouchStart);
-      elem.removeEventListener('touchmove', handleTouchMove);
-      elem.removeEventListener('touchend', handleTouchEnd);
-      elem.removeEventListener('touchcancel', handleTouchEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [uniqueScores]);
 
@@ -744,7 +745,7 @@ export function Dashboard() {
         <div 
           ref={scatterContainerRef}
           className="scrollable-content-wrapper" 
-          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab' }}
+          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
         >
           <div className="chart-min-width-md" style={{ height: '430px' }}>
             <ResponsiveContainer width="100%" height="100%">

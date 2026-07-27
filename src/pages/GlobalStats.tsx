@@ -190,6 +190,7 @@ const GlobalStats: React.FC = () => {
     const handleTouchStart = (e: TouchEvent) => {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
+        e.preventDefault();
         const t = e.touches[0];
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
@@ -298,9 +299,9 @@ const GlobalStats: React.FC = () => {
     window.addEventListener('mouseup', handleMouseUp);
 
     elem.addEventListener('touchstart', handleTouchStart, { passive: false });
-    elem.addEventListener('touchmove', handleTouchMove, { passive: false });
-    elem.addEventListener('touchend', handleTouchEnd);
-    elem.addEventListener('touchcancel', handleTouchEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
       elem.removeEventListener('wheel', handleWheel);
@@ -309,9 +310,9 @@ const GlobalStats: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp);
 
       elem.removeEventListener('touchstart', handleTouchStart);
-      elem.removeEventListener('touchmove', handleTouchMove);
-      elem.removeEventListener('touchend', handleTouchEnd);
-      elem.removeEventListener('touchcancel', handleTouchEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [metaData]);
 
@@ -712,7 +713,7 @@ const GlobalStats: React.FC = () => {
             <div 
               ref={globalScatterContainerRef}
               className="scrollable-content-wrapper" 
-              style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab' }}
+              style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
             >
               <div className="chart-min-width-md" style={{ height: '430px' }}>
                 <ResponsiveContainer width="100%" height="100%">

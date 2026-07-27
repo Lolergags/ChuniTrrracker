@@ -346,77 +346,102 @@ const PerformanceAnalysis: React.FC = () => {
                   Click and drag a box to zoom into any area. Scroll mouse wheel to zoom in/out.
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Level:</span>
-                  {[
-                    { label: 'All', range: null },
-                    { label: '1-12+', range: [1.0, 12.9] },
-                    { label: '13-13+', range: [13.0, 13.9] },
-                    { label: '14-14+', range: [14.0, 14.9] },
-                    { label: '15+', range: [15.0, 15.4] }
-                  ].map(preset => {
-                    const isActive = preset.range === null ? !globalScatterZoomX : (globalScatterZoomX && globalScatterZoomX[0] === preset.range[0] && globalScatterZoomX[1] === preset.range[1]);
-                    return (
-                      <button
-                        key={preset.label}
-                        onClick={() => setGlobalScatterZoomX(preset.range as [number, number] | null)}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          background: isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.08)',
-                          border: '1px solid ' + (isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.15)'),
-                          color: 'white',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: isActive ? 'bold' : 'normal',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
+              <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <span>Level:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1.0"
+                    max="15.4"
+                    placeholder="Min"
+                    value={globalScatterZoomX ? globalScatterZoomX[0] : ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                      const constants = validMeta.map((d: any) => d.constant);
+                      const defaultMaxX = constants.length ? Math.max(...constants) + 0.2 : 15.4;
+                      if (!isNaN(val)) {
+                        setGlobalScatterZoomX([val, globalScatterZoomX ? globalScatterZoomX[1] : defaultMaxX]);
+                      } else if (!e.target.value) {
+                        setGlobalScatterZoomX(null);
+                      }
+                    }}
+                    data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                    style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+                  />
+                  <span>-</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1.0"
+                    max="15.4"
+                    placeholder="Max"
+                    value={globalScatterZoomX ? globalScatterZoomX[1] : ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+                      const constants = validMeta.map((d: any) => d.constant);
+                      const defaultMinX = constants.length ? Math.min(...constants) - 0.5 : 1.0;
+                      if (!isNaN(val)) {
+                        setGlobalScatterZoomX([globalScatterZoomX ? globalScatterZoomX[0] : defaultMinX, val]);
+                      } else if (!e.target.value) {
+                        setGlobalScatterZoomX(null);
+                      }
+                    }}
+                    data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                    style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+                  />
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Score:</span>
-                  {[
-                    { label: 'All', range: null },
-                    { label: 'S+ (990k+)', range: [990000, 1010000] },
-                    { label: 'SS+ (1005k+)', range: [1005000, 1010000] },
-                    { label: 'SSS+ (1009k+)', range: [1009000, 1010000] }
-                  ].map(preset => {
-                    const isActive = preset.range === null ? !globalScatterZoomY : (globalScatterZoomY && globalScatterZoomY[0] === preset.range[0] && globalScatterZoomY[1] === preset.range[1]);
-                    return (
-                      <button
-                        key={preset.label}
-                        onClick={() => setGlobalScatterZoomY(preset.range as [number, number] | null)}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          background: isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.08)',
-                          border: '1px solid ' + (isActive ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.15)'),
-                          color: 'white',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: isActive ? 'bold' : 'normal',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
+                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <span>Score:</span>
+                  <input
+                    type="number"
+                    step="1000"
+                    min="800000"
+                    max="1010000"
+                    placeholder="Min"
+                    value={globalScatterZoomY ? globalScatterZoomY[0] : ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setGlobalScatterZoomY([val, globalScatterZoomY ? globalScatterZoomY[1] : 1010000]);
+                      } else if (!e.target.value) {
+                        setGlobalScatterZoomY(null);
+                      }
+                    }}
+                    data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                    style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+                  />
+                  <span>-</span>
+                  <input
+                    type="number"
+                    step="1000"
+                    min="800000"
+                    max="1010000"
+                    placeholder="Max"
+                    value={globalScatterZoomY ? globalScatterZoomY[1] : ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setGlobalScatterZoomY([globalScatterZoomY ? globalScatterZoomY[0] : 975000, val]);
+                      } else if (!e.target.value) {
+                        setGlobalScatterZoomY(null);
+                      }
+                    }}
+                    data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                    style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+                  />
                 </div>
 
                 {(globalScatterZoomX || globalScatterZoomY) && (
                   <button
                     onClick={() => { setGlobalScatterZoomX(null); setGlobalScatterZoomY(null); }}
                     title="Reset Zoom"
-                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-secondary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', fontWeight: 'bold' }}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-secondary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}
                   >
-                    <RotateCcw size={12} /> Reset
+                    <RotateCcw size={13} /> Reset
                   </button>
                 )}
               </div>

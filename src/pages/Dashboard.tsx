@@ -328,77 +328,100 @@ export function Dashboard() {
               Click and drag a box to zoom into any area. Scroll mouse wheel to zoom in/out.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Level:</span>
-              {[
-                { label: 'All', range: null },
-                { label: '1-12+', range: [1.0, 12.9] },
-                { label: '13-13+', range: [13.0, 13.9] },
-                { label: '14-14+', range: [14.0, 14.9] },
-                { label: '15+', range: [15.0, 15.4] }
-              ].map(preset => {
-                const isActive = preset.range === null ? !scatterZoomX : (scatterZoomX && scatterZoomX[0] === preset.range[0] && scatterZoomX[1] === preset.range[1]);
-                return (
-                  <button
-                    key={preset.label}
-                    onClick={() => setScatterZoomX(preset.range as [number, number] | null)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      background: isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)',
-                      border: '1px solid ' + (isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.15)'),
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      fontWeight: isActive ? 'bold' : 'normal',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
+          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span>Level:</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1.0"
+                max="15.4"
+                placeholder="Min"
+                value={scatterZoomX ? scatterZoomX[0] : ''}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  const constants = uniqueScores.map(s => s.constant);
+                  const defaultMaxX = constants.length ? Math.max(...constants) + 0.2 : 15.4;
+                  if (!isNaN(val)) {
+                    setScatterZoomX([val, scatterZoomX ? scatterZoomX[1] : defaultMaxX]);
+                  } else if (!e.target.value) {
+                    setScatterZoomX(null);
+                  }
+                }}
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+              />
+              <span>-</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1.0"
+                max="15.4"
+                placeholder="Max"
+                value={scatterZoomX ? scatterZoomX[1] : ''}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  const constants = uniqueScores.map(s => s.constant);
+                  const defaultMinX = constants.length ? Math.min(...constants) - 0.5 : 1.0;
+                  if (!isNaN(val)) {
+                    setScatterZoomX([scatterZoomX ? scatterZoomX[0] : defaultMinX, val]);
+                  } else if (!e.target.value) {
+                    setScatterZoomX(null);
+                  }
+                }}
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+              />
             </div>
 
-            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '0.1rem' }}>Score:</span>
-              {[
-                { label: 'All', range: null },
-                { label: 'S+ (990k+)', range: [990000, 1010000] },
-                { label: 'SS+ (1005k+)', range: [1005000, 1010000] },
-                { label: 'SSS+ (1009k+)', range: [1009000, 1010000] }
-              ].map(preset => {
-                const isActive = preset.range === null ? !scatterZoomY : (scatterZoomY && scatterZoomY[0] === preset.range[0] && scatterZoomY[1] === preset.range[1]);
-                return (
-                  <button
-                    key={preset.label}
-                    onClick={() => setScatterZoomY(preset.range as [number, number] | null)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      background: isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)',
-                      border: '1px solid ' + (isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.15)'),
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      fontWeight: isActive ? 'bold' : 'normal',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
+            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span>Score:</span>
+              <input
+                type="number"
+                step="1000"
+                min="800000"
+                max="1010000"
+                placeholder="Min"
+                value={scatterZoomY ? scatterZoomY[0] : ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val)) {
+                    setScatterZoomY([val, scatterZoomY ? scatterZoomY[1] : 1010000]);
+                  } else if (!e.target.value) {
+                    setScatterZoomY(null);
+                  }
+                }}
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+              />
+              <span>-</span>
+              <input
+                type="number"
+                step="1000"
+                min="800000"
+                max="1010000"
+                placeholder="Max"
+                value={scatterZoomY ? scatterZoomY[1] : ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val)) {
+                    setScatterZoomY([scatterZoomY ? scatterZoomY[0] : 975000, val]);
+                  } else if (!e.target.value) {
+                    setScatterZoomY(null);
+                  }
+                }}
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
+              />
             </div>
 
             {(scatterZoomX || scatterZoomY) && (
               <button
                 onClick={() => { setScatterZoomX(null); setScatterZoomY(null); }}
                 title="Reset Zoom"
-                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', fontWeight: 'bold' }}
+                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}
               >
-                <RotateCcw size={12} /> Reset
+                <RotateCcw size={13} /> Reset
               </button>
             )}
           </div>

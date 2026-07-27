@@ -179,7 +179,7 @@ export function Dashboard() {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
-      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
+      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.3;
       const spanX = (curX[1] - curX[0]) * zoomFactor;
       const spanY = (curY[1] - curY[0]) * zoomFactor;
 

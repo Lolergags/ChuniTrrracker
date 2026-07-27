@@ -16,10 +16,17 @@ describe('scatterZoom utilities', () => {
       expect(maxX).toBe(15.5);
     });
 
-    it('should shift right bound if left bound goes below defX[0]', () => {
+    it('should clamp bounds to defX bounds', () => {
       const [minX, maxX] = clampDomainX(0.5, 5.0, defX);
       expect(minX).toBe(1.0);
-      expect(maxX).toBe(5.5);
+      expect(maxX).toBe(5.0);
+    });
+
+    it('should allow zooming out smoothly from deep zoom states near right edge', () => {
+      // Zoomed in near 15.0 - 15.4, zooming out rawMinX goes to 10.0 and rawMaxX goes to 17.0
+      const [minX, maxX] = clampDomainX(10.0, 17.0, defX);
+      expect(minX).toBe(10.0);
+      expect(maxX).toBe(15.5);
     });
   });
 

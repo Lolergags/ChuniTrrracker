@@ -264,7 +264,10 @@ export function Dashboard() {
       </div>
 
       <div className="glass-panel" style={{ marginTop: '2rem' }}>
-        <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Lamp Distribution by Level (Normalized)</h2>
+        <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Clear Rate & Lamp Breakdown by Level</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+          Proportional breakdown of Clear, Full Combo, All Justice, and AJC lamps achieved across chart level folders.
+        </p>
         <div className="scrollable-content-wrapper">
           <div className="chart-min-width-sm" style={{ height: '400px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -316,9 +319,9 @@ export function Dashboard() {
       <div className="glass-panel" style={{ marginTop: '2rem', height: '530px', width: '100%', minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div>
-            <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Personal Performance Scatter</h2>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score vs Level Constant Scatter</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              All imported plays. Correlation between Score and Chart Constant. Bubble size represents chart play count.
+              Individual played charts plotted by Level Constant and Score. Bubble size represents chart play count.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

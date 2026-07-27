@@ -161,7 +161,7 @@ const PerformanceAnalysis: React.FC = () => {
       {/* Global Meta Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Global Meta</h1>
+          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Server Meta & Skill Analytics</h1>
           <p style={{ color: 'var(--text-secondary)' }}>
             Universal statistics aggregated across all players and songs on the server.
           </p>
@@ -178,8 +178,8 @@ const PerformanceAnalysis: React.FC = () => {
           
           {/* Heatmap */}
           <div className="glass-panel" style={{ overflowX: 'auto' }}>
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Grade Density Heatmap</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Grade Rank Heatmap by Chart Level</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               Shows the normalized percentage of scores for each Chart Constant that fall into a specific Grade. (Brighter = Higher %)
             </p>
             
@@ -198,22 +198,28 @@ const PerformanceAnalysis: React.FC = () => {
                     return (
                       <div 
                         key={c} 
-                        title={`CC: ${c.toFixed(1)} | Grade: ${grade} | ${cell?.count || 0} plays (${(percent * 100).toFixed(1)}%)`}
                         style={{ 
-                          background: percent > 0 ? bg : 'rgba(255,255,255,0.02)', 
+                          backgroundColor: bg, 
+                          color: percent > 0.3 ? '#fff' : 'var(--text-secondary)',
+                          fontSize: '0.75rem', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
                           borderRadius: '2px',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          cursor: 'crosshair',
-                          height: '30px'
-                        }} 
-                      />
+                          aspectRatio: '1',
+                          fontWeight: percent > 0.3 ? 'bold' : 'normal'
+                        }}
+                        title={`${grade} @ Level ${getConstantLabel(c)}: ${(percent * 100).toFixed(1)}% (${cell?.count || 0} scores)`}
+                      >
+                        {percent > 0 ? (percent * 100).toFixed(0) : ''}
+                      </div>
                     );
                   })}
                 </React.Fragment>
               ))}
 
-              {/* Header row at the bottom */}
-              <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}></div>
+              {/* Column Labels */}
+              <div></div>
               {constants.map(c => (
                 <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {getConstantLabel(c)}
@@ -224,8 +230,8 @@ const PerformanceAnalysis: React.FC = () => {
 
           {/* Survival Rate */}
           <div className="glass-panel">
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>AJ & FC Survival Rate</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>AJ & FC Survival Rate by Chart Level</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               The exact percentage chance of a player achieving an All Justice or Full Combo plotted against the Chart Constant. Shows the difficulty cliff.
             </p>
             <div className="scrollable-content-wrapper">
@@ -252,8 +258,8 @@ const PerformanceAnalysis: React.FC = () => {
 
           {/* Lamp Distribution Stacked Bar */}
           <div className="glass-panel">
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Server-Wide Lamp Distribution</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Server Lamp Distribution by Level</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               Normalized distribution of all logged lamps across chart constants. Compare this against your personal dashboard.
             </p>
             <div className="scrollable-content-wrapper">
@@ -291,8 +297,8 @@ const PerformanceAnalysis: React.FC = () => {
 
           {/* Lucrative OP Levels */}
           <div className="glass-panel">
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Average OP Yield by Level</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Average Overpower (OP%) Yield by Level</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               The average percentage of maximum Overpower rewarded per play grouped by Chart Constant.
             </p>
             <div className="scrollable-content-wrapper">
@@ -316,8 +322,8 @@ const PerformanceAnalysis: React.FC = () => {
 
           {/* Player Skill Stratification */}
           <div className="glass-panel">
-            <h2 className="text-gradient" style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Server Skill Stratification</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Player Overpower (OP) Distribution</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               The bell curve of total Overpower for all players on the server.
             </p>
             <div className="scrollable-content-wrapper">
@@ -342,7 +348,7 @@ const PerformanceAnalysis: React.FC = () => {
           <div className="glass-panel" style={{ height: '530px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
               <div>
-                <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Global Chart Meta</h2>
+                <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Chart Level Constant vs Average Score Scatter</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                   Level vs Average Score. Bubble size represents Play Count (Popularity). Identifies highly played "farm" charts vs avoided charts.
                 </p>

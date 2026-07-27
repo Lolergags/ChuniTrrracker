@@ -420,7 +420,10 @@ const SongAnalytics: React.FC = () => {
 
               {gradeDistribution.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
-                  <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Score Distribution</h3>
+                  <h3 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Grade Rank Breakdown for Selected Chart</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    Number of logged players achieving each clear grade rank on this chart.
+                  </p>
                   <div className="scrollable-content-wrapper">
                     <div className="chart-min-width-sm" style={{ height: '250px' }}>
                       <ResponsiveContainer width="100%" height="100%">
@@ -442,7 +445,10 @@ const SongAnalytics: React.FC = () => {
 
               {normalDistribution.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
-                  <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Normal Distribution</h3>
+                  <h3 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score Distribution Bell Curve</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    Frequency of player scores grouped into 5,000 / 10,000 point score buckets.
+                  </p>
                   <div className="scrollable-content-wrapper">
                     <div className="chart-min-width-sm" style={{ height: '250px' }}>
                       <ResponsiveContainer width="100%" height="100%">

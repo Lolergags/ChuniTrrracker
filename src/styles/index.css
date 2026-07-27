@@ -217,9 +217,23 @@ h1, h2, h3, h4 {
   padding-bottom: var(--spacing-sm);
 }
 
-.chart-min-width-sm { min-width: 600px; height: 100%; }
-.chart-min-width-md { min-width: 800px; height: 100%; }
-.chart-min-width-lg { min-width: 1200px; height: 100%; }
+@media (min-width: 769px) {
+  .scrollable-content-wrapper {
+    overflow-x: hidden;
+  }
+  .chart-min-width-sm,
+  .chart-min-width-md,
+  .chart-min-width-lg {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-min-width-sm { min-width: 550px; height: 100%; }
+  .chart-min-width-md { min-width: 680px; height: 100%; }
+  .chart-min-width-lg { min-width: 900px; height: 100%; }
+}
 
 /* Recharts Typography & Responsive Label Overrides */
 .recharts-cartesian-axis-tick-value {

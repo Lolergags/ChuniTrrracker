@@ -58,6 +58,7 @@ export interface ApiSong {
   version: string;
   is_jp_active: number;
   is_intl_active: number;
+  is_pl_offline_active: number;
   charts: Array<{
     difficulty: string;
     constant: number;

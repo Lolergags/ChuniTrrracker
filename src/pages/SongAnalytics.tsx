@@ -78,10 +78,11 @@ const SongAnalytics: React.FC = () => {
 
   // Get a flat list of all charts (song + difficulty)
   const allCharts = useMemo(() => {
-    const list: { id: number; title: string; difficulty: string; constant: number; level: string; noteCount: number; version: string; is_jp_active: number; is_intl_active: number; uniqueId: string }[] = [];
+    const list: { id: number; title: string; difficulty: string; constant: number; level: string; noteCount: number; version: string; is_jp_active: number; is_intl_active: number; is_pl_offline_active: number; uniqueId: string }[] = [];
     songs.forEach(song => {
       if (serverFilter === 'JP' && song.is_jp_active !== 1) return;
       if (serverFilter === 'INT' && song.is_intl_active !== 1) return;
+      if (serverFilter === 'PL_OFFLINE' && song.is_pl_offline_active !== 1) return;
       
       song.charts.forEach(chart => {
         list.push({
@@ -94,6 +95,7 @@ const SongAnalytics: React.FC = () => {
           version: song.version,
           is_jp_active: song.is_jp_active,
           is_intl_active: song.is_intl_active,
+          is_pl_offline_active: song.is_pl_offline_active,
           uniqueId: `${song.id}-${chart.difficulty}`
         });
       });
@@ -207,6 +209,7 @@ const SongAnalytics: React.FC = () => {
             >
               <option value="JP">Japan (JP)</option>
               <option value="INT">International (Intl)</option>
+              <option value="PL_OFFLINE">Paradise Lost (Offline)</option>
               <option value="OMNI">Omnimix (All)</option>
             </select>
 

@@ -13,14 +13,14 @@ const Leaderboard: React.FC = () => {
   // The URL takes precedence. If no URL, fallback to GlobalContext, else defaults.
   const page = parseInt(searchParams.get('page') || '1', 10);
   
-  const ctxServerMap: Record<string, string> = { 'JP': 'jp', 'INT': 'intl', 'OMNI': 'omni' };
+  const ctxServerMap: Record<string, string> = { 'JP': 'jp', 'INT': 'intl', 'PL_OFFLINE': 'pl_offline', 'OMNI': 'omni' };
   const getContextServer = () => ctxServerMap[filters.server] || 'jp';
   const server = searchParams.get('server') || getContextServer();
   const version = searchParams.get('version') || filters.version || 'X-VERSE-X';
 
   // Sync to GlobalContext whenever server or version changes
   useEffect(() => {
-    const revMap: Record<string, string> = { 'jp': 'JP', 'intl': 'INT', 'omni': 'OMNI' };
+    const revMap: Record<string, string> = { 'jp': 'JP', 'intl': 'INT', 'pl_offline': 'PL_OFFLINE', 'omni': 'OMNI' };
     const ctxServer = revMap[server] || 'JP';
     
     if (filters.server !== ctxServer || filters.version !== version) {
@@ -79,6 +79,7 @@ const Leaderboard: React.FC = () => {
           >
             <option value="jp">Japan (JP)</option>
             <option value="intl">International (Intl)</option>
+            <option value="pl_offline">Paradise Lost (Offline)</option>
             <option value="omni">Omnimix (All)</option>
           </select>
         </div>

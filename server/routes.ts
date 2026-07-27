@@ -83,6 +83,7 @@ router.get('/leaderboard', (req, res) => {
   const sUpper = (server as string).toUpperCase();
   if (sUpper === 'JP') serverCondition = 'AND songs.is_jp_active = 1';
   else if (sUpper === 'INTL' || sUpper === 'INT') serverCondition = 'AND songs.is_intl_active = 1';
+  else if (sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE') serverCondition = 'AND songs.is_pl_offline_active = 1';
   else if (sUpper === 'OMNI') serverCondition = `AND songs.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`;
   
   const VERSION_ORDER = [
@@ -349,7 +350,7 @@ router.get('/players/:username/scores', (req, res) => {
 // 5. Get Songs List
 router.get('/songs', (req, res) => {
   // Fetch all songs
-  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active FROM songs`).all() as any[];
+  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active, is_pl_offline_active FROM songs`).all() as any[];
   
   // Fetch all charts and attach to songs, excluding ghost charts
   const charts = db.prepare(`SELECT id, song_id, difficulty, constant, level, note_count FROM charts WHERE (song_id NOT IN (50, 81) AND id != 239116)`).all() as any[];

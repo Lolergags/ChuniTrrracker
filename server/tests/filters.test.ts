@@ -16,6 +16,13 @@ describe('getChartFilterConditions', () => {
     expect(bindings).toEqual([]);
   });
 
+  it('should filter by PL_OFFLINE server', () => {
+    const { conditions, bindings } = getChartFilterConditions({ server: 'PL_OFFLINE' });
+    expect(conditions).toContain("songs.is_pl_offline_active = 1");
+    expect(conditions).not.toContain("songs.is_jp_active = 1");
+    expect(bindings).toEqual([]);
+  });
+
   it('should exclude AOMN_REMOVE song IDs for OMNI server', () => {
     const { conditions, bindings } = getChartFilterConditions({ server: 'OMNI' });
     expect(conditions.some(c => c.includes('songs.id NOT IN'))).toBe(true);

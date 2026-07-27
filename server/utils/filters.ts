@@ -53,8 +53,10 @@ export function getChartFilterConditions(params: ChartFilterParams, songsAlias =
   const server = (params.server || 'JP').toUpperCase();
   if (server === 'JP') {
     conditions.push(`${songsAlias}.is_jp_active = 1`);
-  } else if (server === 'INT') {
+  } else if (server === 'INT' || server === 'INTL') {
     conditions.push(`${songsAlias}.is_intl_active = 1`);
+  } else if (server === 'PL_OFFLINE' || server === 'PARADISE_LOST_OFFLINE' || server === 'PARADISE') {
+    conditions.push(`${songsAlias}.is_pl_offline_active = 1`);
   } else if (server === 'OMNI') {
     conditions.push(`${songsAlias}.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`);
   }

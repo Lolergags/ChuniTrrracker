@@ -26,6 +26,7 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
       >
         <option value="JP">Standard (JP Active)</option>
         <option value="INT">International</option>
+        <option value="PL_OFFLINE">Paradise Lost (Offline)</option>
         <option value="OMNI">Omnimix (All Charts)</option>
       </select>
 

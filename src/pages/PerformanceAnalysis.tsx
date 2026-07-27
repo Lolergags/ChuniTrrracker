@@ -131,7 +131,7 @@ const PerformanceAnalysis: React.FC = () => {
 
     const clampDomainY = (minY: number, maxY: number): [number, number] => {
       const minAllowedY = 0;
-      const maxAllowedY = 1011000;
+      const maxAllowedY = 1010000;
       const spanY = maxY - minY;
 
       let finalMinY = minY;

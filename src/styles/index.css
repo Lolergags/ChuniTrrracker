@@ -274,11 +274,14 @@ rect:focus {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Allow scatter plot data points to render beyond plot box edges without being clipped */
+/* Allow scatter plot data points to overflow past top and right edges, but strictly clip at left (Y-axis) and bottom (X-axis) bounds */
 .recharts-scatter,
-.recharts-scatter-symbol,
-.recharts-symbols,
 .recharts-layer.recharts-scatter {
-  clip-path: none !important;
+  clip-path: inset(-50px -50px 0px 0px) !important;
   overflow: visible !important;
+}
+
+.recharts-scatter-symbol,
+.recharts-symbols {
+  clip-path: none !important;
 }

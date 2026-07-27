@@ -233,7 +233,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={survivalData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constant" stroke="var(--text-secondary)" />
+                    <XAxis dataKey="constant" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
                     <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${val}%`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
@@ -261,7 +261,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sortedLampData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} stackOffset="expand">
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
                     <YAxis stroke="var(--text-secondary)" tickFormatter={(val) => `${Math.round(val * 100)}%`} />
                     <Tooltip content={<LampTooltip />} /><Legend content={(props: any) => {
                       const { payload } = props;
@@ -300,7 +300,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sortedOpYield} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" />
+                    <XAxis dataKey="constantLabel" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
                     <YAxis stroke="var(--text-secondary)" domain={[0, 100]} tickFormatter={(val) => val.toFixed(0) + '%'} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
@@ -325,7 +325,7 @@ const PerformanceAnalysis: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={opDistribution} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" />
+                    <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ dy: 6 }} />
                     <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
@@ -407,6 +407,7 @@ const PerformanceAnalysis: React.FC = () => {
                       dataKey="constant" 
                       name="Chart Constant" 
                       stroke="var(--text-secondary)"
+                      tick={{ dy: 6 }}
                       domain={globalScatterZoomX || ['dataMin', 'dataMax']}
                       label={{ value: 'Chart Constant (Level)', position: 'insideBottomRight', fill: 'var(--text-secondary)', offset: -10 }}
                     />

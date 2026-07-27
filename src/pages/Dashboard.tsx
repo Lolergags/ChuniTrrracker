@@ -280,7 +280,7 @@ export function Dashboard() {
                   angle={-45}
                   textAnchor="end"
                   height={60}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, dy: 6 }}
                 />
                 <YAxis stroke="var(--text-secondary)" tickFormatter={(tick) => `${Math.round(tick * 100)}%`} />
                 <Tooltip content={<LampTooltip />} />
@@ -380,6 +380,7 @@ export function Dashboard() {
                   name="Level Constant" 
                   domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
+                  tick={{ dy: 6 }}
                   tickFormatter={(val) => val.toFixed(1)}
                 />
                 <YAxis 

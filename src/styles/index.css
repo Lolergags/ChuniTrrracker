@@ -76,6 +76,10 @@ h1, h2, h3, h4 {
   z-index: 100;
 }
 
+.nav-logo {
+  padding-right: var(--spacing-lg);
+}
+
 .nav-links {
   display: flex;
   gap: var(--spacing-md);
@@ -163,6 +167,12 @@ h1, h2, h3, h4 {
     gap: 0.5rem;
   }
   
+  .nav-logo {
+    padding-right: 0;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.25rem;
+  }
+  
   .nav-logo h2 {
     font-size: 1.25rem;
   }
@@ -172,7 +182,7 @@ h1, h2, h3, h4 {
     overflow-x: auto;
     flex-wrap: nowrap;
     white-space: nowrap;
-    padding-top: var(--spacing-xs);
+    padding-top: 0.4rem;
     padding-bottom: 0.6rem;
     /* Hide scrollbar for a cleaner look while keeping it scrollable */
     scrollbar-width: none;

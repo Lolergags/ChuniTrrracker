@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useDeferredValue } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid, Brush, ReferenceArea } from 'recharts';
+import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
 import { Search, ChevronRight, RotateCcw } from 'lucide-react';
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { api } from '../lib/api/client.js';
@@ -19,6 +19,7 @@ export function Dashboard() {
   const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
   const [refAreaTop, setRefAreaTop] = useState<number | null>(null);
   const [refAreaBottom, setRefAreaBottom] = useState<number | null>(null);
+  const scatterContainerRef = useRef<HTMLDivElement>(null);
   
   const filteredPlayers = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -106,6 +107,49 @@ export function Dashboard() {
     }
     return sortableItems;
   }, [uniqueScores, sortConfig]);
+
+  useEffect(() => {
+    const elem = scatterContainerRef.current;
+    if (!elem) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const constants = uniqueScores.map(s => s.constant);
+      const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+      const defaultY: [number, number] = [975000, 1010000];
+
+      const currentX = scatterZoomX || defaultX;
+      const currentY = scatterZoomY || defaultY;
+
+      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
+      const spanX = (currentX[1] - currentX[0]) * zoomFactor;
+      const spanY = (currentY[1] - currentY[0]) * zoomFactor;
+
+      if (spanX < 0.2 && e.deltaY < 0) return;
+      if (spanY < 1000 && e.deltaY < 0) return;
+
+      const midX = (currentX[0] + currentX[1]) / 2;
+      const midY = (currentY[0] + currentY[1]) / 2;
+
+      const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
+      const newMaxX = Number((midX + spanX / 2).toFixed(1));
+      const newMinY = Math.max(0, Math.round(midY - spanY / 2));
+      const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
+
+      if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
+        setScatterZoomX(null);
+        setScatterZoomY(null);
+      } else {
+        setScatterZoomX([newMinX, newMaxX]);
+        setScatterZoomY([newMinY, newMaxY]);
+      }
+    };
+
+    elem.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      elem.removeEventListener('wheel', handleWheel);
+    };
+  }, [scatterZoomX, scatterZoomY, uniqueScores]);
 
   const requestSort = (key: keyof ApiProcessedScore | 'lampValue') => {
     let direction: 'asc' | 'desc' = 'desc';
@@ -379,7 +423,7 @@ export function Dashboard() {
               <input
                 type="number"
                 step="1000"
-                min="800000"
+                min="0"
                 max="1010000"
                 placeholder="Min"
                 value={scatterZoomY ? scatterZoomY[0] : ''}
@@ -398,7 +442,7 @@ export function Dashboard() {
               <input
                 type="number"
                 step="1000"
-                min="800000"
+                min="0"
                 max="1010000"
                 placeholder="Max"
                 value={scatterZoomY ? scatterZoomY[1] : ''}
@@ -428,40 +472,9 @@ export function Dashboard() {
         </div>
 
         <div 
+          ref={scatterContainerRef}
           className="scrollable-content-wrapper" 
           style={{ overflowY: 'hidden' }}
-          onWheel={(e) => {
-            e.preventDefault();
-            const constants = uniqueScores.map(s => s.constant);
-            const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
-            const defaultY: [number, number] = [975000, 1010000];
-
-            const currentX = scatterZoomX || defaultX;
-            const currentY = scatterZoomY || defaultY;
-
-            const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-            const spanX = (currentX[1] - currentX[0]) * zoomFactor;
-            const spanY = (currentY[1] - currentY[0]) * zoomFactor;
-
-            if (spanX < 0.2 && e.deltaY < 0) return;
-            if (spanY < 1000 && e.deltaY < 0) return;
-
-            const midX = (currentX[0] + currentX[1]) / 2;
-            const midY = (currentY[0] + currentY[1]) / 2;
-
-            const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
-            const newMaxX = Number((midX + spanX / 2).toFixed(1));
-            const newMinY = Math.max(800000, Math.round(midY - spanY / 2));
-            const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
-
-            if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
-              setScatterZoomX(null);
-              setScatterZoomY(null);
-            } else {
-              setScatterZoomX([newMinX, newMaxX]);
-              setScatterZoomY([newMinY, newMaxY]);
-            }
-          }}
         >
           <div className="chart-min-width-md" style={{ height: '430px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -504,17 +517,19 @@ export function Dashboard() {
                   type="number" 
                   dataKey="constant" 
                   name="Level Constant" 
+                  allowDataOverflow={true}
                   domain={scatterZoomX || ['dataMin - 0.5', 'dataMax + 0.2']} 
                   stroke="var(--text-secondary)" 
                   tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
-                  tickFormatter={(val) => val.toFixed(1)}
+                  tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
                 />
                 <YAxis 
                   type="number" 
                   dataKey="score" 
                   name="Score" 
-                  domain={scatterZoomY || [(dataMin: number) => Math.max(dataMin - 2000, 975000), 1010000]} 
-                  ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                  allowDataOverflow={true}
+                  domain={scatterZoomY || [975000, 1010000]} 
+                  ticks={scatterZoomY ? undefined : [975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                   stroke="var(--text-secondary)"
                   tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
                   tickFormatter={(val) => {
@@ -555,7 +570,6 @@ export function Dashboard() {
                     strokeDasharray="3 3"
                   />
                 )}
-                <Brush dataKey="constant" height={25} stroke="var(--accent-primary)" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush, ReferenceArea } from 'recharts';
 import { RotateCcw } from 'lucide-react';
 import { api } from '../lib/api/client.js';
@@ -24,6 +24,7 @@ const PerformanceAnalysis: React.FC = () => {
   const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
   const [refAreaTop, setRefAreaTop] = useState<number | null>(null);
   const [refAreaBottom, setRefAreaBottom] = useState<number | null>(null);
+  const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   useEffect(() => {
@@ -52,6 +53,50 @@ const PerformanceAnalysis: React.FC = () => {
       setIsLoadingGlobal(false);
     });
   }, [filters]);
+
+  useEffect(() => {
+    const elem = globalScatterContainerRef.current;
+    if (!elem) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+      const constants = validMeta.map((d: any) => d.constant);
+      const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
+      const defaultY: [number, number] = [975000, 1010000];
+
+      const currentX = globalScatterZoomX || defaultX;
+      const currentY = globalScatterZoomY || defaultY;
+
+      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
+      const spanX = (currentX[1] - currentX[0]) * zoomFactor;
+      const spanY = (currentY[1] - currentY[0]) * zoomFactor;
+
+      if (spanX < 0.2 && e.deltaY < 0) return;
+      if (spanY < 1000 && e.deltaY < 0) return;
+
+      const midX = (currentX[0] + currentX[1]) / 2;
+      const midY = (currentY[0] + currentY[1]) / 2;
+
+      const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
+      const newMaxX = Number((midX + spanX / 2).toFixed(1));
+      const newMinY = Math.max(0, Math.round(midY - spanY / 2));
+      const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
+
+      if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
+        setGlobalScatterZoomX(null);
+        setGlobalScatterZoomY(null);
+      } else {
+        setGlobalScatterZoomX([newMinX, newMaxX]);
+        setGlobalScatterZoomY([newMinY, newMaxY]);
+      }
+    };
+
+    elem.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      elem.removeEventListener('wheel', handleWheel);
+    };
+  }, [globalScatterZoomX, globalScatterZoomY, metaData]);
 
   const getConstantLabel = (constant: number) => {
     return constant.toFixed(1);
@@ -399,7 +444,7 @@ const PerformanceAnalysis: React.FC = () => {
                   <input
                     type="number"
                     step="1000"
-                    min="800000"
+                    min="0"
                     max="1010000"
                     placeholder="Min"
                     value={globalScatterZoomY ? globalScatterZoomY[0] : ''}
@@ -418,7 +463,7 @@ const PerformanceAnalysis: React.FC = () => {
                   <input
                     type="number"
                     step="1000"
-                    min="800000"
+                    min="0"
                     max="1010000"
                     placeholder="Max"
                     value={globalScatterZoomY ? globalScatterZoomY[1] : ''}
@@ -448,41 +493,9 @@ const PerformanceAnalysis: React.FC = () => {
             </div>
 
             <div 
+              ref={globalScatterContainerRef}
               className="scrollable-content-wrapper" 
               style={{ overflowY: 'hidden' }}
-              onWheel={(e) => {
-                e.preventDefault();
-                const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
-                const constants = validMeta.map((d: any) => d.constant);
-                const defaultX: [number, number] = constants.length ? [Math.min(...constants) - 0.5, Math.max(...constants) + 0.2] : [1.0, 15.4];
-                const defaultY: [number, number] = [975000, 1010000];
-
-                const currentX = globalScatterZoomX || defaultX;
-                const currentY = globalScatterZoomY || defaultY;
-
-                const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
-                const spanX = (currentX[1] - currentX[0]) * zoomFactor;
-                const spanY = (currentY[1] - currentY[0]) * zoomFactor;
-
-                if (spanX < 0.2 && e.deltaY < 0) return;
-                if (spanY < 1000 && e.deltaY < 0) return;
-
-                const midX = (currentX[0] + currentX[1]) / 2;
-                const midY = (currentY[0] + currentY[1]) / 2;
-
-                const newMinX = Number(Math.max(1, midX - spanX / 2).toFixed(1));
-                const newMaxX = Number((midX + spanX / 2).toFixed(1));
-                const newMinY = Math.max(800000, Math.round(midY - spanY / 2));
-                const newMaxY = Math.min(1010000, Math.round(midY + spanY / 2));
-
-                if (newMinX <= defaultX[0] && newMaxX >= defaultX[1] && newMinY <= defaultY[0] && newMaxY >= defaultY[1]) {
-                  setGlobalScatterZoomX(null);
-                  setGlobalScatterZoomY(null);
-                } else {
-                  setGlobalScatterZoomX([newMinX, newMaxX]);
-                  setGlobalScatterZoomY([newMinY, newMaxY]);
-                }
-              }}
             >
               <div className="chart-min-width-md" style={{ height: '430px' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -525,6 +538,7 @@ const PerformanceAnalysis: React.FC = () => {
                       type="number" 
                       dataKey="constant" 
                       name="Chart Constant" 
+                      allowDataOverflow={true}
                       stroke="var(--text-secondary)"
                       tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }}
                       domain={globalScatterZoomX || ['dataMin', 'dataMax']}
@@ -534,8 +548,9 @@ const PerformanceAnalysis: React.FC = () => {
                       type="number" 
                       dataKey="avgScore" 
                       name="Avg Score" 
+                      allowDataOverflow={true}
                       domain={globalScatterZoomY || [975000, 1010000]}
-                      ticks={[975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
+                      ticks={globalScatterZoomY ? undefined : [975000, 990000, 1000000, 1005000, 1007500, 1009000, 1010000]}
                       stroke="var(--text-secondary)" 
                       tick={{ fontSize: 13, fill: 'var(--text-secondary)' }}
                       tickFormatter={(val) => {
@@ -564,7 +579,6 @@ const PerformanceAnalysis: React.FC = () => {
                         strokeDasharray="3 3"
                       />
                     )}
-                    <Brush dataKey="constant" height={25} stroke="#ff66ff" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>

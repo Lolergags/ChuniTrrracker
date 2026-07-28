@@ -69,7 +69,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       } else if (clickX >= leftPx && clickX <= rightPx && isZoomed) {
         mode = 'pan';
       } else {
-        // Clicked outside thumb: center current zoom span around click position
         const clickRatio = Math.max(0, Math.min(1, clickX / rect.width));
         const clickVal = min + clickRatio * fullSpan;
         const halfSpan = zoomSpan / 2;
@@ -90,7 +89,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         mode
       };
     } else {
-      // Vertical orientation (top is max, bottom is min)
       const bottomPx = ((curMin - min) / fullSpan) * rect.height;
       const topPx = ((curMax - min) / fullSpan) * rect.height;
       const clickYFromBottom = rect.bottom - e.clientY;
@@ -131,7 +129,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     if (!isDragging || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const minStep = orientation === 'horizontal' ? 0.1 : 1000;
-
     const { startPos, startMin, startMax, mode } = dragRef.current;
 
     let deltaVal: number;
@@ -139,7 +136,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       const deltaX = e.clientX - startPos;
       deltaVal = (deltaX / rect.width) * fullSpan;
     } else {
-      // Dragging up increases Y value
       const deltaY = startPos - e.clientY;
       deltaVal = (deltaY / rect.height) * fullSpan;
     }
@@ -187,6 +183,8 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
     const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
 
+    const yTicks = [1010000, 1007500, 1000000, 975000, 900000].filter(v => v >= min && v <= max);
+
     return (
       <div style={{
         display: 'flex',
@@ -198,9 +196,17 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         marginTop: marginTop || 0,
         marginBottom: marginBottom || 0
       }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-          {label || 'Score View'}
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Score View'}</div>
+          {isZoomed ? (
+            <div style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.35rem', borderRadius: '4px', marginTop: '0.15rem' }}>
+              {formatVal(curMin)}–{formatVal(curMax)}
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>(Drag)</div>
+          )}
         </div>
+
         <div
           ref={containerRef}
           onPointerDown={handlePointerDown}
@@ -209,7 +215,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           onPointerCancel={handlePointerUp}
           style={{
             position: 'relative',
-            width: '26px',
+            width: '32px',
             flex: 1,
             background: 'rgba(0, 0, 0, 0.4)',
             borderRadius: '6px',
@@ -223,6 +229,13 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           }}
           title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag thumb to pan, drag edges to resize'}
         >
+          {/* Tick labels underneath */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', pointerEvents: 'none', opacity: 0.35 }}>
+            {yTicks.map(t => (
+              <span key={t} style={{ fontSize: '0.625rem', color: '#fff', fontWeight: 600 }}>{formatVal(t)}</span>
+            ))}
+          </div>
+
           {/* Zoomed Viewport Thumb Box */}
           <div
             style={{
@@ -245,15 +258,15 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             }}
           >
             {/* Top Resize Handle (Max) */}
-            <div style={{ width: '100%', height: '5px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: '12px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+            <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
             </div>
 
             <div style={{ height: '8px', width: '6px', borderTop: `2px solid ${accentColor}`, borderBottom: `2px solid ${accentColor}`, opacity: 0.8 }} />
 
             {/* Bottom Resize Handle (Min) */}
-            <div style={{ width: '100%', height: '5px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: '12px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+            <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
             </div>
           </div>
         </div>
@@ -344,7 +357,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         }}
       >
         {/* Tick labels underneath */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', pointerEvents: 'none', opacity: 0.3 }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', pointerEvents: 'none', opacity: 0.35 }}>
           {tickValues.map(t => (
             <span key={t} style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>{t}</span>
           ))}
@@ -371,15 +384,15 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           }}
         >
           {/* Left Resize Handle (Min) */}
-          <div style={{ height: '100%', width: '5px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '12px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>
 
           <div style={{ width: '8px', height: '8px', borderLeft: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
 
           {/* Right Resize Handle (Max) */}
-          <div style={{ height: '100%', width: '5px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '12px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>
         </div>
       </div>

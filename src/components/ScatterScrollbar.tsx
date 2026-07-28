@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface ScatterScrollbarProps {
   min: number;
@@ -31,17 +31,27 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const fullSpan = Math.max(0.1, max - min);
+  const curMin = currentZoom ? Math.max(min, currentZoom[0]) : min;
+  const curMax = currentZoom ? Math.min(max, currentZoom[1]) : max;
+  const zoomSpan = Math.max(0.1, curMax - curMin);
+
+  const [inputMin, setInputMin] = useState(curMin.toString());
+  const [inputMax, setInputMax] = useState(curMax.toString());
+
+  useEffect(() => {
+    setInputMin(curMin.toString());
+    setInputMax(curMax.toString());
+  }, [curMin, curMax]);
+
   const dragRef = useRef<{
     startPos: number;
     startMin: number;
     startMax: number;
     mode: 'pan' | 'min' | 'max';
   }>({ startPos: 0, startMin: min, startMax: max, mode: 'pan' });
-
-  const fullSpan = Math.max(0.1, max - min);
-  const curMin = currentZoom ? Math.max(min, currentZoom[0]) : min;
-  const curMax = currentZoom ? Math.min(max, currentZoom[1]) : max;
-  const zoomSpan = Math.max(0.1, curMax - curMin);
 
   const isZoomed = currentZoom !== null && (curMin > min + (orientation === 'horizontal' ? 0.05 : 500) || curMax < max - (orientation === 'horizontal' ? 0.05 : 500));
 
@@ -52,8 +62,22 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     return `${(val / 1000).toFixed(0)}k`;
   };
 
+  const handleApplyInputs = () => {
+    const minVal = parseFloat(inputMin);
+    const maxVal = parseFloat(inputMax);
+    if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
+      const clampedMin = Math.max(min, minVal);
+      const clampedMax = Math.min(max, maxVal);
+      onZoomChange([
+        orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin),
+        orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax)
+      ]);
+    }
+    setIsEditing(false);
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || isEditing) return;
     const rect = containerRef.current.getBoundingClientRect();
     let mode: 'pan' | 'min' | 'max' = 'pan';
 
@@ -182,7 +206,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   if (orientation === 'vertical') {
     const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
     const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
-
     const yTicks = [1010000, 1007500, 1000000, 975000, 900000].filter(v => v >= min && v <= max);
 
     return (
@@ -198,12 +221,42 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Score View'}</div>
-          {isZoomed ? (
-            <div style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.35rem', borderRadius: '4px', marginTop: '0.15rem' }}>
-              {formatVal(curMin)}–{formatVal(curMax)}
+          {isEditing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
+              <input
+                type="number"
+                value={inputMax}
+                onChange={(e) => setInputMax(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
+                onBlur={handleApplyInputs}
+                autoFocus
+                style={{ width: '50px', fontSize: '0.7rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+              />
+              <input
+                type="number"
+                value={inputMin}
+                onChange={(e) => setInputMin(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
+                onBlur={handleApplyInputs}
+                style={{ width: '50px', fontSize: '0.7rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+              />
+            </div>
+          ) : isZoomed ? (
+            <div 
+              onClick={() => setIsEditing(true)}
+              title="Click to type exact values"
+              style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.35rem', borderRadius: '4px', marginTop: '0.15rem', cursor: 'pointer' }}
+            >
+              {formatVal(curMin)}–{formatVal(curMax)} ✎
             </div>
           ) : (
-            <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>(Drag)</div>
+            <div 
+              onClick={() => setIsEditing(true)}
+              title="Click to type exact values"
+              style={{ fontSize: '0.65rem', opacity: 0.6, cursor: 'pointer' }}
+            >
+              (Drag / ✎)
+            </div>
           )}
         </div>
 
@@ -229,14 +282,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           }}
           title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag thumb to pan, drag edges to resize'}
         >
-          {/* Tick labels underneath */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', pointerEvents: 'none', opacity: 0.35 }}>
             {yTicks.map(t => (
               <span key={t} style={{ fontSize: '0.625rem', color: '#fff', fontWeight: 600 }}>{formatVal(t)}</span>
             ))}
           </div>
 
-          {/* Zoomed Viewport Thumb Box */}
           <div
             style={{
               position: 'absolute',
@@ -257,14 +308,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
             }}
           >
-            {/* Top Resize Handle (Max) */}
             <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
             </div>
 
             <div style={{ height: '8px', width: '6px', borderTop: `2px solid ${accentColor}`, borderBottom: `2px solid ${accentColor}`, opacity: 0.8 }} />
 
-            {/* Bottom Resize Handle (Min) */}
             <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
             </div>
@@ -296,7 +345,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   // Horizontal Orientation
   const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
   const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
-
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (
@@ -310,12 +358,45 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Horizontal Viewport Slider'}</span>
-          {isZoomed ? (
-            <span style={{ fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-              Level {formatVal(curMin)} – {formatVal(curMax)}
+          {isEditing ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <input
+                type="number"
+                step="0.1"
+                value={inputMin}
+                onChange={(e) => setInputMin(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
+                onBlur={handleApplyInputs}
+                autoFocus
+                style={{ width: '45px', fontSize: '0.75rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+              />
+              <span>–</span>
+              <input
+                type="number"
+                step="0.1"
+                value={inputMax}
+                onChange={(e) => setInputMax(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
+                onBlur={handleApplyInputs}
+                style={{ width: '45px', fontSize: '0.75rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+              />
+            </span>
+          ) : isZoomed ? (
+            <span 
+              onClick={() => setIsEditing(true)}
+              title="Click to type exact values"
+              style={{ fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.4rem', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Level {formatVal(curMin)} – {formatVal(curMax)} ✎
             </span>
           ) : (
-            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Drag thumb to pan, drag edges to resize)</span>
+            <span 
+              onClick={() => setIsEditing(true)}
+              title="Click to type exact values"
+              style={{ fontSize: '0.75rem', opacity: 0.7, cursor: 'pointer' }}
+            >
+              (Drag thumb to pan, drag edges to resize ✎)
+            </span>
           )}
         </span>
         {isZoomed && (
@@ -356,14 +437,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           overflow: 'hidden'
         }}
       >
-        {/* Tick labels underneath */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', pointerEvents: 'none', opacity: 0.35 }}>
           {tickValues.map(t => (
             <span key={t} style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>{t}</span>
           ))}
         </div>
 
-        {/* Zoomed Viewport Thumb Box */}
         <div
           style={{
             position: 'absolute',
@@ -383,14 +462,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             transition: isDragging ? 'none' : 'left 0.15s ease, width 0.15s ease'
           }}
         >
-          {/* Left Resize Handle (Min) */}
           <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>
 
           <div style={{ width: '8px', height: '8px', borderLeft: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
 
-          {/* Right Resize Handle (Max) */}
           <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>

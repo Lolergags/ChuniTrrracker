@@ -211,6 +211,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
 
     return (
       <div style={{
+        position: 'relative',
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'stretch',
@@ -234,48 +235,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           whiteSpace: 'nowrap',
           userSelect: 'none'
         }}>
-          {isEditing ? (
-            <div 
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                  handleApplyInputs();
-                }
-              }}
-              style={{ display: 'flex', gap: '0.2rem', transform: 'rotate(180deg)', writingMode: 'horizontal-tb', alignItems: 'center' }}
-            >
-              <input
-                type="number"
-                value={inputMin}
-                onChange={(e) => setInputMin(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                autoFocus
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '48px', fontSize: '0.65rem', padding: '0.1rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
-              />
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>–</span>
-              <input
-                type="number"
-                value={inputMax}
-                onChange={(e) => setInputMax(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '48px', fontSize: '0.65rem', padding: '0.1rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
-              />
-              <button
-                onMouseDown={(e) => { e.preventDefault(); handleApplyInputs(); }}
-                title="Apply score bounds"
-                style={{ background: accentColor, border: 'none', color: '#fff', borderRadius: '3px', padding: '0.1rem 0.25rem', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}
-              >
-                ✓
-              </button>
-            </div>
-          ) : isZoomed ? (
+          {isZoomed ? (
             <span
               onClick={() => setIsEditing(true)}
               title="Click to type exact score values"
@@ -300,6 +260,65 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             </span>
           )}
         </div>
+
+        {/* Absolute Floating Popover Editor for Vertical Mode (Zero Layout Shift) */}
+        {isEditing && (
+          <div 
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                handleApplyInputs();
+              }
+            }}
+            style={{
+              position: 'absolute',
+              left: '26px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 100,
+              background: 'var(--bg-glass)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--accent-primary)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+              padding: '0.6rem 0.75rem',
+              borderRadius: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.4rem',
+              width: '120px'
+            }}
+          >
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Score Range</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Score:</label>
+              <input
+                type="number"
+                step="1000"
+                value={inputMax}
+                onChange={(e) => setInputMax(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleApplyInputs();
+                  if (e.key === 'Escape') setIsEditing(false);
+                }}
+                autoFocus
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+              />
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Min Score:</label>
+              <input
+                type="number"
+                step="1000"
+                value={inputMin}
+                onChange={(e) => setInputMin(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleApplyInputs();
+                  if (e.key === 'Escape') setIsEditing(false);
+                }}
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Slim 14px Vertical Track Bar */}
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
@@ -417,7 +436,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                 }}
                 autoFocus
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '40px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '42px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
               />
               <span>–</span>
               <input
@@ -430,15 +449,8 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '40px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '42px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
               />
-              <button
-                onMouseDown={(e) => { e.preventDefault(); handleApplyInputs(); }}
-                title="Apply level bounds"
-                style={{ background: accentColor, border: 'none', color: '#fff', borderRadius: '3px', padding: '0.05rem 0.2rem', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}
-              >
-                ✓
-              </button>
             </span>
           ) : isZoomed ? (
             <span 

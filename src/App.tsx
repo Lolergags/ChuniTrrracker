@@ -12,6 +12,7 @@ import { Admin } from './pages/Admin.js';
 import { GlobalProvider, GlobalContext } from './lib/context/GlobalContext.js';
 
 import { Footer } from './components/Footer.js';
+import { ScrollToTop } from './components/ScrollToTop.js';
 
 const AppContent = () => {
   const { playersList, activePlayer, setActivePlayer, isAdmin } = useContext(GlobalContext);
@@ -183,6 +184,7 @@ const AppContent = () => {
         </Routes>
       </main>
       <Footer />
+      <ScrollToTop />
     </>
   );
 };

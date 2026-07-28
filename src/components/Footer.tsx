@@ -139,8 +139,25 @@ export const Footer: React.FC = () => {
           <div>
             © {new Date().getFullYear()} ChuniTrrracker. Built with React & TypeScript.
           </div>
-          <div>
-            CHUNITHM is a registered trademark of SEGA. This site is fan-made and not affiliated with SEGA.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span>CHUNITHM is a registered trademark of SEGA. Fan-made project.</span>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-primary)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.2rem'
+              }}
+            >
+              Back to Top ↑
+            </button>
           </div>
         </div>
       </div>

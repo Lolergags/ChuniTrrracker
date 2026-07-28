@@ -5,6 +5,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiSong, ChartLeaderboardResponse } from '../lib/types/index.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { ALL_VERSIONS } from '../lib/constants.js';
+import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 
 const SongAnalytics: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -24,17 +25,7 @@ const SongAnalytics: React.FC = () => {
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
-  const checkMobile = () => 
-    typeof window !== 'undefined' && 
-    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
-
-  const [isMobile, setIsMobile] = useState(checkMobile);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(checkMobile());
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   const initialPlayerRef = useRef<string | null>(urlPlayer);
 

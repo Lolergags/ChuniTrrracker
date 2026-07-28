@@ -7,6 +7,7 @@ import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
+import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -25,17 +26,7 @@ export function GlobalStats() {
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
-  const checkMobile = () => 
-    typeof window !== 'undefined' && 
-    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
-
-  const [isMobile, setIsMobile] = useState(checkMobile);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(checkMobile());
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   const globalScatterYWidth = globalScatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
   const globalScatterClipX = 20 + globalScatterYWidth;

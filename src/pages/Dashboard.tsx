@@ -9,6 +9,7 @@ import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
+import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -28,17 +29,7 @@ export function Dashboard() {
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
 
-  const checkMobile = () => 
-    typeof window !== 'undefined' && 
-    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
-
-  const [isMobile, setIsMobile] = useState(checkMobile);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(checkMobile());
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   const scatterYWidth = scatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
   const scatterClipX = 20 + scatterYWidth;

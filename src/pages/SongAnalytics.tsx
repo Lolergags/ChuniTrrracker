@@ -184,6 +184,11 @@ const SongAnalytics: React.FC = () => {
     return filteredCharts.slice(startIndex, startIndex + 50);
   }, [filteredCharts, chartPage]);
 
+  const activeChart = useMemo(() => {
+    if (!selectedSongId) return null;
+    return allCharts.find(c => c.uniqueId === selectedSongId) || null;
+  }, [selectedSongId, allCharts]);
+
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Song Leaderboards</h1>
@@ -214,25 +219,32 @@ const SongAnalytics: React.FC = () => {
 
             {/* Difficulty Pills */}
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
-                <button
-                  key={diff}
-                  onClick={() => toggleDiff(diff)}
-                  style={{
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: 'var(--radius-full)',
-                    background: diffFilters.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
-                    color: '#fff',
-                    border: diffFilters.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {diff}
-                </button>
-              ))}
+              {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => {
+                const isActive = diffFilters.includes(diff);
+                const diffColor = diff === 'BAS' ? 'var(--diff-bas)' : diff === 'ADV' ? 'var(--diff-adv)' : diff === 'EXP' ? 'var(--diff-exp)' : diff === 'MAS' ? 'var(--diff-mas)' : 'var(--diff-ult)';
+                return (
+                  <button
+                    key={diff}
+                    onClick={() => toggleDiff(diff)}
+                    style={{
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: 'var(--radius-full)',
+                      background: isActive ? diffColor : 'rgba(0,0,0,0.3)',
+                      color: '#fff',
+                      border: isActive ? `1px solid ${diffColor}` : '1px solid rgba(255,255,255,0.2)',
+                      boxShadow: isActive ? `0 0 10px ${diffColor}55` : 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-heading)',
+                      letterSpacing: '0.05em',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {diff}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Server & Version Grid */}
@@ -322,8 +334,9 @@ const SongAnalytics: React.FC = () => {
                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {chart.title}
                     </div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>{chart.difficulty} {chart.level}</span> (CC: {chart.constant.toFixed(1)})
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span className={`badge badge-${chart.difficulty.toLowerCase()}`}>{chart.difficulty} {chart.level}</span>
+                      <span>CC: {chart.constant.toFixed(1)}</span>
                     </div>
                   </div>
                   {chart.noteCount > 0 && (
@@ -387,7 +400,23 @@ const SongAnalytics: React.FC = () => {
         <div style={{ flex: '1 1 450px', minWidth: 0 }}>
           {selectedSongId ? (
             <div className="glass-panel" style={{ width: '100%', boxSizing: 'border-box' }}>
-              <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Chart Leaderboard</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem' }}>
+                    {activeChart ? activeChart.title : 'Chart Leaderboard'}
+                  </h2>
+                  {activeChart && (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{activeChart.constant.toFixed(1)}</strong> ({activeChart.version})
+                    </div>
+                  )}
+                </div>
+                {activeChart && (
+                  <span className={`badge badge-${activeChart.difficulty.toLowerCase()}`}>
+                    {activeChart.difficulty} {activeChart.level}
+                  </span>
+                )}
+              </div>
               {isLoadingBoard ? (
                 <p style={{ color: 'var(--text-secondary)' }}>Loading leaderboard...</p>
               ) : leaderboard.length === 0 ? (

@@ -1,25 +1,40 @@
 :root {
-  /* Premium Dark Mode Colors */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #13131a;
-  --bg-glass: rgba(255, 255, 255, 0.05);
+  /* Deep Midnight Violet & Obsidian Arcade Palette */
+  --bg-primary: #080811;
+  --bg-secondary: #101021;
+  --bg-tertiary: #17172e;
+  --bg-glass: rgba(16, 16, 33, 0.85);
+  --bg-glass-hover: rgba(23, 23, 46, 0.95);
   
-  --text-primary: #f8f9fa;
-  --text-secondary: #adb5bd;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   
-  --accent-primary: #6366f1; /* Indigo */
-  --accent-glow: rgba(99, 102, 241, 0.5);
-  --accent-secondary: #ec4899; /* Pink */
+  /* Less Saturated Chunithm Accents */
+  --accent-primary: #38bdf8;       /* Desaturated Cyan / Sky Blue */
+  --accent-glow: rgba(56, 189, 248, 0.2);
+  --accent-secondary: #e11d48;     /* Muted Crimson / Magenta */
+  --accent-secondary-glow: rgba(225, 29, 72, 0.2);
+  --accent-gold: #eab308;          /* Warm Muted Gold */
+  --accent-gold-glow: rgba(234, 179, 8, 0.2);
   
-  /* Rank Colors */
-  --rank-ajc: #fbbf24;
-  --rank-aj: #ef4444;
-  --rank-fc: #3b82f6;
-  --rank-clear: #22c55e;
-  --rank-failed: #000000;
+  /* Less Saturated Difficulty Colors */
+  --diff-bas: #16a34a;             /* Muted Emerald Green */
+  --diff-adv: #d97706;             /* Muted Amber */
+  --diff-exp: #dc2626;             /* Muted Crimson */
+  --diff-mas: #9333ea;             /* Muted Deep Purple */
+  --diff-ult: #db2777;             /* Muted Rose */
+
+  /* Less Saturated Lamp Colors */
+  --rank-ajc: #eab308;             /* Warm Gold */
+  --rank-aj: #d97706;              /* Amber */
+  --rank-fc: #0284c7;              /* Deep Cyan */
+  --rank-clear: #2563eb;           /* Cobalt Blue */
+  --rank-failed: #475569;          /* Slate Dark Gray */
   
   /* Typography */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Rajdhani', 'Inter', system-ui, sans-serif;
   
   /* Spacing */
   --spacing-sm: 0.5rem;
@@ -28,11 +43,11 @@
   --spacing-xl: 4rem;
   
   /* Border Radius */
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
   --radius-full: 9999px;
   
   /* Transitions */
-  --transition-fast: 0.2s ease-in-out;
-  --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s ease-in-out;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -969,12 +969,8 @@ export function Dashboard() {
               >
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ 
-                    padding: '0.25rem 0.5rem', 
-                    background: 'rgba(255,255,255,0.1)', 
-                    borderRadius: '4px',
-                    fontSize: '0.85rem'
-                  }}>{score.difficulty} {score.level}</span> ({score.constant.toFixed(1)})
+                  <span className={`badge badge-${score.difficulty.toLowerCase()}`} style={{ marginRight: '0.4rem' }}>{score.difficulty} {score.level}</span>
+                  <span>({score.constant.toFixed(1)})</span>
                 </td>
                 <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{score.score.toLocaleString()}</td>
                 <td style={{ padding: '1rem', color: `var(--rank-${score.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{score.lamp}</td>

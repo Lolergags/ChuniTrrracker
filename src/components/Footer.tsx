@@ -1,15 +1,17 @@
 import React from 'react';
-import { Heart, Mail, ExternalLink, Activity, Code } from 'lucide-react';
+import { Heart, Mail, ExternalLink, Code } from 'lucide-react';
+import { TrrrackerIcon } from './TrrrackerIcon.js';
 
 export const Footer: React.FC = () => {
   return (
     <footer style={{
-      marginTop: '4rem',
+      marginTop: 'auto',
+      paddingTop: '4rem',
       borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-      background: 'rgba(15, 15, 25, 0.75)',
+      background: 'var(--bg-glass)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      padding: '3rem 1.5rem 2rem 1.5rem',
+      padding: '3rem 1.5rem calc(4rem + env(safe-area-inset-bottom, 0px)) 1.5rem',
       color: 'var(--text-secondary)'
     }}>
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -22,7 +24,7 @@ export const Footer: React.FC = () => {
           {/* Column 1: Brand & Purpose */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <Activity style={{ color: 'var(--accent-primary)' }} size={22} />
+              <TrrrackerIcon size={30} />
               <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }} className="text-gradient">
                 ChuniTrrracker
               </span>

@@ -1,6 +1,7 @@
 import React, { useContext, useState, useDeferredValue, useMemo, useEffect } from 'react';
 import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
+import { Globe, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
+import { TrrrackerIcon } from './components/TrrrackerIcon.js';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
@@ -81,7 +82,7 @@ const AppContent = () => {
         <div className="nav-logo">
           <NavLink to="/" style={{ textDecoration: 'none' }}>
             <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Activity /> ChuniTrrracker
+              <TrrrackerIcon size={34} /> ChuniTrrracker
             </h2>
           </NavLink>
         </div>
@@ -97,7 +98,7 @@ const AppContent = () => {
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><BarChart2 size={18} /> Song Leaderboards</span>
           </NavLink>
           <NavLink to="/global-stats" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Activity size={18} /> Global Stats</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Globe size={18} /> Global Stats</span>
           </NavLink>
           <NavLink to="/import" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><DownloadCloud size={18} /> Import Data</span>

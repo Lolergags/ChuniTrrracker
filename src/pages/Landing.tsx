@@ -43,7 +43,7 @@ export function Landing() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', width: '100%', maxWidth: '1200px', marginBottom: '4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '2rem', width: '100%', maxWidth: '1200px', marginBottom: '4rem', boxSizing: 'border-box' }}>
         <div className="glass-panel hover-card" onClick={() => navigate('/leaderboard')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ padding: '1rem', background: 'rgba(234, 179, 8, 0.1)', borderRadius: '50%', color: 'var(--accent-gold)', marginBottom: '1rem' }}>
             <Trophy size={32} />

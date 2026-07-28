@@ -18,97 +18,75 @@ export function PenguinIcon({
       xmlns="http://www.w3.org/2000/svg"
       width={numericSize}
       height={numericSize}
-      viewBox="0 0 32 32"
+      viewBox="0 0 36 36"
       fill="none"
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Subtle Ambient Aura */}
-      <circle cx="16" cy="16" r="15" fill="var(--accent-glow)" opacity="0.15" />
+      {/* Gold Headphones Band */}
+      <path
+        d="M 9 14 C 9 8 13.5 4.5 18 4.5 C 22.5 4.5 27 8 27 14"
+        stroke="var(--accent-gold)"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+      {/* Earcups */}
+      <rect x="6" y="10.5" width="5.5" height="9" rx="2.75" fill="var(--accent-gold)" stroke="#0f172a" strokeWidth="1.5" />
+      <rect x="24.5" y="10.5" width="5.5" height="9" rx="2.75" fill="var(--accent-gold)" stroke="#0f172a" strokeWidth="1.5" />
 
-      {/* Pingy - Leaning Forward, Facing Slightly Forward */}
-      <g transform="rotate(-8 16 16)">
-        {/* Headphone Band Arch */}
-        <path
-          d="M 7.5 13.5 C 7.5 8 11.5 5.5 16 5.5 C 20.5 5.5 24.5 8 24.5 13.5"
-          stroke="var(--accent-primary)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
+      {/* Outer Navy Body Silhouette */}
+      <path
+        d="M 17.5 6 C 12 6 8.5 10 8.5 15 V 23.5 C 8.5 27.5 12 30 17.5 30 C 23 30 26.5 27 26.5 23 V 15 C 26.5 10 23 6 17.5 6 Z"
+        fill="#0f172a"
+        stroke="#0f172a"
+        strokeWidth="1.5"
+      />
 
-        {/* Headphone Earcups (Cyan with Dark Border) */}
-        <rect
-          x="5"
-          y="11.5"
-          width="3.5"
-          height="6.5"
-          rx="1.75"
-          fill="var(--accent-primary)"
-          stroke="#0f172a"
-          strokeWidth="0.8"
-        />
-        <rect
-          x="23.5"
-          y="11.5"
-          width="3.5"
-          height="6.5"
-          rx="1.75"
-          fill="var(--accent-primary)"
-          stroke="#0f172a"
-          strokeWidth="0.8"
-        />
+      {/* Black Tail behind */}
+      <path d="M 25 21.5 C 29 22 30.5 24.5 27.5 27 C 25.5 26.5 24.8 24 25 21.5 Z" fill="#0f172a" stroke="#0f172a" strokeWidth="1" />
 
-        {/* Solid Navy Body (Leaning Forward, Subtle Dark Rim) */}
-        <path
-          d="M 16 7.5 C 11.5 7.5 8 11.5 8 16 V 22.5 C 8 25.8 11.5 28 16 28 C 20.5 28 24 25.8 24 22.5 V 16 C 24 11.5 20.5 7.5 16 7.5 Z"
-          fill="#0f172a"
-          stroke="rgba(255, 255, 255, 0.15)"
-          strokeWidth="0.8"
-        />
+      {/* White Face & Belly Patch */}
+      <path
+        d="M 17.5 10.5 C 13.5 10.5 10.5 12.5 10.5 16.5 V 23.5 C 10.5 26.8 13.5 28.5 17.5 28.5 C 21.5 28.5 24 26.8 24 23.5 V 16.5 C 24 12.5 21.5 10.5 17.5 10.5 Z"
+        fill="#ffffff"
+      />
 
-        {/* Crisp White Belly (Front-Center Curve) */}
-        <path
-          d="M 16 13.5 C 13.2 13.5 11 16 11 19.5 V 23.5 C 11 25.8 13.2 27 16 27 C 18.8 27 21 25.8 21 23.5 V 19.5 C 21 16 18.8 13.5 16 13.5 Z"
-          fill="#f8fafc"
-        />
+      {/* Striped Track Jacket (Black & White) */}
+      <path
+        d="M 16.5 17.5 C 21.5 18 24.5 20.5 25 24.5 C 23.5 27.5 19.5 28.5 16.5 28.5 C 14.5 28.5 12.5 27.5 11.5 25.5 C 13 22 15 19 16.5 17.5 Z"
+        fill="#0f172a"
+        stroke="#0f172a"
+        strokeWidth="1"
+      />
 
-        {/* Expressive Cute Mascot Eyes */}
-        <ellipse cx="13.2" cy="12.5" rx="1.3" ry="1.7" fill="#0f172a" />
-        <circle cx="13.6" cy="11.8" r="0.5" fill="#ffffff" />
+      {/* White Jacket Stripes */}
+      <path d="M 19 19 L 20.5 24.5" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M 21.5 20 L 23 24" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
 
-        <ellipse cx="18.8" cy="12.5" rx="1.3" ry="1.7" fill="#0f172a" />
-        <circle cx="19.2" cy="11.8" r="0.5" fill="#ffffff" />
+      {/* Bent Flipper Sleeve */}
+      <path
+        d="M 15.5 19 C 13.5 21 14.5 24 16.5 24.5 C 18 24 18.5 22 17.5 20 Z"
+        fill="#0f172a"
+        stroke="#ffffff"
+        strokeWidth="0.8"
+      />
 
-        {/* Cheerful Beak (Gold) */}
-        <path
-          d="M 13.5 14.8 C 13.5 14.8 16 14 18.5 14.8 C 18.5 17 13.5 17 13.5 14.8 Z"
-          fill="var(--accent-gold)"
-          stroke="#0f172a"
-          strokeWidth="0.5"
-        />
+      {/* Cute Round Black Eyes */}
+      <circle cx="14" cy="14" r="1.6" fill="#0f172a" />
+      <circle cx="19.5" cy="14" r="1.6" fill="#0f172a" />
 
-        {/* Outstretched Navy Flippers */}
-        <path
-          d="M 7.5 17.5 C 5.5 19 5 21 6.8 22 C 8 22.2 9.2 20.5 8.5 18.8"
-          fill="#0f172a"
-          stroke="rgba(255, 255, 255, 0.12)"
-          strokeWidth="0.8"
-        />
-        <path
-          d="M 24.5 17.5 C 26.5 19 27 21 25.2 22 C 24 22.2 22.8 20.5 23.5 18.8"
-          fill="#0f172a"
-          stroke="rgba(255, 255, 255, 0.12)"
-          strokeWidth="0.8"
-        />
+      {/* Gold Triangle Beak */}
+      <path
+        d="M 13.5 16 L 20 16 L 16.5 19.5 Z"
+        fill="var(--accent-gold)"
+        stroke="#0f172a"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
 
-        {/* Feet at Base (Solid Gold) */}
-        <path
-          d="M 11.5 27.2 L 14 28.2 M 18 28.2 L 20.5 27.2"
-          stroke="var(--accent-gold)"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </g>
+      {/* Stepping Front Foot (Navy) & Back Webbed Foot (Gold) */}
+      <path d="M 11 29 L 14.5 32 L 16.5 29 Z" fill="#0f172a" stroke="#0f172a" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M 22 28.5 L 25 31.5 L 27 28.5 Z" fill="var(--accent-gold)" stroke="#0f172a" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
   );
 }

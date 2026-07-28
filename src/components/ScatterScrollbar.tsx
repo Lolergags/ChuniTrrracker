@@ -86,21 +86,22 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       const rightPx = ((curMax - min) / fullSpan) * rect.width;
       const clickX = e.clientX - rect.left;
 
-      if (isZoomed && Math.abs(clickX - leftPx) <= 14) {
+      if (Math.abs(clickX - leftPx) <= 14) {
         mode = 'min';
-      } else if (isZoomed && Math.abs(clickX - rightPx) <= 14) {
+      } else if (Math.abs(clickX - rightPx) <= 14) {
         mode = 'max';
       } else if (clickX >= leftPx && clickX <= rightPx && isZoomed) {
         mode = 'pan';
       } else {
         const clickRatio = Math.max(0, Math.min(1, clickX / rect.width));
         const clickVal = min + clickRatio * fullSpan;
-        const halfSpan = zoomSpan / 2;
+        const targetSpan = isZoomed ? zoomSpan : fullSpan * 0.4;
+        const halfSpan = targetSpan / 2;
         let newMin = Math.max(min, clickVal - halfSpan);
-        let newMax = newMin + zoomSpan;
+        let newMax = newMin + targetSpan;
         if (newMax > max) {
           newMax = max;
-          newMin = Math.max(min, max - zoomSpan);
+          newMin = Math.max(min, max - targetSpan);
         }
         onZoomChange([Number(newMin.toFixed(2)), Number(newMax.toFixed(2))]);
         return;
@@ -117,21 +118,22 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       const topPx = ((curMax - min) / fullSpan) * rect.height;
       const clickYFromBottom = rect.bottom - e.clientY;
 
-      if (isZoomed && Math.abs(clickYFromBottom - bottomPx) <= 14) {
+      if (Math.abs(clickYFromBottom - bottomPx) <= 14) {
         mode = 'min';
-      } else if (isZoomed && Math.abs(clickYFromBottom - topPx) <= 14) {
+      } else if (Math.abs(clickYFromBottom - topPx) <= 14) {
         mode = 'max';
       } else if (clickYFromBottom >= bottomPx && clickYFromBottom <= topPx && isZoomed) {
         mode = 'pan';
       } else {
         const clickRatio = Math.max(0, Math.min(1, clickYFromBottom / rect.height));
         const clickVal = min + clickRatio * fullSpan;
-        const halfSpan = zoomSpan / 2;
+        const targetSpan = isZoomed ? zoomSpan : fullSpan * 0.4;
+        const halfSpan = targetSpan / 2;
         let newMin = Math.max(min, clickVal - halfSpan);
-        let newMax = newMin + zoomSpan;
+        let newMax = newMin + targetSpan;
         if (newMax > max) {
           newMax = max;
-          newMin = Math.max(min, max - zoomSpan);
+          newMin = Math.max(min, max - targetSpan);
         }
         onZoomChange([Math.round(newMin), Math.round(newMax)]);
         return;

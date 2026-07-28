@@ -130,7 +130,7 @@ const Leaderboard: React.FC = () => {
         <div className="scrollable-content-wrapper" style={{ marginTop: '2rem' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-heading)', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.9rem' }}>
                 <th style={{ padding: '1rem' }}>Rank</th>
                 <th style={{ padding: '1rem' }}>Player</th>
                 <th style={{ padding: '1rem' }}>Total OP</th>
@@ -143,19 +143,20 @@ const Leaderboard: React.FC = () => {
                 <tr 
                   key={player.username} 
                   onClick={() => handleRowClick(player.username)}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', cursor: 'pointer' }} 
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} 
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s', cursor: 'pointer' }} 
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'} 
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td style={{ padding: '1rem', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-primary)', fontWeight: 'bold' }}>#{((page - 1) * 50) + idx + 1}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>{player.username}</td>
-                  <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{(player.totalOp || 0).toFixed(2)}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{(player.opPercent || 0).toFixed(2)}%</td>
+                  <td style={{ padding: '1rem', color: (page === 1 && idx === 0) ? 'var(--accent-gold)' : 'var(--text-primary)', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>#{((page - 1) * 50) + idx + 1}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: '600' }}>{player.username}</td>
+                  <td style={{ padding: '1rem', color: 'var(--accent-primary)', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>{(player.totalOp || 0).toFixed(2)}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-heading)' }}>{(player.opPercent || 0).toFixed(2)}%</td>
                   <td style={{ 
                     padding: '1rem', 
                     fontWeight: 'bold', 
-                    color: player.possession === 'Rainbow' ? '#ff66ff' : player.possession === 'Platinum' ? '#e5e4e2' : player.possession === 'Gold' ? '#ffd700' : player.possession === 'Silver' ? '#c0c0c0' : 'var(--text-secondary)',
-                    textShadow: player.possession === 'Rainbow' ? '0 0 10px rgba(255,102,255,0.5)' : player.possession === 'Platinum' ? '0 0 10px rgba(229,228,226,0.5)' : 'none'
+                    fontFamily: 'var(--font-heading)',
+                    color: player.possession === 'Rainbow' ? '#f472b6' : player.possession === 'Platinum' ? '#cbd5e1' : player.possession === 'Gold' ? '#eab308' : player.possession === 'Silver' ? '#94a3b8' : 'var(--text-muted)',
+                    textShadow: player.possession === 'Rainbow' ? '0 0 8px rgba(244,114,182,0.4)' : player.possession === 'Platinum' ? '0 0 8px rgba(203,213,225,0.3)' : 'none'
                   }}>
                     {player.possession !== 'None' ? player.possession : '-'}
                   </td>

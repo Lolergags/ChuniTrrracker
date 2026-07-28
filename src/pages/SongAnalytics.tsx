@@ -24,6 +24,14 @@ const SongAnalytics: React.FC = () => {
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const initialPlayerRef = useRef<string | null>(urlPlayer);
 
   useEffect(() => {
@@ -116,7 +124,7 @@ const SongAnalytics: React.FC = () => {
           constant: chart.constant,
           level: chart.level,
           noteCount: chart.noteCount || 0,
-          version: song.version,
+          version: chart.version || song.version,
           is_jp_active: song.is_jp_active,
           is_intl_active: song.is_intl_active,
           is_pl_offline_active: song.is_pl_offline_active,
@@ -179,120 +187,128 @@ const SongAnalytics: React.FC = () => {
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Song Leaderboards</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
         Search for a song and select a chart to view the leaderboard across all imported players.
       </p>
 
-      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {/* Left column: Song List */}
-        <div className="sticky-column" style={{ flex: '1 1 300px' }}>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <div className="sticky-column" style={{ flex: '1 1 320px', maxWidth: isMobile ? '100%' : '380px', minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
             <input 
               type="text" 
               placeholder="Search song title or level (e.g. 14+)..." 
               value={searchFilter}
               onChange={e => setSearchFilter(e.target.value)}
               style={{ 
-                flex: '1',
-                padding: '0.75rem', 
+                width: '100%',
+                padding: '0.65rem 0.85rem', 
                 borderRadius: 'var(--radius-md)', 
                 border: '1px solid rgba(255,255,255,0.2)',
                 background: 'rgba(0,0,0,0.3)',
                 color: 'var(--text-primary)',
-                outline: 'none'
+                outline: 'none',
+                fontSize: '0.9rem'
               }}
             />
-          </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-            {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
-              <button
-                key={diff}
-                onClick={() => toggleDiff(diff)}
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: 'var(--radius-full)',
-                  background: diffFilters.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
-                  color: '#fff',
-                  border: diffFilters.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {diff}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <select 
-              value={serverFilter}
-              onChange={e => setServerFilter(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none' }}
-            >
-              <option value="JP">Japan (JP)</option>
-              <option value="INT">International (Intl)</option>
-              <option value="PL_OFFLINE">Paradise Lost (Offline)</option>
-              <option value="OMNI">Omnimix (All)</option>
-            </select>
-
-            <input 
-              type="number"
-              placeholder="Min CC"
-              value={minConst}
-              onChange={e => setMinConst(e.target.value)}
-              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none' }}
-              step="0.1"
-              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-            />
-            <input 
-              type="number"
-              placeholder="Max CC"
-              value={maxConst}
-              onChange={e => setMaxConst(e.target.value)}
-              style={{ width: '80px', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none' }}
-              step="0.1"
-              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-            />
-
-            <select 
-              value={sortType}
-              onChange={(e) => setSortType(e.target.value as 'title' | 'constant' | 'notes')}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="constant">Sort: Constant</option>
-              <option value="title">Sort: Name</option>
-              <option value="notes">Sort: Note Count</option>
-            </select>
-
-            <select 
-              value={versionFilter}
-              onChange={(e) => setVersionFilter(e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="ALL">All Versions</option>
-              {(serverFilter === 'PL_OFFLINE' ? ALL_VERSIONS.slice(ALL_VERSIONS.indexOf('PARADISE LOST')) : ALL_VERSIONS).map(v => (
-                <option key={v} value={v}>{v}</option>
+            {/* Difficulty Pills */}
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+              {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
+                <button
+                  key={diff}
+                  onClick={() => toggleDiff(diff)}
+                  style={{
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: 'var(--radius-full)',
+                    background: diffFilters.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
+                    color: '#fff',
+                    border: diffFilters.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {diff}
+                </button>
               ))}
-            </select>
+            </div>
 
-            <button 
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
-            >
-              {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
-            </button>
+            {/* Server & Version Grid */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select 
+                value={serverFilter}
+                onChange={e => setServerFilter(e.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '0.5rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+              >
+                <option value="JP">Japan (JP)</option>
+                <option value="INT">International (Intl)</option>
+                <option value="PL_OFFLINE">Paradise Lost (Offline)</option>
+                <option value="OMNI">Omnimix (All)</option>
+              </select>
+
+              <select 
+                value={versionFilter}
+                onChange={(e) => setVersionFilter(e.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                <option value="ALL">All Versions</option>
+                {(serverFilter === 'PL_OFFLINE' ? ALL_VERSIONS.slice(ALL_VERSIONS.indexOf('PARADISE LOST')) : ALL_VERSIONS).map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Min/Max CC & Sort Controls */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <input 
+                type="number"
+                placeholder="Min CC"
+                value={minConst}
+                onChange={e => setMinConst(e.target.value)}
+                style={{ flex: '1 1 70px', minWidth: 0, padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', fontSize: '0.85rem' }}
+                step="0.1"
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              />
+              <input 
+                type="number"
+                placeholder="Max CC"
+                value={maxConst}
+                onChange={e => setMaxConst(e.target.value)}
+                style={{ flex: '1 1 70px', minWidth: 0, padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', outline: 'none', fontSize: '0.85rem' }}
+                step="0.1"
+                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              />
+
+              <select 
+                value={sortType}
+                onChange={(e) => setSortType(e.target.value as 'title' | 'constant' | 'notes')}
+                style={{ flex: '1 1 110px', minWidth: 0, padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                <option value="constant">Sort: Constant</option>
+                <option value="title">Sort: Name</option>
+                <option value="notes">Sort: Notes</option>
+              </select>
+
+              <button 
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                style={{ padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'background 0.2s', fontSize: '0.85rem' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
+              >
+                {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+              </button>
+            </div>
           </div>
-          <div style={{ height: '500px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1rem' }}>
+
+          <div style={{ height: '480px', overflowY: 'auto', paddingRight: '0.25rem', marginBottom: '1rem' }}>
             {paginatedCharts.map(chart => (
               <div 
                 key={chart.uniqueId}
                 onClick={() => setSelectedSongId(chart.uniqueId)}
                 style={{
-                  padding: '1rem',
+                  padding: '0.85rem 1rem',
                   background: selectedSongId === chart.uniqueId ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.2)',
                   border: selectedSongId === chart.uniqueId ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.05)',
                   borderRadius: 'var(--radius-md)',
@@ -301,24 +317,35 @@ const SongAnalytics: React.FC = () => {
                   transition: 'background 0.2s'
                 }}
               >
-                <div style={{ fontWeight: 'bold' }}>{chart.title}</div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                  <span style={{ color: 'var(--accent-secondary)' }}>{chart.difficulty} {chart.level}</span> (CC: {chart.constant.toFixed(1)})
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {chart.title}
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>{chart.difficulty} {chart.level}</span> (CC: {chart.constant.toFixed(1)})
+                    </div>
+                  </div>
+                  {chart.noteCount > 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      {chart.noteCount} notes
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
           {filteredCharts.length > 50 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.25rem 0' }}>
               <button 
                 onClick={() => setChartPage(p => Math.max(1, p - 1))}
                 disabled={chartPage === 1}
-                style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: chartPage === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === 1 ? 'not-allowed' : 'pointer' }}
+                style={{ padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-md)', background: chartPage === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
               >
                 Prev
               </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 Page 
                 <input 
                   type="number" 
@@ -339,7 +366,7 @@ const SongAnalytics: React.FC = () => {
                       e.preventDefault();
                     }
                   }}
-                  style={{ width: '50px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }} 
+                  style={{ width: '45px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', fontSize: '0.85rem' }} 
                   min={1} 
                   max={Math.ceil(filteredCharts.length / 50)} 
                 />
@@ -348,7 +375,7 @@ const SongAnalytics: React.FC = () => {
               <button 
                 onClick={() => setChartPage(p => Math.min(Math.ceil(filteredCharts.length / 50), p + 1))}
                 disabled={chartPage === Math.ceil(filteredCharts.length / 50)}
-                style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: chartPage === Math.ceil(filteredCharts.length / 50) ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === Math.ceil(filteredCharts.length / 50) ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === Math.ceil(filteredCharts.length / 50) ? 'not-allowed' : 'pointer' }}
+                style={{ padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-md)', background: chartPage === Math.ceil(filteredCharts.length / 50) ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: chartPage === Math.ceil(filteredCharts.length / 50) ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: chartPage === Math.ceil(filteredCharts.length / 50) ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
               >
                 Next
               </button>
@@ -357,9 +384,9 @@ const SongAnalytics: React.FC = () => {
         </div>
 
         {/* Right column: Leaderboard */}
-        <div style={{ flex: '2 1 400px', minWidth: 0 }}>
+        <div style={{ flex: '1 1 450px', minWidth: 0 }}>
           {selectedSongId ? (
-            <div className="glass-panel">
+            <div className="glass-panel" style={{ width: '100%', boxSizing: 'border-box' }}>
               <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Chart Leaderboard</h2>
               {isLoadingBoard ? (
                 <p style={{ color: 'var(--text-secondary)' }}>Loading leaderboard...</p>
@@ -367,15 +394,15 @@ const SongAnalytics: React.FC = () => {
                 <p style={{ color: 'var(--text-secondary)' }}>No imported players have played this chart yet!</p>
               ) : (
                 <div className="scrollable-content-wrapper">
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '420px' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        <th style={{ padding: '1rem' }}>Rank</th>
-                        <th style={{ padding: '1rem' }}>Player</th>
-                        <th style={{ padding: '1rem' }}>Score</th>
-                        <th style={{ padding: '1rem' }}>Lamp</th>
-                        <th style={{ padding: '1rem' }}>OP</th>
-                        <th style={{ padding: '1rem' }}>OP%</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>Rank</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>Player</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>Score</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>Lamp</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>OP</th>
+                        <th style={{ padding: '0.75rem 0.5rem' }}>OP%</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -395,12 +422,12 @@ const SongAnalytics: React.FC = () => {
                             onMouseEnter={(e) => { if (!isHighlighted) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }} 
                             onMouseLeave={(e) => { if (!isHighlighted) e.currentTarget.style.background = 'transparent'; }}
                           >
-                            <td style={{ padding: '1rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
-                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{row.username}</td>
-                            <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{row.score.toLocaleString()}</td>
-                            <td style={{ padding: '1rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
-                            <td style={{ padding: '1rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
-                            <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
+                            <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: (page === 1 && idx === 0) ? 'var(--rank-ajc)' : 'var(--text-secondary)' }}>#{((page - 1) * 10) + idx + 1}</td>
+                            <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold' }}>{row.username}</td>
+                            <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'monospace', fontSize: '1.05rem' }}>{row.score.toLocaleString()}</td>
+                            <td style={{ padding: '0.75rem 0.5rem', color: `var(--rank-${row.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{row.lamp}</td>
+                            <td style={{ padding: '0.75rem 0.5rem', color: 'var(--accent-secondary)' }}>{(row.op / 10000).toFixed(2)}</td>
+                            <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>{row.opPercent}%</td>
                           </tr>
                         );
                       })}
@@ -410,15 +437,15 @@ const SongAnalytics: React.FC = () => {
               )}
 
               {leaderboard.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0.75rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                   <button 
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === 1 ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === 1 ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
                   >
                     Previous
                   </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     Page 
                     <input 
                       type="number" 
@@ -439,7 +466,7 @@ const SongAnalytics: React.FC = () => {
                           e.preventDefault();
                         }
                       }}
-                      style={{ width: '50px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px' }} 
+                      style={{ width: '45px', padding: '0.2rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', fontSize: '0.85rem' }} 
                       min={1} 
                       max={totalPages} 
                     />
@@ -448,7 +475,7 @@ const SongAnalytics: React.FC = () => {
                   <button 
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === totalPages ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === totalPages ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                    style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: page === totalPages ? 'rgba(255,255,255,0.05)' : 'var(--accent-primary)', color: page === totalPages ? 'var(--text-secondary)' : '#fff', border: 'none', cursor: page === totalPages ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
                   >
                     Next
                   </button>
@@ -456,17 +483,17 @@ const SongAnalytics: React.FC = () => {
               )}
 
               {gradeDistribution.length > 0 && (
-                <div style={{ marginTop: '3rem' }}>
+                <div style={{ marginTop: '2.5rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Grade Rank Breakdown for Selected Chart</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
                     Number of logged players achieving each clear grade rank on this chart.
                   </p>
                   <div className="scrollable-content-wrapper">
-                    <div className="chart-min-width-sm" style={{ height: '250px' }}>
+                    <div className="chart-min-width-sm" style={{ height: '240px' }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={gradeDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }} />
-                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 13, fill: 'var(--text-secondary)' }} />
+                        <BarChart data={gradeDistribution} margin={{ top: 10, right: 15, left: -15, bottom: 20 }}>
+                          <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fontSize: isMobile ? 11 : 13, dy: 4, fill: 'var(--text-secondary)' }} />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                             itemStyle={{ color: 'var(--text-primary)' }}
@@ -481,17 +508,23 @@ const SongAnalytics: React.FC = () => {
               )}
 
               {normalDistribution.length > 0 && (
-                <div style={{ marginTop: '3rem' }}>
+                <div style={{ marginTop: '2.5rem' }}>
                   <h3 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score Distribution Bell Curve</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                    Frequency of player scores grouped into 5,000 / 10,000 point score buckets.
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                    Frequency of player scores grouped into score buckets.
                   </p>
                   <div className="scrollable-content-wrapper">
-                    <div className="chart-min-width-sm" style={{ height: '250px' }}>
+                    <div className="chart-min-width-sm" style={{ height: '240px' }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={normalDistribution} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <XAxis dataKey="bucket" stroke="var(--text-secondary)" tick={{ fontSize: 13, dy: 6, fill: 'var(--text-secondary)' }} interval={0} />
-                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: 13, fill: 'var(--text-secondary)' }} />
+                        <LineChart data={normalDistribution} margin={{ top: 10, right: 20, left: -15, bottom: 20 }}>
+                          <XAxis 
+                            dataKey="bucket" 
+                            stroke="var(--text-secondary)" 
+                            tick={{ fontSize: isMobile ? 10 : 12, dy: 4, fill: 'var(--text-secondary)' }} 
+                            interval="preserveStartEnd"
+                            tickFormatter={(val) => String(val).replace(/,000$/, 'k')}
+                          />
+                          <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                             itemStyle={{ color: 'var(--text-primary)' }}
@@ -506,7 +539,7 @@ const SongAnalytics: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', height: '100%', minHeight: '300px', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
               Select a chart from the left to view its leaderboard.
             </div>
           )}

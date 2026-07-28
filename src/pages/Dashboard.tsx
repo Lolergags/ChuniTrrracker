@@ -812,72 +812,84 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div 
-          ref={scatterContainerRef}
-          className="scrollable-content-wrapper" 
-          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
-        >
-          <div className="chart-min-width-md" style={{ height: '430px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart 
-                margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
-              >
-                <defs>
-                  <clipPath id="custom-scatter-clip">
-                    <rect x={scatterClipX} y="-500" width="10000" height="875" />
-                  </clipPath>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis 
-                  type="number" 
-                  dataKey="constant" 
-                  allowDataOverflow={true}
-                  domain={scatterZoomX || defaultXDomain} 
-                  stroke="var(--text-secondary)" 
-                  tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
-                  tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
-                />
-                <YAxis 
-                  type="number" 
-                  dataKey="score" 
-                  name="Score" 
-                  allowDataOverflow={true}
-                  domain={scatterZoomY || defaultYDomain} 
-                  ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
-                  stroke="var(--text-secondary)"
-                  tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
-                  tickFormatter={(val) => {
-                    if (typeof val !== 'number') return val;
-                    if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
-                    return (val / 1000).toFixed(1) + 'k';
-                  }}
-                  width={scatterYWidth}
-                />
-                <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
-                <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-                <Scatter 
-                  name="Scores" 
-                  data={uniqueScores.map(s => ({
-                    name: s.songTitle,
-                    score: s.score,
-                    constant: s.constant,
-                    opDisplay: Number((s.op / 10000).toFixed(2)),
-                    playCount: s.playCount || 1,
-                    lamp: s.lamp,
-                    songId: s.songId,
-                    difficulty: s.difficulty
-                  }))} 
-                  fill="var(--accent-primary)" 
-                  fillOpacity={0.6}
-                  onClick={(node: any) => {
-                    if (node && (node.payload || node.name)) {
-                      setSelectedDot(node.payload || node);
-                    }
-                  }} 
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
+        <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
+          <div 
+            ref={scatterContainerRef}
+            className="scrollable-content-wrapper" 
+            style={{ flex: 1, minWidth: 0, overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+          >
+            <div className="chart-min-width-md" style={{ height: '430px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart 
+                  margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
+                >
+                  <defs>
+                    <clipPath id="custom-scatter-clip">
+                      <rect x={scatterClipX} y="-500" width="10000" height="875" />
+                    </clipPath>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis 
+                    type="number" 
+                    dataKey="constant" 
+                    allowDataOverflow={true}
+                    domain={scatterZoomX || defaultXDomain} 
+                    stroke="var(--text-secondary)" 
+                    tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
+                    tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
+                  />
+                  <YAxis 
+                    type="number" 
+                    dataKey="score" 
+                    name="Score" 
+                    allowDataOverflow={true}
+                    domain={scatterZoomY || defaultYDomain} 
+                    ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
+                    stroke="var(--text-secondary)"
+                    tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
+                    tickFormatter={(val) => {
+                      if (typeof val !== 'number') return val;
+                      if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
+                      return (val / 1000).toFixed(1) + 'k';
+                    }}
+                    width={scatterYWidth}
+                  />
+                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
+                  <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Scatter 
+                    name="Scores" 
+                    data={uniqueScores.map(s => ({
+                      name: s.songTitle,
+                      score: s.score,
+                      constant: s.constant,
+                      opDisplay: Number((s.op / 10000).toFixed(2)),
+                      playCount: s.playCount || 1,
+                      lamp: s.lamp,
+                      songId: s.songId,
+                      difficulty: s.difficulty
+                    }))} 
+                    fill="var(--accent-primary)" 
+                    fillOpacity={0.6}
+                    onClick={(node: any) => {
+                      if (node && (node.payload || node.name)) {
+                        setSelectedDot(node.payload || node);
+                      }
+                    }} 
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          <ScatterScrollbar
+            orientation="vertical"
+            min={0}
+            max={1010000}
+            currentZoom={scatterZoomY}
+            onZoomChange={setScatterZoomY}
+            accentColor="var(--accent-primary)"
+            label="Score"
+          />
         </div>
 
         {(() => {
@@ -886,11 +898,13 @@ export function Dashboard() {
           const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
           return (
             <ScatterScrollbar
-              minX={minC}
-              maxX={maxC}
-              currentZoomX={scatterZoomX}
-              onZoomXChange={setScatterZoomX}
+              orientation="horizontal"
+              min={minC}
+              max={maxC}
+              currentZoom={scatterZoomX}
+              onZoomChange={setScatterZoomX}
               accentColor="var(--accent-primary)"
+              label="Level Constant"
             />
           );
         })()}

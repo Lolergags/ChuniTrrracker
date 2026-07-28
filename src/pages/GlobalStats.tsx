@@ -797,62 +797,74 @@ export function GlobalStats() {
               </div>
             </div>
 
-            <div 
-              ref={globalScatterContainerRef}
-              className="scrollable-content-wrapper" 
-              style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
-            >
-              <div className="chart-min-width-md" style={{ height: '430px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart 
-                    margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
-                  >
-                    <defs>
-                      <clipPath id="custom-scatter-clip">
-                        <rect x={globalScatterClipX} y="-500" width="10000" height="875" />
-                      </clipPath>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis 
-                      type="number" 
-                      dataKey="constant" 
-                      allowDataOverflow={true}
-                      stroke="var(--text-secondary)"
-                      tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
-                      domain={globalScatterZoomX || defaultXDomain}
-                    />
-                    <YAxis 
-                      type="number" 
-                      dataKey="avgScore" 
-                      name="Avg Score" 
-                      allowDataOverflow={true}
-                      domain={globalScatterZoomY || defaultYDomain}
-                      ticks={getSmartYTicks(globalScatterZoomY ? globalScatterZoomY[0] : defaultYDomain[0], globalScatterZoomY ? globalScatterZoomY[1] : 1010000, defaultYDomain[0])}
-                      stroke="var(--text-secondary)" 
-                      tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
-                      tickFormatter={(val) => {
-                        if (typeof val !== 'number') return val;
-                        if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
-                        return (val / 1000).toFixed(1) + 'k';
-                      }}
-                      width={globalScatterYWidth}
-                    />
-                    <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Scatter 
-                      name="Charts" 
-                      data={metaData.filter((d: any) => d.avgScore >= 975000)} 
-                      fill="#ff66ff" 
-                      fillOpacity={0.6} 
-                      onClick={(node: any) => {
-                        if (node && (node.payload || node.title)) {
-                          setSelectedDot(node.payload || node);
-                        }
-                      }}
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
+            <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
+              <div 
+                ref={globalScatterContainerRef}
+                className="scrollable-content-wrapper" 
+                style={{ flex: 1, minWidth: 0, overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+              >
+                <div className="chart-min-width-md" style={{ height: '430px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart 
+                      margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
+                    >
+                      <defs>
+                        <clipPath id="custom-scatter-clip">
+                          <rect x={globalScatterClipX} y="-500" width="10000" height="875" />
+                        </clipPath>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis 
+                        type="number" 
+                        dataKey="constant" 
+                        allowDataOverflow={true}
+                        stroke="var(--text-secondary)"
+                        tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
+                        domain={globalScatterZoomX || defaultXDomain}
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="avgScore" 
+                        name="Avg Score" 
+                        allowDataOverflow={true}
+                        domain={globalScatterZoomY || defaultYDomain}
+                        ticks={getSmartYTicks(globalScatterZoomY ? globalScatterZoomY[0] : defaultYDomain[0], globalScatterZoomY ? globalScatterZoomY[1] : 1010000, defaultYDomain[0])}
+                        stroke="var(--text-secondary)" 
+                        tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
+                        tickFormatter={(val) => {
+                          if (typeof val !== 'number') return val;
+                          if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
+                          return (val / 1000).toFixed(1) + 'k';
+                        }}
+                        width={globalScatterYWidth}
+                      />
+                      <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Scatter 
+                        name="Charts" 
+                        data={metaData.filter((d: any) => d.avgScore >= 975000)} 
+                        fill="#ff66ff" 
+                        fillOpacity={0.6} 
+                        onClick={(node: any) => {
+                          if (node && (node.payload || node.title)) {
+                            setSelectedDot(node.payload || node);
+                          }
+                        }}
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
+
+              <ScatterScrollbar
+                orientation="vertical"
+                min={0}
+                max={1010000}
+                currentZoom={globalScatterZoomY}
+                onZoomChange={setGlobalScatterZoomY}
+                accentColor="var(--accent-secondary)"
+                label="Score"
+              />
             </div>
 
             {(() => {
@@ -862,11 +874,13 @@ export function GlobalStats() {
               const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
               return (
                 <ScatterScrollbar
-                  minX={minC}
-                  maxX={maxC}
-                  currentZoomX={globalScatterZoomX}
-                  onZoomXChange={setGlobalScatterZoomX}
+                  orientation="horizontal"
+                  min={minC}
+                  max={maxC}
+                  currentZoom={globalScatterZoomX}
+                  onZoomChange={setGlobalScatterZoomX}
                   accentColor="var(--accent-secondary)"
+                  label="Level Constant"
                 />
               );
             })()}

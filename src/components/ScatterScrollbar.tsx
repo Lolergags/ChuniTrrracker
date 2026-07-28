@@ -206,138 +206,154 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   if (orientation === 'vertical') {
     const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
     const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
-    const yTicks = [1010000, 1007500, 1000000, 975000, 900000].filter(v => v >= min && v <= max);
 
     return (
       <div style={{
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        flexDirection: 'row',
+        alignItems: 'stretch',
         height: '430px',
         boxSizing: 'border-box',
-        marginRight: '0.4rem',
+        marginRight: '0.2rem',
         paddingTop: marginTop || 0,
-        paddingBottom: marginBottom || 0
+        paddingBottom: marginBottom || 0,
+        gap: '0.2rem'
       }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Score View'}</div>
+        {/* Rotated Score Label & Active Range Side Text */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          writingMode: 'vertical-rl',
+          transform: 'rotate(180deg)',
+          fontSize: '0.68rem',
+          color: 'var(--text-secondary)',
+          whiteSpace: 'nowrap',
+          userSelect: 'none'
+        }}>
           {isEditing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
-              <input
-                type="number"
-                value={inputMax}
-                onChange={(e) => setInputMax(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
-                onBlur={handleApplyInputs}
-                autoFocus
-                style={{ width: '50px', fontSize: '0.7rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
-              />
+            <div style={{ display: 'flex', gap: '0.2rem', transform: 'rotate(180deg)', writingMode: 'horizontal-tb' }}>
               <input
                 type="number"
                 value={inputMin}
                 onChange={(e) => setInputMin(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
                 onBlur={handleApplyInputs}
-                style={{ width: '50px', fontSize: '0.7rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                autoFocus
+                style={{ width: '45px', fontSize: '0.65rem', padding: '0.1rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+              />
+              <input
+                type="number"
+                value={inputMax}
+                onChange={(e) => setInputMax(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
+                onBlur={handleApplyInputs}
+                style={{ width: '45px', fontSize: '0.65rem', padding: '0.1rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
               />
             </div>
           ) : isZoomed ? (
-            <div 
+            <span
               onClick={() => setIsEditing(true)}
-              title="Click to type exact values"
-              style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.35rem', borderRadius: '4px', marginTop: '0.15rem', cursor: 'pointer' }}
+              title="Click to type exact score values"
+              style={{
+                background: 'rgba(56, 189, 248, 0.15)',
+                color: accentColor,
+                padding: '0.3rem 0.15rem',
+                borderRadius: '4px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
             >
-              {formatVal(curMin)}–{formatVal(curMax)} ✎
-            </div>
+              Score {formatVal(curMin)}–{formatVal(curMax)} ✎
+            </span>
           ) : (
-            <div 
+            <span
               onClick={() => setIsEditing(true)}
-              title="Click to type exact values"
-              style={{ fontSize: '0.65rem', opacity: 0.6, cursor: 'pointer' }}
+              title="Click to type exact score values"
+              style={{ opacity: 0.6, cursor: 'pointer' }}
             >
-              (Drag / ✎)
-            </div>
+              {label || 'Score View'} ✎
+            </span>
           )}
         </div>
 
-        <div
-          ref={containerRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          style={{
-            position: 'relative',
-            width: '32px',
-            flex: 1,
-            background: 'rgba(0, 0, 0, 0.4)',
-            borderRadius: '6px',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            cursor: isDragging ? 'grabbing' : 'pointer',
-            touchAction: 'none',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            boxSizing: 'border-box',
-            overflow: 'hidden'
-          }}
-          title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag thumb to pan, drag edges to resize'}
-        >
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', pointerEvents: 'none', opacity: 0.35 }}>
-            {yTicks.map(t => (
-              <span key={t} style={{ fontSize: '0.625rem', color: '#fff', fontWeight: 600 }}>{formatVal(t)}</span>
-            ))}
-          </div>
-
+        {/* Slim 14px Vertical Track Bar */}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
           <div
+            ref={containerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             style={{
-              position: 'absolute',
-              bottom: `${bottomPercent}%`,
-              height: `${heightPercent}%`,
-              left: '2px',
-              right: '2px',
-              background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.1)',
-              border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.3)'}`,
-              borderRadius: '4px',
-              boxShadow: isZoomed ? `0 0 10px ${accentColor}55` : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '2px 0',
+              position: 'relative',
+              width: '14px',
+              flex: 1,
+              background: 'rgba(0, 0, 0, 0.4)',
+              borderRadius: '7px',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              cursor: isDragging ? 'grabbing' : 'pointer',
+              touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
               boxSizing: 'border-box',
-              transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
+              overflow: 'hidden'
             }}
+            title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag thumb to pan, drag edges to resize'}
           >
-            <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
-            </div>
+            {/* Viewport Thumb Box */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: `${bottomPercent}%`,
+                height: `${heightPercent}%`,
+                left: '1px',
+                right: '1px',
+                background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.15)',
+                border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.35)'}`,
+                borderRadius: '5px',
+                boxShadow: isZoomed ? `0 0 10px ${accentColor}55` : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1px 0',
+                boxSizing: 'border-box',
+                transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
+              }}
+            >
+              {/* Top Handle Line */}
+              <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{ width: '8px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+              </div>
 
-            <div style={{ height: '8px', width: '6px', borderTop: `2px solid ${accentColor}`, borderBottom: `2px solid ${accentColor}`, opacity: 0.8 }} />
-
-            <div style={{ width: '100%', height: '6px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: '14px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+              {/* Bottom Handle Line */}
+              <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{ width: '8px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {isZoomed && (
-          <button
-            onClick={() => onZoomChange(null)}
-            title="Reset Score Zoom"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: accentColor,
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginTop: '0.2rem',
-              padding: '0.1rem'
-            }}
-          >
-            Reset Y
-          </button>
-        )}
+          {isZoomed && (
+            <button
+              onClick={() => onZoomChange(null)}
+              title="Reset Score Zoom"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: accentColor,
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginTop: '0.2rem',
+                padding: '0'
+              }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
       </div>
     );
   }

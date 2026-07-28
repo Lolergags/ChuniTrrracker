@@ -257,8 +257,17 @@ export function GlobalStats() {
       const { defX, defY, curX, curY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         const t = e.touches[0];
-        const dx = Math.abs(t.clientX - panRef.current.startX);
-        const dy = Math.abs(t.clientY - panRef.current.startY);
+        const deltaX = t.clientX - panRef.current.startX;
+        const deltaY = t.clientY - panRef.current.startY;
+        const dx = Math.abs(deltaX);
+        const dy = Math.abs(deltaY);
+
+        // 1-finger horizontal touch drag smoothly scrolls the graph DOM container around while sliders remain anchored
+        if (dx > dy && elem.scrollWidth > elem.clientWidth) {
+          e.preventDefault();
+          elem.scrollLeft = panRef.current.startScrollLeft - deltaX;
+          return;
+        }
 
         // If move is predominantly vertical and graph is unzoomed, allow native page scroll
         if (dy > dx && !globalScatterZoomXRef.current && !globalScatterZoomYRef.current) {
@@ -271,22 +280,16 @@ export function GlobalStats() {
 
         e.preventDefault();
 
-        if (elem.scrollWidth > elem.clientWidth && !globalScatterZoomXRef.current) {
-          elem.scrollLeft = panRef.current.startScrollLeft - (t.clientX - panRef.current.startX);
-          return;
-        }
-
         const rect = elem.getBoundingClientRect();
         const plotWidth = Math.max(100, rect.width - 105);
         const plotHeight = Math.max(100, rect.height - 60);
 
-        const deltaX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
-        const deltaY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
+        const dX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
+        const dY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, deltaX, defX, true);
-        const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
+        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, dX, defX, true);
+        const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, dY, defY, false);
 
-        if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
         if (newMinX <= defX[0] && newMaxX >= defX[1]) {
           setGlobalScatterZoomX(null);
         } else {

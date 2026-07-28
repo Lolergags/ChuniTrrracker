@@ -34,11 +34,25 @@ export async function syncSongs() {
   if (!res.ok) throw new Error('Failed to fetch songs from Beerpsi');
   const data = await res.json();
 
-  console.log(`Received ${data.length} songs. Syncing to DB (JP track list)...`);
+  console.log('Fetching Paradise Lost Offline songlist...');
+  let plOfflineSongIds = new Set<number>();
+  let plData: any[] = [];
+  try {
+    const plRes = await fetch('https://raw.githubusercontent.com/Lolergags/Paradise_Lost_Offline_Songlist/main/paradiselost_offline_songs.json');
+    if (plRes.ok) {
+      plData = await plRes.json();
+      plOfflineSongIds = new Set(plData.map((s: any) => s.id));
+      console.log(`Received ${plOfflineSongIds.size} Paradise Lost Offline songs.`);
+    }
+  } catch (e: any) {
+    console.warn(`Failed to fetch Paradise Lost Offline songlist: ${e.message}`);
+  }
+
+  console.log(`Received ${data.length} songs from Beerpsi. Syncing to DB...`);
 
   const insertSong = db.prepare(`
-    INSERT INTO songs (id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active)
-    VALUES (@id, @title, @artist, @genre, @version, @jacket_url, @is_jp_active, @is_intl_active)
+    INSERT INTO songs (id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active, is_pl_offline_active)
+    VALUES (@id, @title, @artist, @genre, @version, @jacket_url, @is_jp_active, @is_intl_active, @is_pl_offline_active)
     ON CONFLICT(id) DO UPDATE SET
       title = excluded.title,
       artist = excluded.artist,
@@ -46,7 +60,8 @@ export async function syncSongs() {
       version = excluded.version,
       jacket_url = excluded.jacket_url,
       is_jp_active = excluded.is_jp_active,
-      is_intl_active = excluded.is_intl_active
+      is_intl_active = excluded.is_intl_active,
+      is_pl_offline_active = excluded.is_pl_offline_active
   `);
 
   const insertChart = db.prepare(`
@@ -64,8 +79,10 @@ export async function syncSongs() {
   let chartCount = 0;
 
   const transaction = db.transaction((songs: any[]) => {
+    const processedIds = new Set<number>();
+
     for (const song of songs) {
-      // We no longer filter out non-JP songs completely, we just mark their availability
+      processedIds.add(song.id);
       insertSong.run({
         id: song.id,
         title: song.title,
@@ -74,12 +91,12 @@ export async function syncSongs() {
         version: song.version,
         jacket_url: song.jacket_url || '',
         is_jp_active: (song.availability && song.availability.jp) ? 1 : 0,
-        is_intl_active: (song.availability && song.availability.intl) ? 1 : 0
+        is_intl_active: (song.availability && song.availability.intl) ? 1 : 0,
+        is_pl_offline_active: plOfflineSongIds.has(song.id) ? 1 : 0
       });
       songCount++;
 
       for (const chart of song.charts) {
-        // Exclude WE (World's End)
         if (chart.difficulty === 'WE') continue;
 
         insertChart.run({
@@ -92,6 +109,42 @@ export async function syncSongs() {
           version: chart.version || song.version
         });
         chartCount++;
+      }
+    }
+
+    // Process any additional songs in Paradise Lost Offline songlist that were not in Beerpsi's list
+    for (const plSong of plData) {
+      if (processedIds.has(plSong.id)) continue;
+      processedIds.add(plSong.id);
+
+      insertSong.run({
+        id: plSong.id,
+        title: plSong.title,
+        artist: plSong.artist,
+        genre: plSong.genre || '',
+        version: plSong.version || '',
+        jacket_url: plSong.jacket_url || '',
+        is_jp_active: 0,
+        is_intl_active: 0,
+        is_pl_offline_active: 1
+      });
+      songCount++;
+
+      if (plSong.charts) {
+        for (const chart of plSong.charts) {
+          if (chart.difficulty === 'WE') continue;
+
+          insertChart.run({
+            song_id: plSong.id,
+            difficulty: chart.difficulty,
+            constant: chart.const,
+            level: chart.level,
+            note_count: chart.notecounts?.total || 0,
+            charter: chart.charter || '',
+            version: chart.version || plSong.version || ''
+          });
+          chartCount++;
+        }
       }
     }
   });

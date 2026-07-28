@@ -19,6 +19,8 @@ export interface PaginatedResponse<T> {
 export interface ChartLeaderboardResponse extends PaginatedResponse<{ username: string, score: number, lamp: LampType, op: number, opPercent: number, timeAchieved: number }> {
   gradeDistribution: { name: string; count: number }[];
   normalDistribution: { bucket: string; count: number }[];
+  userRank?: number | null;
+  userPage?: number | null;
 }
 
 export interface ApiPlayerStats {
@@ -47,6 +49,7 @@ export interface ApiProcessedScore {
   lamp: LampType;
   op: number;
   timeAchieved: number;
+  playCount?: number;
 }
 
 export interface ApiSong {
@@ -57,6 +60,7 @@ export interface ApiSong {
   version: string;
   is_jp_active: number;
   is_intl_active: number;
+  is_pl_offline_active: number;
   charts: Array<{
     difficulty: string;
     constant: number;

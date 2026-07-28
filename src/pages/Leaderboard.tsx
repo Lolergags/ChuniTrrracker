@@ -1,25 +1,31 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api/client.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import type { ApiPlayer } from '../lib/types/index.js';
+import { ALL_VERSIONS } from '../lib/constants.js';
 
 const Leaderboard: React.FC = () => {
   const { setActivePlayer, filters, setFilters } = useContext(GlobalContext);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const previousVersionRef = useRef<string | null>(null);
   
   // The URL takes precedence. If no URL, fallback to GlobalContext, else defaults.
   const page = parseInt(searchParams.get('page') || '1', 10);
   
-  const ctxServerMap: Record<string, string> = { 'JP': 'jp', 'INT': 'intl', 'OMNI': 'omni' };
+  const ctxServerMap: Record<string, string> = { 'JP': 'jp', 'INT': 'intl', 'PL_OFFLINE': 'pl_offline', 'OMNI': 'omni' };
   const getContextServer = () => ctxServerMap[filters.server] || 'jp';
   const server = searchParams.get('server') || getContextServer();
   const version = searchParams.get('version') || filters.version || 'X-VERSE-X';
 
+  const isPlOffline = server === 'pl_offline';
+  const plIndex = ALL_VERSIONS.indexOf('PARADISE LOST');
+  const versionOptions = isPlOffline && plIndex !== -1 ? ALL_VERSIONS.slice(plIndex) : ALL_VERSIONS;
+
   // Sync to GlobalContext whenever server or version changes
   useEffect(() => {
-    const revMap: Record<string, string> = { 'jp': 'JP', 'intl': 'INT', 'omni': 'OMNI' };
+    const revMap: Record<string, string> = { 'jp': 'JP', 'intl': 'INT', 'pl_offline': 'PL_OFFLINE', 'omni': 'OMNI' };
     const ctxServer = revMap[server] || 'JP';
     
     if (filters.server !== ctxServer || filters.version !== version) {
@@ -33,7 +39,22 @@ const Leaderboard: React.FC = () => {
   };
   
   const setServer = (s: string) => {
-    setSearchParams(prev => { prev.set('server', s); prev.set('page', '1'); return prev; });
+    setSearchParams(prev => {
+      prev.set('server', s);
+      prev.set('page', '1');
+      if (s === 'pl_offline') {
+        const activeVer = prev.get('version') || filters.version || 'X-VERSE-X';
+        const activeIdx = ALL_VERSIONS.indexOf(activeVer as any);
+        if (activeIdx !== -1 && activeIdx < plIndex) {
+          previousVersionRef.current = activeVer;
+          prev.set('version', 'PARADISE LOST');
+        }
+      } else if (previousVersionRef.current) {
+        prev.set('version', previousVersionRef.current);
+        previousVersionRef.current = null;
+      }
+      return prev;
+    });
   };
   
   const setVersion = (v: string) => {
@@ -61,30 +82,6 @@ const Leaderboard: React.FC = () => {
     navigate('/dashboard');
   };
 
-  const VERSIONS = [
-    'X-VERSE-X',
-    'X-VERSE',
-    'VERSE',
-    'LUMINOUS PLUS',
-    'LUMINOUS',
-    'SUN PLUS',
-    'SUN',
-    'NEW PLUS',
-    'NEW',
-    'PARADISE LOST',
-    'PARADISE',
-    'CRYSTAL PLUS',
-    'CRYSTAL',
-    'AMAZON PLUS',
-    'AMAZON',
-    'STAR PLUS',
-    'STAR',
-    'AIR PLUS',
-    'AIR',
-    'CHUNITHM PLUS',
-    'CHUNITHM'
-  ];
-
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Global Leaderboard</h1>
@@ -98,10 +95,11 @@ const Leaderboard: React.FC = () => {
           <select 
             value={server} 
             onChange={e => setServer(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
+            style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
           >
             <option value="jp">Japan (JP)</option>
             <option value="intl">International (Intl)</option>
+            <option value="pl_offline">Paradise Lost (Offline)</option>
             <option value="omni">Omnimix (All)</option>
           </select>
         </div>
@@ -111,9 +109,9 @@ const Leaderboard: React.FC = () => {
           <select 
             value={version} 
             onChange={e => setVersion(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--code-bg, #1f2028)', color: 'white' }}
+            style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
           >
-            {VERSIONS.map(v => (
+            {versionOptions.map(v => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>

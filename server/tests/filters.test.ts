@@ -16,6 +16,15 @@ describe('getChartFilterConditions', () => {
     expect(bindings).toEqual([]);
   });
 
+  it('should filter by PL_OFFLINE server, exclude ULT charts, and cap version at PARADISE LOST', () => {
+    const { conditions, bindings } = getChartFilterConditions({ server: 'PL_OFFLINE', version: 'LUMINOUS' });
+    expect(conditions).toContain("songs.is_pl_offline_active = 1");
+    expect(conditions).toContain("charts.difficulty != 'ULT'");
+    expect(conditions).not.toContain("songs.is_jp_active = 1");
+    expect(bindings).not.toContain('LUMINOUS');
+    expect(bindings).toContain('PARADISE LOST');
+  });
+
   it('should exclude AOMN_REMOVE song IDs for OMNI server', () => {
     const { conditions, bindings } = getChartFilterConditions({ server: 'OMNI' });
     expect(conditions.some(c => c.includes('songs.id NOT IN'))).toBe(true);
@@ -60,5 +69,10 @@ describe('getChartFilterConditions', () => {
     const { conditions, bindings } = getChartFilterConditions({ version: 'AIR' }, 'songs', 'c');
     expect(conditions).toContain("c.version IN (?, ?, ?)");
     expect(bindings).toEqual(['CHUNITHM', 'CHUNITHM PLUS', 'AIR']);
+  });
+
+  it('should return 1 = 0 condition when selecting only ULT on PL_OFFLINE', () => {
+    const { conditions } = getChartFilterConditions({ server: 'PL_OFFLINE', diff: ['ULT'] });
+    expect(conditions).toContain("1 = 0");
   });
 });

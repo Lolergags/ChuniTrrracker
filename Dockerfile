@@ -20,7 +20,10 @@ RUN mkdir -p server/data
 # Build the frontend via Vite
 RUN npm run build
 
+# Copy entrypoint supervisor script to root directory so git reset / updates don't mutate active script
+RUN cp entrypoint.sh /entrypoint.sh && chmod +x /entrypoint.sh
+
 EXPOSE 3001
 
-# Execute the TypeScript server directly using tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Execute entrypoint supervisor loop to automatically restart when Node exits (e.g. after Update Manager updates)
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

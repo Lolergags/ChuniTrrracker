@@ -26,7 +26,8 @@ db.exec(`
     version TEXT NOT NULL DEFAULT '',
     jacket_url TEXT NOT NULL DEFAULT '',
     is_jp_active INTEGER NOT NULL DEFAULT 1,
-    is_intl_active INTEGER NOT NULL DEFAULT 1
+    is_intl_active INTEGER NOT NULL DEFAULT 1,
+    is_pl_offline_active INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS charts (
@@ -81,6 +82,11 @@ db.exec(`
 const scoreCols = (db.prepare(`PRAGMA table_info(scores)`).all() as any[]).map(c => c.name);
 if (!scoreCols.includes('clear_lamp')) {
   db.exec(`ALTER TABLE scores ADD COLUMN clear_lamp TEXT NOT NULL DEFAULT 'CLEAR'`);
+}
+
+const songCols = (db.prepare(`PRAGMA table_info(songs)`).all() as any[]).map(c => c.name);
+if (!songCols.includes('is_pl_offline_active')) {
+  db.exec(`ALTER TABLE songs ADD COLUMN is_pl_offline_active INTEGER NOT NULL DEFAULT 0`);
 }
 
 const playerCols = (db.prepare(`PRAGMA table_info(players)`).all() as any[]).map(c => c.name);

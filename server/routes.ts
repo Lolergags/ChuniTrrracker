@@ -83,6 +83,7 @@ router.get('/leaderboard', (req, res) => {
   const sUpper = (server as string).toUpperCase();
   if (sUpper === 'JP') serverCondition = 'AND songs.is_jp_active = 1';
   else if (sUpper === 'INTL' || sUpper === 'INT') serverCondition = 'AND songs.is_intl_active = 1';
+  else if (sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE') serverCondition = "AND songs.is_pl_offline_active = 1 AND c.difficulty != 'ULT'";
   else if (sUpper === 'OMNI') serverCondition = `AND songs.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`;
   
   const VERSION_ORDER = [
@@ -95,7 +96,12 @@ router.get('/leaderboard', (req, res) => {
   let versionFilter = '';
   const versionParams: any[] = [];
   let selectedVersionIdx = VERSION_ORDER.indexOf(version as string);
-  if (selectedVersionIdx < 0) selectedVersionIdx = VERSION_ORDER.length - 1; // Default to all if invalid
+  const plMaxIdx = VERSION_ORDER.indexOf('PARADISE LOST');
+  const isPl = sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE';
+
+  if (selectedVersionIdx < 0 || (isPl && selectedVersionIdx > plMaxIdx)) {
+    selectedVersionIdx = isPl ? plMaxIdx : VERSION_ORDER.length - 1;
+  }
   
   const includedVersions = VERSION_ORDER.slice(0, selectedVersionIdx + 1);
   const placeholders = includedVersions.map(() => '?').join(',');
@@ -327,11 +333,17 @@ router.get('/players/:username/scores', (req, res) => {
       s.score,
       s.lamp,
       s.op,
-      s.time_achieved as timeAchieved
+      s.time_achieved as timeAchieved,
+      COALESCE(cp.playCount, 1) as playCount
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
+    LEFT JOIN (
+      SELECT chart_id, COUNT(*) as playCount
+      FROM scores
+      GROUP BY chart_id
+    ) cp ON cp.chart_id = c.id
     WHERE p.username = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?
@@ -343,7 +355,7 @@ router.get('/players/:username/scores', (req, res) => {
 // 5. Get Songs List
 router.get('/songs', (req, res) => {
   // Fetch all songs
-  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active FROM songs`).all() as any[];
+  const songs = db.prepare(`SELECT id, title, artist, genre, version, jacket_url, is_jp_active, is_intl_active, is_pl_offline_active FROM songs`).all() as any[];
   
   // Fetch all charts and attach to songs, excluding ghost charts
   const charts = db.prepare(`SELECT id, song_id, difficulty, constant, level, note_count FROM charts WHERE (song_id NOT IN (50, 81) AND id != 239116)`).all() as any[];
@@ -373,16 +385,30 @@ router.get('/songs', (req, res) => {
 router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   const { songId, difficulty } = req.params;
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 50;
+  const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
+  const playerQuery = (req.query.player as string) || (req.query.username as string);
 
-  // Fetch all scores for calculating accurate distributions
+  // Fetch all scores for calculating accurate distributions and player rank
   const allScoresQuery = db.prepare(`
-    SELECT s.score
+    SELECT p.username, s.score
     FROM scores s
+    JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     WHERE c.song_id = ? AND c.difficulty = ?
-  `).all(songId, difficulty) as { score: number }[];
+    ORDER BY s.score DESC, s.time_achieved ASC
+  `).all(songId, difficulty) as { username: string; score: number }[];
+
+  let userRank: number | null = null;
+  let userPage: number | null = null;
+
+  if (playerQuery) {
+    const userIndex = allScoresQuery.findIndex(row => row.username.toLowerCase() === playerQuery.toLowerCase());
+    if (userIndex !== -1) {
+      userRank = userIndex + 1;
+      userPage = Math.floor(userIndex / limit) + 1;
+    }
+  }
 
   const leaderboard = db.prepare(`
     SELECT p.username, s.score, s.lamp, s.op, s.time_achieved as timeAchieved,
@@ -416,28 +442,35 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   });
   const gradeDistribution = gradeBins.reverse();
 
-  // Compute Normal Distribution (Line Chart)
-  const normalBinsMap = new Map<number, number>();
-  for (let i = 975000; i <= 1010000; i += 5000) {
-    normalBinsMap.set(i, 0);
-  }
-  normalBinsMap.set(0, 0); // Catch-all for < 975k
+  // Compute Normal Distribution (Line Chart) with extra granularity for SSS, SSS+, 99AJ, and AJC
+  const normalBins = [
+    { min: 0, max: 974999, label: '< 975k', count: 0 },
+    { min: 975000, max: 979999, label: '975k', count: 0 },
+    { min: 980000, max: 984999, label: '980k', count: 0 },
+    { min: 985000, max: 989999, label: '985k', count: 0 },
+    { min: 990000, max: 994999, label: '990k', count: 0 },
+    { min: 995000, max: 999999, label: '995k', count: 0 },
+    { min: 1000000, max: 1004999, label: '1000k', count: 0 },
+    { min: 1005000, max: 1007499, label: '1005k', count: 0 },
+    { min: 1007500, max: 1008999, label: '1007.5k', count: 0 },
+    { min: 1009000, max: 1009799, label: '1009k', count: 0 },
+    { min: 1009800, max: 1009999, label: '1009.8k', count: 0 },
+    { min: 1010000, max: 1010000, label: '1010k', count: 0 }
+  ];
 
   allScoresQuery.forEach(row => {
-    let bucket = 0;
-    if (row.score >= 975000) {
-      bucket = Math.floor(row.score / 5000) * 5000;
-      if (bucket > 1010000) bucket = 1010000;
+    for (let i = 0; i < normalBins.length; i++) {
+      if (row.score >= normalBins[i].min && row.score <= normalBins[i].max) {
+        normalBins[i].count++;
+        break;
+      }
     }
-    normalBinsMap.set(bucket, (normalBinsMap.get(bucket) || 0) + 1);
   });
 
-  const normalDistribution = Array.from(normalBinsMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([bucket, count]) => ({
-      bucket: bucket === 0 ? '< 975k' : (bucket / 1000).toString() + 'k',
-      count
-    }));
+  const normalDistribution = normalBins.map(b => ({
+    bucket: b.label,
+    count: b.count
+  }));
 
   res.json({
     data: leaderboard,
@@ -446,7 +479,9 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     limit,
     totalPages: Math.ceil(allScoresQuery.length / limit),
     gradeDistribution,
-    normalDistribution
+    normalDistribution,
+    userRank,
+    userPage
   });
 });
 
@@ -928,7 +963,8 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
           console.log(`Update stdout (tarball fallback): ${fbStdout}`);
           db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
           db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
-          process.exit(0);
+          console.log('[Update Manager] Update completed successfully (tarball). Triggering supervisor/container restart (exit 100)...');
+          process.exit(100);
         });
         return;
       }
@@ -936,7 +972,8 @@ router.post('/admin/update/apply', adminAuth, (req, res) => {
       console.error(`Update stderr: ${stderr}`);
       db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES ('update_status', 'success')`).run();
       db.prepare(`DELETE FROM config WHERE key = 'update_error'`).run();
-      process.exit(0);
+      console.log('[Update Manager] Update completed successfully. Triggering supervisor/container restart (exit 100)...');
+      process.exit(100);
     });
   }, 1000);
 });

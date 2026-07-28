@@ -24,7 +24,7 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
   let minY = rawMinY;
   let maxY = rawMaxY;
 
-  const minAllowedSpan = 100;
+  const minAllowedSpan = 500;
   if (maxY - minY < minAllowedSpan) {
     const mid = (minY + maxY) / 2;
     minY = mid - minAllowedSpan / 2;
@@ -36,8 +36,16 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
     return [defY[0], defY[1]];
   }
 
-  minY = Math.max(0, Math.max(defY[0], minY));
-  maxY = Math.min(1010000, Math.min(defY[1], maxY));
+  if (minY < defY[0]) {
+    const span = maxY - minY;
+    minY = defY[0];
+    maxY = Math.min(defY[1], minY + span);
+  }
+  if (maxY > defY[1]) {
+    const span = maxY - minY;
+    maxY = defY[1];
+    minY = Math.max(defY[0], maxY - span);
+  }
 
   return [Math.round(minY), Math.round(maxY)];
 }

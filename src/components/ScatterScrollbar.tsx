@@ -261,9 +261,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           )}
         </div>
 
-        {/* Absolute Floating Popover Editor for Vertical Mode */}
+        {/* Absolute Floating Popover Editor for Vertical Mode (Prevents Page Scroll Jump) */}
         {isEditing && (
           <div 
+            onTouchStart={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                 handleApplyInputs();
@@ -299,7 +301,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                   if (e.key === 'Enter') handleApplyInputs();
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
-                autoFocus
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
                 style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
               />
@@ -414,9 +415,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      {/* Floating Popover Editor for Horizontal Mode */}
+      {/* Floating Popover Editor for Horizontal Mode (Prevents Page Scroll Jump) */}
       {isEditing && (
         <div 
+          onTouchStart={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) {
               handleApplyInputs();
@@ -455,7 +458,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                   if (e.key === 'Enter') handleApplyInputs();
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
-                autoFocus
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
                 style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
               />

@@ -8,6 +8,7 @@ import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
+import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
@@ -853,6 +854,22 @@ export function GlobalStats() {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {(() => {
+              const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+              const constants = validMeta.map((d: any) => d.constant);
+              const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+              const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+              return (
+                <ScatterScrollbar
+                  minX={minC}
+                  maxX={maxC}
+                  currentZoomX={globalScatterZoomX}
+                  onZoomXChange={setGlobalScatterZoomX}
+                  accentColor="var(--accent-secondary)"
+                />
+              );
+            })()}
 
             {selectedDot && (
               <div style={{

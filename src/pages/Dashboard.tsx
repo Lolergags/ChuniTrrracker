@@ -10,6 +10,7 @@ import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
+import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -878,6 +879,21 @@ export function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {(() => {
+          const constants = uniqueScores.map(s => s.constant);
+          const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+          const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+          return (
+            <ScatterScrollbar
+              minX={minC}
+              maxX={maxC}
+              currentZoomX={scatterZoomX}
+              onZoomXChange={setScatterZoomX}
+              accentColor="var(--accent-primary)"
+            />
+          );
+        })()}
 
         {selectedDot && (
           <div style={{

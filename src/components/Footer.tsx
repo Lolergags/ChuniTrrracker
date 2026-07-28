@@ -6,13 +6,14 @@ export const Footer: React.FC = () => {
   return (
     <footer style={{
       marginTop: 'auto',
-      paddingTop: '4rem',
       borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-      background: 'var(--bg-glass)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
+      background: 'var(--bg-secondary)',
       padding: '3rem 1.5rem calc(4rem + env(safe-area-inset-bottom, 0px)) 1.5rem',
-      color: 'var(--text-secondary)'
+      color: 'var(--text-secondary)',
+      minHeight: '280px',
+      boxSizing: 'border-box',
+      contentVisibility: 'auto',
+      containIntrinsicSize: '0 280px'
     }}>
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div className="footer-grid" style={{

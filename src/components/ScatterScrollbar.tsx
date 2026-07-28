@@ -261,7 +261,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           )}
         </div>
 
-        {/* Absolute Floating Popover Editor for Vertical Mode (Zero Layout Shift) */}
+        {/* Absolute Floating Popover Editor for Vertical Mode */}
         {isEditing && (
           <div 
             onBlur={(e) => {
@@ -400,34 +400,55 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     );
   }
 
-  // Ultra-Compact Horizontal Orientation (14px Track Height)
+  // Ultra-Compact Horizontal Orientation (14px Track Height with Floating Popover)
   const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
   const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (
     <div style={{
+      position: 'relative',
       marginTop: '0.4rem',
       width: '100%',
       boxSizing: 'border-box',
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Level Constant'}</span>
-          {isEditing ? (
-            <span 
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                  handleApplyInputs();
-                }
-              }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}
-            >
+      {/* Floating Popover Editor for Horizontal Mode */}
+      {isEditing && (
+        <div 
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              handleApplyInputs();
+            }
+          }}
+          style={{
+            position: 'absolute',
+            left: paddingLeft || 0,
+            bottom: '100%',
+            marginBottom: '0.4rem',
+            zIndex: 100,
+            background: 'var(--bg-glass)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid var(--accent-primary)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+            padding: '0.6rem 0.75rem',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.4rem',
+            width: '180px'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Level Range</div>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Min Level:</label>
               <input
                 type="number"
                 step="0.1"
+                min="1.0"
+                max="15.4"
                 value={inputMin}
                 onChange={(e) => setInputMin(e.target.value)}
                 onKeyDown={(e) => {
@@ -436,12 +457,17 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                 }}
                 autoFocus
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '42px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
               />
-              <span>–</span>
+            </div>
+            <span style={{ marginTop: '0.8rem', color: 'var(--text-secondary)' }}>–</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Level:</label>
               <input
                 type="number"
                 step="0.1"
+                min="1.0"
+                max="15.4"
                 value={inputMax}
                 onChange={(e) => setInputMax(e.target.value)}
                 onKeyDown={(e) => {
@@ -449,10 +475,17 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
                 data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '42px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
               />
-            </span>
-          ) : isZoomed ? (
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Level Constant'}</span>
+          {isZoomed ? (
             <span 
               onClick={() => setIsEditing(true)}
               title="Click to type exact values"

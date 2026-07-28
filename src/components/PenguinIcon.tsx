@@ -7,7 +7,7 @@ interface PenguinIconProps {
 }
 
 export function PenguinIcon({ 
-  size = 24, 
+  size = 32, 
   className = '', 
   style = {}
 }: PenguinIconProps) {
@@ -18,7 +18,7 @@ export function PenguinIcon({
       xmlns="http://www.w3.org/2000/svg"
       width={numericSize}
       height={numericSize}
-      viewBox="0 0 36 36"
+      viewBox="0.5 0.5 30.5 30.5"
       fill="none"
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}

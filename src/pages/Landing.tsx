@@ -35,7 +35,7 @@ export function Landing() {
     <div className="animate-fade-in" style={{ padding: '4rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: '3rem', maxWidth: '800px', width: '100%' }}>
         <h1 className="text-gradient" style={{ fontSize: 'clamp(2.2rem, 6vw, 4rem)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', wordBreak: 'break-word', maxWidth: '100%' }}>
-          <PenguinIcon size="clamp(36px, 6vw, 56px)" /> <span>ChuniTrrracker</span>
+          <PenguinIcon size="clamp(48px, 8vw, 72px)" /> <span>ChuniTrrracker</span>
         </h1>
         <p style={{ fontSize: 'clamp(1rem, 2vw, 1.2rem)', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
           Advanced statistics and Overpower tracking for Chunithm. 

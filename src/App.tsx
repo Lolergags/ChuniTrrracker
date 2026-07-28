@@ -82,7 +82,7 @@ const AppContent = () => {
         <div className="nav-logo">
           <NavLink to="/" style={{ textDecoration: 'none' }}>
             <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <PenguinIcon size={28} /> ChuniTrrracker
+              <PenguinIcon size={34} /> ChuniTrrracker
             </h2>
           </NavLink>
         </div>

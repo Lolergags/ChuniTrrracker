@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
           {/* Column 1: Brand & Purpose */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <PenguinIcon size={24} />
+              <PenguinIcon size={30} />
               <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }} className="text-gradient">
                 ChuniTrrracker
               </span>

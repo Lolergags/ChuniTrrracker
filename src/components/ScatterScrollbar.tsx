@@ -9,6 +9,10 @@ interface ScatterScrollbarProps {
   orientation?: 'horizontal' | 'vertical';
   label?: string;
   unitFormatter?: (val: number) => string;
+  paddingLeft?: string | number;
+  paddingRight?: string | number;
+  marginTop?: string | number;
+  marginBottom?: string | number;
 }
 
 export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
@@ -19,18 +23,27 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   accentColor = 'var(--accent-primary)',
   orientation = 'horizontal',
   label,
-  unitFormatter
+  unitFormatter,
+  paddingLeft,
+  paddingRight,
+  marginTop,
+  marginBottom
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<{ startPos: number; startMin: number; startMax: number }>({ startPos: 0, startMin: min, startMax: max });
+  const dragRef = useRef<{
+    startPos: number;
+    startMin: number;
+    startMax: number;
+    mode: 'pan' | 'min' | 'max';
+  }>({ startPos: 0, startMin: min, startMax: max, mode: 'pan' });
 
   const fullSpan = Math.max(0.1, max - min);
   const curMin = currentZoom ? Math.max(min, currentZoom[0]) : min;
   const curMax = currentZoom ? Math.min(max, currentZoom[1]) : max;
   const zoomSpan = Math.max(0.1, curMax - curMin);
 
-  const isZoomed = currentZoom !== null && (curMin > min + (orientation === 'horizontal' ? 0.05 : 1000) || curMax < max - (orientation === 'horizontal' ? 0.05 : 1000));
+  const isZoomed = currentZoom !== null && (curMin > min + (orientation === 'horizontal' ? 0.05 : 500) || curMax < max - (orientation === 'horizontal' ? 0.05 : 500));
 
   const formatVal = (val: number) => {
     if (unitFormatter) return unitFormatter(val);
@@ -42,63 +55,123 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    
-    let clickRatio: number;
+    let mode: 'pan' | 'min' | 'max' = 'pan';
+
     if (orientation === 'horizontal') {
-      clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    } else {
-      // For vertical, top is max and bottom is min (1 - ratio)
-      clickRatio = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
-    }
+      const leftPx = ((curMin - min) / fullSpan) * rect.width;
+      const rightPx = ((curMax - min) / fullSpan) * rect.width;
+      const clickX = e.clientX - rect.left;
 
-    const clickVal = min + clickRatio * fullSpan;
-
-    if (clickVal >= curMin && clickVal <= curMax && isZoomed) {
-      dragRef.current = {
-        startPos: orientation === 'horizontal' ? e.clientX : e.clientY,
-        startMin: curMin,
-        startMax: curMax
-      };
-      setIsDragging(true);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    } else {
-      const halfSpan = zoomSpan / 2;
-      let newMin = Math.max(min, clickVal - halfSpan);
-      let newMax = newMin + zoomSpan;
-      if (newMax > max) {
-        newMax = max;
-        newMin = Math.max(min, max - zoomSpan);
+      if (isZoomed && Math.abs(clickX - leftPx) <= 14) {
+        mode = 'min';
+      } else if (isZoomed && Math.abs(clickX - rightPx) <= 14) {
+        mode = 'max';
+      } else if (clickX >= leftPx && clickX <= rightPx && isZoomed) {
+        mode = 'pan';
+      } else {
+        // Clicked outside thumb: center current zoom span around click position
+        const clickRatio = Math.max(0, Math.min(1, clickX / rect.width));
+        const clickVal = min + clickRatio * fullSpan;
+        const halfSpan = zoomSpan / 2;
+        let newMin = Math.max(min, clickVal - halfSpan);
+        let newMax = newMin + zoomSpan;
+        if (newMax > max) {
+          newMax = max;
+          newMin = Math.max(min, max - zoomSpan);
+        }
+        onZoomChange([Number(newMin.toFixed(2)), Number(newMax.toFixed(2))]);
+        return;
       }
-      onZoomChange([Number(newMin.toFixed(2)), Number(newMax.toFixed(2))]);
+
+      dragRef.current = {
+        startPos: e.clientX,
+        startMin: curMin,
+        startMax: curMax,
+        mode
+      };
+    } else {
+      // Vertical orientation (top is max, bottom is min)
+      const bottomPx = ((curMin - min) / fullSpan) * rect.height;
+      const topPx = ((curMax - min) / fullSpan) * rect.height;
+      const clickYFromBottom = rect.bottom - e.clientY;
+
+      if (isZoomed && Math.abs(clickYFromBottom - bottomPx) <= 14) {
+        mode = 'min';
+      } else if (isZoomed && Math.abs(clickYFromBottom - topPx) <= 14) {
+        mode = 'max';
+      } else if (clickYFromBottom >= bottomPx && clickYFromBottom <= topPx && isZoomed) {
+        mode = 'pan';
+      } else {
+        const clickRatio = Math.max(0, Math.min(1, clickYFromBottom / rect.height));
+        const clickVal = min + clickRatio * fullSpan;
+        const halfSpan = zoomSpan / 2;
+        let newMin = Math.max(min, clickVal - halfSpan);
+        let newMax = newMin + zoomSpan;
+        if (newMax > max) {
+          newMax = max;
+          newMin = Math.max(min, max - zoomSpan);
+        }
+        onZoomChange([Math.round(newMin), Math.round(newMax)]);
+        return;
+      }
+
+      dragRef.current = {
+        startPos: e.clientY,
+        startMin: curMin,
+        startMax: curMax,
+        mode
+      };
     }
+
+    setIsDragging(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
+    const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+
+    const { startPos, startMin, startMax, mode } = dragRef.current;
 
     let deltaVal: number;
     if (orientation === 'horizontal') {
-      const deltaX = e.clientX - dragRef.current.startPos;
+      const deltaX = e.clientX - startPos;
       deltaVal = (deltaX / rect.width) * fullSpan;
     } else {
-      // Invert Y delta (dragging up increases value)
-      const deltaY = dragRef.current.startPos - e.clientY;
+      // Dragging up increases Y value
+      const deltaY = startPos - e.clientY;
       deltaVal = (deltaY / rect.height) * fullSpan;
     }
 
-    let newMin = dragRef.current.startMin + deltaVal;
-    let newMax = dragRef.current.startMax + deltaVal;
+    if (mode === 'pan') {
+      let newMin = startMin + deltaVal;
+      let newMax = startMax + deltaVal;
 
-    if (newMin < min) {
-      newMin = min;
-      newMax = min + zoomSpan;
-    } else if (newMax > max) {
-      newMax = max;
-      newMin = max - zoomSpan;
+      if (newMin < min) {
+        newMin = min;
+        newMax = min + zoomSpan;
+      } else if (newMax > max) {
+        newMax = max;
+        newMin = max - zoomSpan;
+      }
+      onZoomChange([
+        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+      ]);
+    } else if (mode === 'min') {
+      let newMin = Math.max(min, Math.min(startMax - minStep, startMin + deltaVal));
+      onZoomChange([
+        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+        startMax
+      ]);
+    } else if (mode === 'max') {
+      let newMax = Math.min(max, Math.max(startMin + minStep, startMax + deltaVal));
+      onZoomChange([
+        startMin,
+        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+      ]);
     }
-
-    onZoomChange([Number(newMin.toFixed(2)), Number(newMax.toFixed(2))]);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -115,8 +188,17 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', boxSizing: 'border-box', marginRight: '0.4rem' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        height: '100%',
+        boxSizing: 'border-box',
+        marginRight: '0.4rem',
+        marginTop: marginTop || 0,
+        marginBottom: marginBottom || 0
+      }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
           {label || 'Score View'}
         </div>
         <div
@@ -129,7 +211,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             position: 'relative',
             width: '26px',
             flex: 1,
-            minHeight: '280px',
             background: 'rgba(0, 0, 0, 0.4)',
             borderRadius: '6px',
             border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -140,7 +221,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             boxSizing: 'border-box',
             overflow: 'hidden'
           }}
-          title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag to scroll score range'}
+          title={isZoomed ? `Score ${formatVal(curMin)} - ${formatVal(curMax)}` : 'Drag thumb to pan, drag edges to resize'}
         >
           {/* Zoomed Viewport Thumb Box */}
           <div
@@ -148,19 +229,32 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               position: 'absolute',
               bottom: `${bottomPercent}%`,
               height: `${heightPercent}%`,
-              left: '3px',
-              right: '3px',
+              left: '2px',
+              right: '2px',
               background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.1)',
               border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.3)'}`,
               borderRadius: '4px',
               boxShadow: isZoomed ? `0 0 10px ${accentColor}55` : 'none',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'space-between',
+              padding: '2px 0',
+              boxSizing: 'border-box',
               transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
             }}
           >
-            <div style={{ height: '10px', width: '6px', borderTop: `2px solid ${accentColor}`, borderBottom: `2px solid ${accentColor}`, opacity: 0.8 }} />
+            {/* Top Resize Handle (Max) */}
+            <div style={{ width: '100%', height: '5px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '12px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+            </div>
+
+            <div style={{ height: '8px', width: '6px', borderTop: `2px solid ${accentColor}`, borderBottom: `2px solid ${accentColor}`, opacity: 0.8 }} />
+
+            {/* Bottom Resize Handle (Min) */}
+            <div style={{ width: '100%', height: '5px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '12px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+            </div>
           </div>
         </div>
 
@@ -175,7 +269,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               fontSize: '0.7rem',
               fontWeight: 600,
               cursor: 'pointer',
-              marginTop: '0.3rem',
+              marginTop: '0.2rem',
               padding: '0.1rem'
             }}
           >
@@ -193,7 +287,13 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (
-    <div style={{ marginTop: '0.75rem', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{
+      marginTop: '0.75rem',
+      width: '100%',
+      boxSizing: 'border-box',
+      paddingLeft: paddingLeft || 0,
+      paddingRight: paddingRight || 0
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Horizontal Viewport Slider'}</span>
@@ -202,7 +302,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               Level {formatVal(curMin)} – {formatVal(curMax)}
             </span>
           ) : (
-            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Drag bar to scroll level range)</span>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Drag thumb to pan, drag edges to resize)</span>
           )}
         </span>
         {isZoomed && (
@@ -243,30 +343,44 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           overflow: 'hidden'
         }}
       >
+        {/* Tick labels underneath */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', pointerEvents: 'none', opacity: 0.3 }}>
           {tickValues.map(t => (
             <span key={t} style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>{t}</span>
           ))}
         </div>
 
+        {/* Zoomed Viewport Thumb Box */}
         <div
           style={{
             position: 'absolute',
             left: `${leftPercent}%`,
             width: `${widthPercent}%`,
-            top: '3px',
-            bottom: '3px',
+            top: '2px',
+            bottom: '2px',
             background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.1)',
             border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.3)'}`,
             borderRadius: '4px',
             boxShadow: isZoomed ? `0 0 10px ${accentColor}55` : 'none',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
+            padding: '0 2px',
+            boxSizing: 'border-box',
             transition: isDragging ? 'none' : 'left 0.15s ease, width 0.15s ease'
           }}
         >
-          <div style={{ width: '12px', height: '8px', borderLeft: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
+          {/* Left Resize Handle (Min) */}
+          <div style={{ height: '100%', width: '5px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '12px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          </div>
+
+          <div style={{ width: '8px', height: '8px', borderLeft: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
+
+          {/* Right Resize Handle (Max) */}
+          <div style={{ height: '100%', width: '5px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '12px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          </div>
         </div>
       </div>
     </div>

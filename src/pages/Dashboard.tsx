@@ -824,6 +824,8 @@ export function Dashboard() {
             onZoomChange={setScatterZoomY}
             accentColor="var(--accent-primary)"
             label="Score"
+            marginTop="25px"
+            marginBottom="25px"
           />
 
           <div 
@@ -908,6 +910,8 @@ export function Dashboard() {
               onZoomChange={setScatterZoomX}
               accentColor="var(--accent-primary)"
               label="Level Constant"
+              paddingLeft={isMobile ? '65px' : '85px'}
+              paddingRight="30px"
             />
           );
         })()}

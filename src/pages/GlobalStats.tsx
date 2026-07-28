@@ -809,6 +809,8 @@ export function GlobalStats() {
                 onZoomChange={setGlobalScatterZoomY}
                 accentColor="var(--accent-secondary)"
                 label="Score"
+                marginTop="25px"
+                marginBottom="25px"
               />
 
               <div 
@@ -884,6 +886,8 @@ export function GlobalStats() {
                   onZoomChange={setGlobalScatterZoomX}
                   accentColor="var(--accent-secondary)"
                   label="Level Constant"
+                  paddingLeft={isMobile ? '65px' : '85px'}
+                  paddingRight="30px"
                 />
               );
             })()}

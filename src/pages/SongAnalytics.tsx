@@ -184,6 +184,11 @@ const SongAnalytics: React.FC = () => {
     return filteredCharts.slice(startIndex, startIndex + 50);
   }, [filteredCharts, chartPage]);
 
+  const activeChart = useMemo(() => {
+    if (!selectedSongId) return null;
+    return allCharts.find(c => c.uniqueId === selectedSongId) || null;
+  }, [selectedSongId, allCharts]);
+
   return (
     <div className="glass-panel">
       <h1 className="text-gradient" style={{ marginBottom: '1rem' }}>Song Leaderboards</h1>
@@ -329,8 +334,9 @@ const SongAnalytics: React.FC = () => {
                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {chart.title}
                     </div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>{chart.difficulty} {chart.level}</span> (CC: {chart.constant.toFixed(1)})
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span className={`badge badge-${chart.difficulty.toLowerCase()}`}>{chart.difficulty} {chart.level}</span>
+                      <span>CC: {chart.constant.toFixed(1)}</span>
                     </div>
                   </div>
                   {chart.noteCount > 0 && (
@@ -394,7 +400,23 @@ const SongAnalytics: React.FC = () => {
         <div style={{ flex: '1 1 450px', minWidth: 0 }}>
           {selectedSongId ? (
             <div className="glass-panel" style={{ width: '100%', boxSizing: 'border-box' }}>
-              <h2 className="text-gradient" style={{ marginBottom: '1.5rem' }}>Chart Leaderboard</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem' }}>
+                    {activeChart ? activeChart.title : 'Chart Leaderboard'}
+                  </h2>
+                  {activeChart && (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{activeChart.constant.toFixed(1)}</strong> ({activeChart.version})
+                    </div>
+                  )}
+                </div>
+                {activeChart && (
+                  <span className={`badge badge-${activeChart.difficulty.toLowerCase()}`}>
+                    {activeChart.difficulty} {activeChart.level}
+                  </span>
+                )}
+              </div>
               {isLoadingBoard ? (
                 <p style={{ color: 'var(--text-secondary)' }}>Loading leaderboard...</p>
               ) : leaderboard.length === 0 ? (

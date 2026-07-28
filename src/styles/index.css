@@ -65,6 +65,26 @@ h1, h2, h3, h4 {
   background-clip: text;
 }
 
+/* Difficulty Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.badge-bas { background: var(--diff-bas); border: 1px solid var(--diff-bas); box-shadow: 0 0 10px rgba(22, 163, 74, 0.35); }
+.badge-adv { background: var(--diff-adv); border: 1px solid var(--diff-adv); box-shadow: 0 0 10px rgba(217, 119, 6, 0.35); }
+.badge-exp { background: var(--diff-exp); border: 1px solid var(--diff-exp); box-shadow: 0 0 10px rgba(220, 38, 38, 0.35); }
+.badge-mas { background: var(--diff-mas); border: 1px solid var(--diff-mas); box-shadow: 0 0 10px rgba(147, 51, 234, 0.35); }
+.badge-ult { background: var(--diff-ult); border: 1px solid var(--diff-ult); box-shadow: 0 0 10px rgba(219, 39, 119, 0.35); }
+
 /* Layout */
 main.container {
   flex: 1 0 auto;

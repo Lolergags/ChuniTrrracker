@@ -25,10 +25,14 @@ export function GlobalStats() {
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const checkMobile = () => 
+    typeof window !== 'undefined' && 
+    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
+
+  const [isMobile, setIsMobile] = useState(checkMobile);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(checkMobile());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);

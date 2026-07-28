@@ -141,16 +141,15 @@ h1, h2, h3, h4 {
 }
 
 /* Responsive sticky column */
-@media (min-width: 768px) {
+@media (min-width: 769px) and (min-height: 501px) {
   .sticky-column {
     position: sticky;
     top: 4.5rem;
-    /* max-height: calc(100vh - 5rem); optional if we want to ensure it doesn't overflow bottom */
   }
 }
 
-/* Responsive Overrides */
-@media (max-width: 768px) {
+/* Responsive Overrides for Mobile & Mobile Landscape */
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
   /* Reduce padding on mobile to maximize screen real estate */
   .container {
     padding: var(--spacing-md);
@@ -217,7 +216,7 @@ h1, h2, h3, h4 {
   padding-bottom: var(--spacing-sm);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-height: 501px) {
   .scrollable-content-wrapper {
     overflow-x: hidden;
   }
@@ -229,7 +228,7 @@ h1, h2, h3, h4 {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
   .chart-min-width-sm { min-width: 550px; height: 100%; }
   .chart-min-width-md { min-width: 680px; height: 100%; }
   .chart-min-width-lg { min-width: 900px; height: 100%; }
@@ -240,7 +239,7 @@ h1, h2, h3, h4 {
   font-size: 13px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
   .recharts-cartesian-axis-tick-value {
     font-size: 11px !important;
   }

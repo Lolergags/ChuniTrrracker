@@ -24,10 +24,14 @@ const SongAnalytics: React.FC = () => {
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const checkMobile = () => 
+    typeof window !== 'undefined' && 
+    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
+
+  const [isMobile, setIsMobile] = useState(checkMobile);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(checkMobile());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -191,9 +195,9 @@ const SongAnalytics: React.FC = () => {
         Search for a song and select a chart to view the leaderboard across all imported players.
       </p>
 
-      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center' }}>
         {/* Left column: Song List */}
-        <div className="sticky-column" style={{ flex: '1 1 320px', maxWidth: isMobile ? '100%' : '380px', minWidth: 0 }}>
+        <div className="sticky-column" style={{ flex: isMobile ? '1 1 100%' : '1 1 320px', maxWidth: isMobile ? '100%' : '380px', minWidth: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
             <input 
               type="text" 

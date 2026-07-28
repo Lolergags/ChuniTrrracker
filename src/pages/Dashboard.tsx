@@ -28,10 +28,14 @@ export function Dashboard() {
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const checkMobile = () => 
+    typeof window !== 'undefined' && 
+    (window.innerWidth <= 768 || (window.innerHeight <= 500 && window.innerWidth <= 1024));
+
+  const [isMobile, setIsMobile] = useState(checkMobile);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(checkMobile());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -610,7 +614,7 @@ export function Dashboard() {
         </div>
 
         {/* Row 2: Global Filters Bar (Server, Version, Difficulty) */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', width: '100%' }}>
           <GlobalFilterBar showRating={false} />
         </div>
       </div>

@@ -44,7 +44,7 @@ export function Landing() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', width: '100%', maxWidth: '1200px', marginBottom: '4rem' }}>
         <div className="glass-panel hover-card" onClick={() => navigate('/leaderboard')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ padding: '1rem', background: 'rgba(255, 204, 0, 0.1)', borderRadius: '50%', color: 'var(--rank-ss)', marginBottom: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(234, 179, 8, 0.1)', borderRadius: '50%', color: 'var(--accent-gold)', marginBottom: '1rem' }}>
             <Trophy size={32} />
           </div>
           <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Global Leaderboards</h3>
@@ -52,7 +52,7 @@ export function Landing() {
         </div>
         
         <div className="glass-panel hover-card" onClick={() => navigate('/analytics')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ padding: '1rem', background: 'rgba(0, 255, 204, 0.1)', borderRadius: '50%', color: 'var(--accent-primary)', marginBottom: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '50%', color: 'var(--accent-primary)', marginBottom: '1rem' }}>
             <BarChart2 size={32} />
           </div>
           <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Song Analytics</h3>
@@ -60,7 +60,7 @@ export function Landing() {
         </div>
 
         <div className="glass-panel hover-card" onClick={() => navigate('/global-stats')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ padding: '1rem', background: 'rgba(255, 102, 255, 0.1)', borderRadius: '50%', color: 'var(--accent-secondary)', marginBottom: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(225, 29, 72, 0.1)', borderRadius: '50%', color: 'var(--accent-secondary)', marginBottom: '1rem' }}>
             <Activity size={32} />
           </div>
           <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Global Stats</h3>

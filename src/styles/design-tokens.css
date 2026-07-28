@@ -1,33 +1,36 @@
 :root {
-  /* Chunithm Arcade Dark Mode Colors */
-  --bg-primary: #0b0e17;
-  --bg-secondary: #121726;
-  --bg-glass: rgba(18, 23, 38, 0.7);
-  --bg-glass-hover: rgba(26, 33, 54, 0.85);
+  /* Darker Arcade Base Colors */
+  --bg-primary: #07090e;
+  --bg-secondary: #0f131d;
+  --bg-tertiary: #161b29;
+  --bg-glass: rgba(15, 19, 29, 0.85);
+  --bg-glass-hover: rgba(22, 28, 42, 0.95);
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-primary: #f1f5f9;
+  --text-secondary: #8492a6;
+  --text-muted: #526075;
   
-  /* Chunithm Neon Accents */
-  --accent-primary: #00f2ff;       /* Chunithm Electric Cyan */
-  --accent-glow: rgba(0, 242, 255, 0.4);
-  --accent-secondary: #ff007f;     /* Chunithm Neon Magenta */
-  --accent-secondary-glow: rgba(255, 0, 127, 0.4);
-  --accent-gold: #ffcc00;          /* Chunithm Justice Critical Gold */
+  /* Less Saturated Chunithm Accents */
+  --accent-primary: #38bdf8;       /* Desaturated Cyan / Sky Blue */
+  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-secondary: #e11d48;     /* Muted Crimson / Magenta */
+  --accent-secondary-glow: rgba(225, 29, 72, 0.25);
+  --accent-gold: #eab308;          /* Warm Muted Gold */
+  --accent-gold-glow: rgba(234, 179, 8, 0.25);
   
-  /* Chunithm Difficulty Colors */
-  --diff-bas: #22c55e;
-  --diff-adv: #f59e0b;
-  --diff-exp: #ef4444;
-  --diff-mas: #a855f7;
-  --diff-ult: #ec4899;
+  /* Less Saturated Difficulty Colors */
+  --diff-bas: #16a34a;             /* Muted Emerald Green */
+  --diff-adv: #d97706;             /* Muted Amber */
+  --diff-exp: #dc2626;             /* Muted Crimson */
+  --diff-mas: #9333ea;             /* Muted Deep Purple */
+  --diff-ult: #db2777;             /* Muted Rose */
 
-  /* Chunithm Lamp Colors */
-  --rank-ajc: #ffd700;
-  --rank-aj: #f59e0b;
-  --rank-fc: #00f2ff;
-  --rank-clear: #3b82f6;
-  --rank-failed: #475569;
+  /* Less Saturated Lamp Colors */
+  --rank-ajc: #eab308;             /* Warm Gold */
+  --rank-aj: #d97706;              /* Amber */
+  --rank-fc: #0284c7;              /* Deep Cyan */
+  --rank-clear: #2563eb;           /* Cobalt Blue */
+  --rank-failed: #475569;          /* Slate Dark Gray */
   
   /* Typography */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -40,11 +43,11 @@
   --spacing-xl: 4rem;
   
   /* Border Radius */
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
   --radius-full: 9999px;
   
   /* Transitions */
-  --transition-fast: 0.2s ease-in-out;
-  --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s ease-in-out;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

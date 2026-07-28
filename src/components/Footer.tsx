@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart, Mail, ExternalLink, Activity, Code } from 'lucide-react';
+import { Heart, Mail, ExternalLink, Code } from 'lucide-react';
+import { PenguinIcon } from './PenguinIcon.js';
 
 export const Footer: React.FC = () => {
   return (
@@ -22,7 +23,7 @@ export const Footer: React.FC = () => {
           {/* Column 1: Brand & Purpose */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <Activity style={{ color: 'var(--accent-primary)' }} size={22} />
+              <PenguinIcon size={24} />
               <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }} className="text-gradient">
                 ChuniTrrracker
               </span>

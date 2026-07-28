@@ -1,6 +1,7 @@
 import React, { useContext, useState, useDeferredValue, useMemo, useEffect } from 'react';
 import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
+import { PenguinIcon } from './components/PenguinIcon.js';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
 import Leaderboard from './pages/Leaderboard.js';
@@ -81,7 +82,7 @@ const AppContent = () => {
         <div className="nav-logo">
           <NavLink to="/" style={{ textDecoration: 'none' }}>
             <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Activity /> ChuniTrrracker
+              <PenguinIcon size={28} /> ChuniTrrracker
             </h2>
           </NavLink>
         </div>

@@ -20,91 +20,58 @@ export function PenguinIcon({
       xmlns="http://www.w3.org/2000/svg"
       width={numericSize}
       height={numericSize}
-      viewBox="0 0 32 32"
+      viewBox="0 0 36 36"
       fill="none"
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Sleek Minimalist Outline - Leaning Forward 3/4 Stance */}
-      <g transform="rotate(-8 16 16)">
-        {/* Headphone Band Arch Outline */}
-        <path
-          d="M 7.5 13.5 C 7.5 7.5 11.5 5 16 5 C 20.5 5 24.5 7.5 24.5 13.5"
-          stroke={strokeColor}
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
+      {/* Cyberpunk Arcade Crest Ring */}
+      <circle cx="18" cy="18" r="16.5" stroke={strokeColor} strokeWidth="1.2" strokeOpacity="0.3" strokeDasharray="3 3" />
+      <circle cx="18" cy="18" r="14" fill="var(--accent-glow)" opacity="0.15" />
 
-        {/* Headphone Earcups Outlines */}
-        <rect
-          x="5"
-          y="11.5"
-          width="3.2"
-          height="6"
-          rx="1.6"
-          stroke={strokeColor}
-          strokeWidth="1.6"
-        />
-        <rect
-          x="23.8"
-          y="11.5"
-          width="3.2"
-          height="6"
-          rx="1.6"
-          stroke={strokeColor}
-          strokeWidth="1.6"
-        />
+      {/* Futuristic Arcade Headphones Arch */}
+      <path
+        d="M 9.5 16 C 9.5 10 13.5 6.5 18 6.5 C 22.5 6.5 26.5 10 26.5 16"
+        stroke={strokeColor}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      {/* Sleek Geometric Ear Cups */}
+      <path d="M 6.5 13.5 L 9.5 12 L 9.5 19 L 6.5 17.5 Z" fill={strokeColor} stroke={strokeColor} strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M 29.5 13.5 L 26.5 12 L 26.5 19 L 29.5 17.5 Z" fill={strokeColor} stroke={strokeColor} strokeWidth="1.2" strokeLinejoin="round" />
 
-        {/* Minimalist Body Contour Outline */}
-        <path
-          d="M 16 7.5 C 11.8 7.5 8.5 11.2 8.5 15.5 V 22 C 8.5 25.2 11.8 27.5 16 27.5 C 20.2 27.5 23.5 25.2 23.5 22 V 15.5 C 23.5 11.2 20.2 7.5 16 7.5 Z"
-          stroke={strokeColor}
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
+      {/* Futuristic Penguin Head Silhouette */}
+      <path
+        d="M 18 9 C 13.5 9 10.5 12.5 10.5 17 V 22.5 C 10.5 25.5 13.5 27.5 18 27.5 C 22.5 27.5 25.5 25.5 25.5 22.5 V 17 C 25.5 12.5 22.5 9 18 9 Z"
+        stroke={strokeColor}
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
 
-        {/* Minimalist Inner Belly Outline */}
-        <path
-          d="M 12 22.5 V 19 C 12 16.5 13.8 14.5 16 14.5 C 18.2 14.5 20 16.5 20 19 V 22.5 C 20 24.5 18.2 25.8 16 25.8 C 13.8 25.8 12 24.5 12 22.5 Z"
-          stroke={strokeColor}
-          strokeWidth="1.3"
-          strokeOpacity="0.6"
-        />
+      {/* Inner Face Mask Arch */}
+      <path
+        d="M 13.5 22 V 18 C 13.5 15.5 15.5 13.8 18 13.8 C 20.5 13.8 22.5 15.5 22.5 18 V 22 C 22.5 24 20.5 25.5 18 25.5 C 15.5 25.5 13.5 24 13.5 22 Z"
+        stroke={strokeColor}
+        strokeWidth="1.2"
+        strokeOpacity="0.6"
+      />
 
-        {/* Minimalist Beak Outline (Gold Accent) */}
-        <path
-          d="M 13.8 15.2 L 18.2 15.2 L 16 17.5 Z"
-          stroke="var(--accent-gold)"
-          strokeWidth="1.4"
-          strokeLinejoin="round"
-        />
+      {/* Sharp Geometric Gold Beak */}
+      <path
+        d="M 14.5 16 L 21.5 16 L 18 19.5 Z"
+        fill="var(--accent-gold)"
+        stroke="var(--accent-gold)"
+        strokeWidth="0.8"
+        strokeLinejoin="round"
+      />
 
-        {/* Minimalist Eye Dots */}
-        <circle cx="13.2" cy="12.5" r="1.1" fill={strokeColor} />
-        <circle cx="18.8" cy="12.5" r="1.1" fill={strokeColor} />
+      {/* Glowing Mascot Eye Dots */}
+      <circle cx="15" cy="14" r="1.2" fill={strokeColor} />
+      <circle cx="21" cy="14" r="1.2" fill={strokeColor} />
 
-        {/* Minimalist Flipper Strokes */}
-        <path
-          d="M 6.8 18.5 C 5.2 19.8 4.8 21.5 6.5 22"
-          stroke={strokeColor}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M 25.2 18.5 C 26.8 19.8 27.2 21.5 25.5 22"
-          stroke={strokeColor}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-
-        {/* Feet Lines */}
-        <path
-          d="M 11.8 27.5 L 14 28.5 M 18 28.5 L 20.2 27.5"
-          stroke="var(--accent-gold)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </g>
+      {/* Rhythm Wave Wings at Base */}
+      <path d="M 8.5 23.5 C 10.5 25 13 25.5 15 24.5" stroke={strokeColor} strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M 27.5 23.5 C 25.5 25 23 25.5 21 24.5" stroke={strokeColor} strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }

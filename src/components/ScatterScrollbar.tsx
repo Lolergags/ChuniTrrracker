@@ -358,24 +358,24 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     );
   }
 
-  // Horizontal Orientation
+  // Ultra-Compact Horizontal Orientation (14px Track Height)
   const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
   const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (
     <div style={{
-      marginTop: '0.75rem',
+      marginTop: '0.4rem',
       width: '100%',
       boxSizing: 'border-box',
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Horizontal Viewport Slider'}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Level Constant'}</span>
           {isEditing ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
               <input
                 type="number"
                 step="0.1"
@@ -384,7 +384,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
                 onBlur={handleApplyInputs}
                 autoFocus
-                style={{ width: '45px', fontSize: '0.75rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '40px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
               />
               <span>–</span>
               <input
@@ -394,24 +394,24 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                 onChange={(e) => setInputMax(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyInputs()}
                 onBlur={handleApplyInputs}
-                style={{ width: '45px', fontSize: '0.75rem', padding: '0.1rem 0.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
+                style={{ width: '40px', fontSize: '0.68rem', padding: '0.05rem 0.15rem', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: '#fff', borderRadius: '3px' }}
               />
             </span>
           ) : isZoomed ? (
             <span 
               onClick={() => setIsEditing(true)}
               title="Click to type exact values"
-              style={{ fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.1rem 0.4rem', borderRadius: '4px', cursor: 'pointer' }}
+              style={{ fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.05rem 0.3rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
             >
-              Level {formatVal(curMin)} – {formatVal(curMax)} ✎
+              Level {formatVal(curMin)}–{formatVal(curMax)} ✎
             </span>
           ) : (
             <span 
               onClick={() => setIsEditing(true)}
               title="Click to type exact values"
-              style={{ fontSize: '0.75rem', opacity: 0.7, cursor: 'pointer' }}
+              style={{ fontSize: '0.68rem', opacity: 0.6, cursor: 'pointer' }}
             >
-              (Drag thumb to pan, drag edges to resize ✎)
+              (Drag / ✎)
             </span>
           )}
         </span>
@@ -422,13 +422,13 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               background: 'transparent',
               border: 'none',
               color: accentColor,
-              fontSize: '0.75rem',
+              fontSize: '0.68rem',
               fontWeight: 600,
               cursor: 'pointer',
-              padding: '0.1rem 0.3rem'
+              padding: '0 0.2rem'
             }}
           >
-            Show All Levels
+            Reset
           </button>
         )}
       </div>
@@ -441,9 +441,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         onPointerCancel={handlePointerUp}
         style={{
           position: 'relative',
-          height: '28px',
+          height: '14px',
           background: 'rgba(0, 0, 0, 0.4)',
-          borderRadius: '6px',
+          borderRadius: '7px',
           border: '1px solid rgba(255, 255, 255, 0.12)',
           cursor: isDragging ? 'grabbing' : 'pointer',
           touchAction: 'none',
@@ -453,9 +453,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           overflow: 'hidden'
         }}
       >
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', pointerEvents: 'none', opacity: 0.35 }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.4rem', pointerEvents: 'none', opacity: 0.35 }}>
           {tickValues.map(t => (
-            <span key={t} style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>{t}</span>
+            <span key={t} style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600 }}>{t}</span>
           ))}
         </div>
 
@@ -464,28 +464,26 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             position: 'absolute',
             left: `${leftPercent}%`,
             width: `${widthPercent}%`,
-            top: '2px',
-            bottom: '2px',
-            background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.1)',
-            border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.3)'}`,
-            borderRadius: '4px',
+            top: '1px',
+            bottom: '1px',
+            background: isZoomed ? `${accentColor}33` : 'rgba(255, 255, 255, 0.15)',
+            border: `1.5px solid ${isZoomed ? accentColor : 'rgba(255, 255, 255, 0.35)'}`,
+            borderRadius: '5px',
             boxShadow: isZoomed ? `0 0 10px ${accentColor}55` : 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 2px',
+            padding: '0 1px',
             boxSizing: 'border-box',
             transition: isDragging ? 'none' : 'left 0.15s ease, width 0.15s ease'
           }}
         >
-          <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          <div style={{ height: '100%', width: '4px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '8px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>
 
-          <div style={{ width: '8px', height: '8px', borderLeft: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
-
-          <div style={{ height: '100%', width: '6px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '14px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+          <div style={{ height: '100%', width: '4px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ height: '8px', width: '2px', background: accentColor, borderRadius: '1px' }} />
           </div>
         </div>
       </div>

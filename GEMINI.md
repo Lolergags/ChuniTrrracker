@@ -85,6 +85,7 @@ Players can earn a possession plate based on a combination of their OP% and thei
     *   **Bug Regression:** Whenever an issue, logical flaw, or edge case is encountered and fixed (e.g., duplicate SQL records, negative UI bounds), **you must write an automated test case** to verify the fix and ensure the error does not repeat.
     *   **SQL & Backend Tests:** For database query logic, spin up an in-memory SQLite database (`new Database(':memory:')`), seed it with explicit edge-case data, and strictly verify the output.
 *   **Git Commits:** The development environment requires the `--no-gpg-sign` flag for all `git commit` commands to bypass GPG signing timeout errors (e.g., `git commit --no-gpg-sign -m "..."`).
+*   **Pull Request Merges:** NEVER perform direct local `git merge` into `main`. All feature branch merges into `main` MUST be performed via a GitHub Pull Request using GitHub CLI (`gh pr create --head <branch> --base main` and `gh pr merge <id> --merge`) or GitHub's web interface to preserve an official PR record and audit trail.
 *   **Docker Container Restart Exit Code 100:** When implementing in-app software updates or restart managers under Docker's `--restart=on-failure` policy, calling `process.exit(0)` is treated as an intentional clean shutdown and will leave the container permanently stopped. Always exit with exit code 100 (`process.exit(100)`) to signal an unclean exit that triggers Unraid / Docker container supervisors to immediately restart the container.
 
 ## Kamaitachi Integration Quirks & Edge Cases

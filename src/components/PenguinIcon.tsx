@@ -20,62 +20,53 @@ export function PenguinIcon({
       xmlns="http://www.w3.org/2000/svg"
       width={numericSize}
       height={numericSize}
-      viewBox="0 0 36 36"
+      viewBox="0 0 32 32"
       fill="none"
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Background Soft Aura */}
-      <circle cx="18" cy="18" r="15" fill="var(--accent-glow)" opacity="0.12" />
+      {/* Soft Background Radial Glow */}
+      <circle cx="16" cy="16" r="14" fill="var(--accent-glow)" opacity="0.12" />
 
-      {/* Chunithm AIR Motion Chevrons (Upward Rays) */}
+      {/* Chunithm AIR Motion Rays / Chevron Arch Above Peak */}
       <path
-        d="M 12 7.5 L 18 3.5 L 24 7.5"
+        d="M 10 9 L 16 5 L 22 9"
         stroke={strokeColor}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M 14.5 10.5 L 18 8 L 21.5 10.5"
+        d="M 12.5 11.5 L 16 9 L 19.5 11.5"
         stroke="var(--accent-gold)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeOpacity="0.85"
       />
 
-      {/* Statistical Overpower Rank Star (Center Peak) */}
-      <path
-        d="M 18 10.5 L 19.2 13.2 L 22.2 13.2 L 19.8 15 L 20.8 17.8 L 18 16 L 15.2 17.8 L 16.2 15 L 13.8 13.2 L 16.8 13.2 Z"
-        fill="var(--accent-gold)"
-        stroke="var(--accent-gold)"
-        strokeWidth="0.5"
-      />
+      {/* Chunithm 16-Key Touch Slider Bar Graph */}
+      {/* Keybeam 1 */}
+      <rect x="4" y="22" width="2.2" height="6" rx="0.8" fill={strokeColor} opacity="0.4" />
+      {/* Keybeam 2 */}
+      <rect x="6.8" y="20" width="2.2" height="8" rx="0.8" fill={strokeColor} opacity="0.5" />
+      {/* Keybeam 3 */}
+      <rect x="9.6" y="17" width="2.2" height="11" rx="0.8" fill={strokeColor} opacity="0.65" />
+      {/* Keybeam 4 */}
+      <rect x="12.4" y="14" width="2.2" height="14" rx="0.8" fill={strokeColor} opacity="0.8" />
+      {/* Keybeam 5 (Peak - Gold) */}
+      <rect x="15.2" y="11" width="2.2" height="17" rx="0.8" fill="var(--accent-gold)" />
+      {/* Keybeam 6 (Secondary Peak - Crimson) */}
+      <rect x="18" y="13" width="2.2" height="15" rx="0.8" fill="var(--accent-secondary)" />
+      {/* Keybeam 7 */}
+      <rect x="20.8" y="16" width="2.2" height="12" rx="0.8" fill={strokeColor} opacity="0.85" />
+      {/* Keybeam 8 */}
+      <rect x="23.6" y="19" width="2.2" height="9" rx="0.8" fill={strokeColor} opacity="0.65" />
+      {/* Keybeam 9 */}
+      <rect x="26.4" y="22" width="2.2" height="6" rx="0.8" fill={strokeColor} opacity="0.45" />
 
-      {/* Ascending Trend Line (OP Growth Trajectory) */}
-      <path
-        d="M 5 25.5 Q 11 23 15 19.5 T 23 14 T 31 9.5"
-        stroke={strokeColor}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <circle cx="31" cy="9.5" r="2" fill={strokeColor} />
-
-      {/* Chunithm 16-Key Touch Slider + Statistical Bar Chart Base */}
-      {/* Bar 1 */}
-      <rect x="5.5" y="23" width="3.2" height="7.5" rx="1" fill={strokeColor} fillOpacity="0.35" stroke={strokeColor} strokeWidth="1" />
-      {/* Bar 2 */}
-      <rect x="10.8" y="20.5" width="3.2" height="10" rx="1" fill={strokeColor} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1" />
-      {/* Bar 3 */}
-      <rect x="16.1" y="17.5" width="3.2" height="13" rx="1" fill={strokeColor} fillOpacity="0.65" stroke={strokeColor} strokeWidth="1" />
-      {/* Bar 4 */}
-      <rect x="21.4" y="14" width="3.2" height="16.5" rx="1" fill={strokeColor} fillOpacity="0.85" stroke={strokeColor} strokeWidth="1" />
-      {/* Bar 5 (Peak OP Bar) */}
-      <rect x="26.7" y="10.5" width="3.2" height="20" rx="1" fill="var(--accent-gold)" stroke="var(--accent-gold)" strokeWidth="1" />
-
-      {/* Touch Slider Base Ground Rail */}
-      <rect x="4" y="30.5" width="28" height="2" rx="1" fill={strokeColor} />
+      {/* Chunithm Ground Slider Rail Line */}
+      <rect x="3" y="28" width="26" height="2" rx="1" fill={strokeColor} />
+      <line x1="3" y1="28.5" x2="29" y2="28.5" stroke="var(--bg-primary)" strokeWidth="0.5" />
     </svg>
   );
 }

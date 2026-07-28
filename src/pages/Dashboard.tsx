@@ -727,7 +727,7 @@ export function Dashboard() {
         <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
           <ScatterScrollbar
             orientation="vertical"
-            min={defaultYDomain[0]}
+            min={defaultYDomain?.[0] ?? 975000}
             max={1010000}
             currentZoom={scatterZoomY}
             onZoomChange={setScatterZoomY}

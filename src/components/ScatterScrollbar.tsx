@@ -213,11 +213,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        height: '100%',
+        height: '430px',
         boxSizing: 'border-box',
         marginRight: '0.4rem',
-        marginTop: marginTop || 0,
-        marginBottom: marginBottom || 0
+        paddingTop: marginTop || 0,
+        paddingBottom: marginBottom || 0
       }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Score View'}</div>

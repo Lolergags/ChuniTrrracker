@@ -25,53 +25,57 @@ export function PenguinIcon({
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Cyberpunk Arcade Crest Ring */}
-      <circle cx="18" cy="18" r="16.5" stroke={strokeColor} strokeWidth="1.2" strokeOpacity="0.3" strokeDasharray="3 3" />
-      <circle cx="18" cy="18" r="14" fill="var(--accent-glow)" opacity="0.15" />
+      {/* Background Soft Aura */}
+      <circle cx="18" cy="18" r="15" fill="var(--accent-glow)" opacity="0.12" />
 
-      {/* Futuristic Arcade Headphones Arch */}
+      {/* Chunithm AIR Motion Chevrons (Upward Rays) */}
       <path
-        d="M 9.5 16 C 9.5 10 13.5 6.5 18 6.5 C 22.5 6.5 26.5 10 26.5 16"
+        d="M 12 7.5 L 18 3.5 L 24 7.5"
+        stroke={strokeColor}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M 14.5 10.5 L 18 8 L 21.5 10.5"
+        stroke="var(--accent-gold)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity="0.85"
+      />
+
+      {/* Statistical Overpower Rank Star (Center Peak) */}
+      <path
+        d="M 18 10.5 L 19.2 13.2 L 22.2 13.2 L 19.8 15 L 20.8 17.8 L 18 16 L 15.2 17.8 L 16.2 15 L 13.8 13.2 L 16.8 13.2 Z"
+        fill="var(--accent-gold)"
+        stroke="var(--accent-gold)"
+        strokeWidth="0.5"
+      />
+
+      {/* Ascending Trend Line (OP Growth Trajectory) */}
+      <path
+        d="M 5 25.5 Q 11 23 15 19.5 T 23 14 T 31 9.5"
         stroke={strokeColor}
         strokeWidth="2.2"
         strokeLinecap="round"
       />
-      {/* Sleek Geometric Ear Cups */}
-      <path d="M 6.5 13.5 L 9.5 12 L 9.5 19 L 6.5 17.5 Z" fill={strokeColor} stroke={strokeColor} strokeWidth="1.2" strokeLinejoin="round" />
-      <path d="M 29.5 13.5 L 26.5 12 L 26.5 19 L 29.5 17.5 Z" fill={strokeColor} stroke={strokeColor} strokeWidth="1.2" strokeLinejoin="round" />
+      <circle cx="31" cy="9.5" r="2" fill={strokeColor} />
 
-      {/* Futuristic Penguin Head Silhouette */}
-      <path
-        d="M 18 9 C 13.5 9 10.5 12.5 10.5 17 V 22.5 C 10.5 25.5 13.5 27.5 18 27.5 C 22.5 27.5 25.5 25.5 25.5 22.5 V 17 C 25.5 12.5 22.5 9 18 9 Z"
-        stroke={strokeColor}
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
+      {/* Chunithm 16-Key Touch Slider + Statistical Bar Chart Base */}
+      {/* Bar 1 */}
+      <rect x="5.5" y="23" width="3.2" height="7.5" rx="1" fill={strokeColor} fillOpacity="0.35" stroke={strokeColor} strokeWidth="1" />
+      {/* Bar 2 */}
+      <rect x="10.8" y="20.5" width="3.2" height="10" rx="1" fill={strokeColor} fillOpacity="0.5" stroke={strokeColor} strokeWidth="1" />
+      {/* Bar 3 */}
+      <rect x="16.1" y="17.5" width="3.2" height="13" rx="1" fill={strokeColor} fillOpacity="0.65" stroke={strokeColor} strokeWidth="1" />
+      {/* Bar 4 */}
+      <rect x="21.4" y="14" width="3.2" height="16.5" rx="1" fill={strokeColor} fillOpacity="0.85" stroke={strokeColor} strokeWidth="1" />
+      {/* Bar 5 (Peak OP Bar) */}
+      <rect x="26.7" y="10.5" width="3.2" height="20" rx="1" fill="var(--accent-gold)" stroke="var(--accent-gold)" strokeWidth="1" />
 
-      {/* Inner Face Mask Arch */}
-      <path
-        d="M 13.5 22 V 18 C 13.5 15.5 15.5 13.8 18 13.8 C 20.5 13.8 22.5 15.5 22.5 18 V 22 C 22.5 24 20.5 25.5 18 25.5 C 15.5 25.5 13.5 24 13.5 22 Z"
-        stroke={strokeColor}
-        strokeWidth="1.2"
-        strokeOpacity="0.6"
-      />
-
-      {/* Sharp Geometric Gold Beak */}
-      <path
-        d="M 14.5 16 L 21.5 16 L 18 19.5 Z"
-        fill="var(--accent-gold)"
-        stroke="var(--accent-gold)"
-        strokeWidth="0.8"
-        strokeLinejoin="round"
-      />
-
-      {/* Glowing Mascot Eye Dots */}
-      <circle cx="15" cy="14" r="1.2" fill={strokeColor} />
-      <circle cx="21" cy="14" r="1.2" fill={strokeColor} />
-
-      {/* Rhythm Wave Wings at Base */}
-      <path d="M 8.5 23.5 C 10.5 25 13 25.5 15 24.5" stroke={strokeColor} strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M 27.5 23.5 C 25.5 25 23 25.5 21 24.5" stroke={strokeColor} strokeWidth="1.4" strokeLinecap="round" />
+      {/* Touch Slider Base Ground Rail */}
+      <rect x="4" y="30.5" width="28" height="2" rx="1" fill={strokeColor} />
     </svg>
   );
 }

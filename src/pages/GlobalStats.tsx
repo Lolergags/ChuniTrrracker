@@ -798,6 +798,16 @@ export function GlobalStats() {
             </div>
 
             <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
+              <ScatterScrollbar
+                orientation="vertical"
+                min={0}
+                max={1010000}
+                currentZoom={globalScatterZoomY}
+                onZoomChange={setGlobalScatterZoomY}
+                accentColor="var(--accent-secondary)"
+                label="Score"
+              />
+
               <div 
                 ref={globalScatterContainerRef}
                 className="scrollable-content-wrapper" 
@@ -855,16 +865,6 @@ export function GlobalStats() {
                   </ResponsiveContainer>
                 </div>
               </div>
-
-              <ScatterScrollbar
-                orientation="vertical"
-                min={0}
-                max={1010000}
-                currentZoom={globalScatterZoomY}
-                onZoomChange={setGlobalScatterZoomY}
-                accentColor="var(--accent-secondary)"
-                label="Score"
-              />
             </div>
 
             {(() => {

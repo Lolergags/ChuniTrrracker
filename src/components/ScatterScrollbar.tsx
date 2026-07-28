@@ -115,7 +115,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     const heightPercent = Math.max(5, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', boxSizing: 'border-box', marginLeft: '0.4rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', boxSizing: 'border-box', marginRight: '0.4rem' }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
           {label || 'Score View'}
         </div>

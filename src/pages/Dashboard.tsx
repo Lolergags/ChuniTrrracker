@@ -813,6 +813,16 @@ export function Dashboard() {
         </div>
 
         <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
+          <ScatterScrollbar
+            orientation="vertical"
+            min={0}
+            max={1010000}
+            currentZoom={scatterZoomY}
+            onZoomChange={setScatterZoomY}
+            accentColor="var(--accent-primary)"
+            label="Score"
+          />
+
           <div 
             ref={scatterContainerRef}
             className="scrollable-content-wrapper" 
@@ -880,16 +890,6 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           </div>
-
-          <ScatterScrollbar
-            orientation="vertical"
-            min={0}
-            max={1010000}
-            currentZoom={scatterZoomY}
-            onZoomChange={setScatterZoomY}
-            accentColor="var(--accent-primary)"
-            label="Score"
-          />
         </div>
 
         {(() => {

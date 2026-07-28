@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
       marginTop: 'auto',
       paddingTop: '4rem',
       borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-      background: 'rgba(15, 15, 25, 0.75)',
+      background: 'var(--bg-glass)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
       padding: '3rem 1.5rem calc(4rem + env(safe-area-inset-bottom, 0px)) 1.5rem',

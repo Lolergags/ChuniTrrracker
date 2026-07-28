@@ -1,22 +1,22 @@
 :root {
-  /* Darker Arcade Base Colors */
-  --bg-primary: #07090e;
-  --bg-secondary: #0f131d;
-  --bg-tertiary: #161b29;
-  --bg-glass: rgba(15, 19, 29, 0.85);
-  --bg-glass-hover: rgba(22, 28, 42, 0.95);
+  /* Deep Midnight Violet & Obsidian Arcade Palette */
+  --bg-primary: #080811;
+  --bg-secondary: #101021;
+  --bg-tertiary: #17172e;
+  --bg-glass: rgba(16, 16, 33, 0.85);
+  --bg-glass-hover: rgba(23, 23, 46, 0.95);
   
   --text-primary: #f1f5f9;
-  --text-secondary: #8492a6;
-  --text-muted: #526075;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   
   /* Less Saturated Chunithm Accents */
   --accent-primary: #38bdf8;       /* Desaturated Cyan / Sky Blue */
-  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-glow: rgba(56, 189, 248, 0.2);
   --accent-secondary: #e11d48;     /* Muted Crimson / Magenta */
-  --accent-secondary-glow: rgba(225, 29, 72, 0.25);
+  --accent-secondary-glow: rgba(225, 29, 72, 0.2);
   --accent-gold: #eab308;          /* Warm Muted Gold */
-  --accent-gold-glow: rgba(234, 179, 8, 0.25);
+  --accent-gold-glow: rgba(234, 179, 8, 0.2);
   
   /* Less Saturated Difficulty Colors */
   --diff-bas: #16a34a;             /* Muted Emerald Green */

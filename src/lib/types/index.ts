@@ -66,6 +66,7 @@ export interface ApiSong {
     constant: number;
     level: string;
     noteCount: number;
+    version?: string;
   }>;
 }
 

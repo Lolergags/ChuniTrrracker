@@ -963,9 +963,9 @@ export function Dashboard() {
                 title="Click to view on Song Leaderboard"
               >
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
-                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                  <span className={`badge badge-${score.difficulty.toLowerCase()}`} style={{ marginRight: '0.4rem' }}>{score.difficulty} {score.level}</span>
-                  <span>({score.constant.toFixed(1)})</span>
+                <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  <span className={`badge badge-${score.difficulty.toLowerCase()}`} style={{ marginRight: '0.35rem' }}>{score.difficulty} {score.level}</span>
+                  <span style={{ fontSize: '0.85rem' }}>({score.constant.toFixed(1)})</span>
                 </td>
                 <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{score.score.toLocaleString()}</td>
                 <td style={{ padding: '1rem', color: `var(--rank-${score.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{score.lamp}</td>

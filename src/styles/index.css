@@ -89,6 +89,8 @@ h1, h2, h3, h4 {
   font-family: var(--font-heading);
   letter-spacing: 0.04em;
   color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-bas { background: var(--diff-bas); border: 1px solid var(--diff-bas); box-shadow: 0 0 10px rgba(22, 163, 74, 0.35); }

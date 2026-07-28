@@ -262,8 +262,8 @@ export function GlobalStats() {
         const dx = Math.abs(deltaX);
         const dy = Math.abs(deltaY);
 
-        // 1-finger horizontal touch drag smoothly scrolls the graph DOM container around while sliders remain anchored
-        if (dx > dy && elem.scrollWidth > elem.clientWidth) {
+        // 1-finger horizontal touch swipe smoothly scrolls the graph DOM container left and right
+        if (dx > dy) {
           e.preventDefault();
           elem.scrollLeft = panRef.current.startScrollLeft - deltaX;
           return;
@@ -281,20 +281,10 @@ export function GlobalStats() {
         e.preventDefault();
 
         const rect = elem.getBoundingClientRect();
-        const plotWidth = Math.max(100, rect.width - 105);
         const plotHeight = Math.max(100, rect.height - 60);
 
-        const dX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
         const dY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
-
-        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, dX, defX, true);
         const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, dY, defY, false);
-
-        if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-          setGlobalScatterZoomX(null);
-        } else {
-          setGlobalScatterZoomX([newMinX, newMaxX]);
-        }
 
         if (newMinY <= defY[0] && newMaxY >= defY[1]) {
           setGlobalScatterZoomY(null);
@@ -723,7 +713,7 @@ export function GlobalStats() {
               <div 
                 ref={globalScatterContainerRef}
                 className="scrollable-content-wrapper" 
-                style={{ flex: 1, minWidth: 0, overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+                style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
               >
                 <div className="chart-min-width-md" style={{ height: '430px' }}>
                   <ResponsiveContainer width="100%" height="100%">

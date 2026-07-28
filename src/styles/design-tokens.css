@@ -1,25 +1,37 @@
 :root {
-  /* Premium Dark Mode Colors */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #13131a;
-  --bg-glass: rgba(255, 255, 255, 0.05);
+  /* Chunithm Arcade Dark Mode Colors */
+  --bg-primary: #0b0e17;
+  --bg-secondary: #121726;
+  --bg-glass: rgba(18, 23, 38, 0.7);
+  --bg-glass-hover: rgba(26, 33, 54, 0.85);
   
-  --text-primary: #f8f9fa;
-  --text-secondary: #adb5bd;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
   
-  --accent-primary: #6366f1; /* Indigo */
-  --accent-glow: rgba(99, 102, 241, 0.5);
-  --accent-secondary: #ec4899; /* Pink */
+  /* Chunithm Neon Accents */
+  --accent-primary: #00f2ff;       /* Chunithm Electric Cyan */
+  --accent-glow: rgba(0, 242, 255, 0.4);
+  --accent-secondary: #ff007f;     /* Chunithm Neon Magenta */
+  --accent-secondary-glow: rgba(255, 0, 127, 0.4);
+  --accent-gold: #ffcc00;          /* Chunithm Justice Critical Gold */
   
-  /* Rank Colors */
-  --rank-ajc: #fbbf24;
-  --rank-aj: #ef4444;
-  --rank-fc: #3b82f6;
-  --rank-clear: #22c55e;
-  --rank-failed: #000000;
+  /* Chunithm Difficulty Colors */
+  --diff-bas: #22c55e;
+  --diff-adv: #f59e0b;
+  --diff-exp: #ef4444;
+  --diff-mas: #a855f7;
+  --diff-ult: #ec4899;
+
+  /* Chunithm Lamp Colors */
+  --rank-ajc: #ffd700;
+  --rank-aj: #f59e0b;
+  --rank-fc: #00f2ff;
+  --rank-clear: #3b82f6;
+  --rank-failed: #475569;
   
   /* Typography */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Rajdhani', 'Inter', system-ui, sans-serif;
   
   /* Spacing */
   --spacing-sm: 0.5rem;
@@ -28,11 +40,11 @@
   --spacing-xl: 4rem;
   
   /* Border Radius */
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
   
   /* Transitions */
   --transition-fast: 0.2s ease-in-out;
-  --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }

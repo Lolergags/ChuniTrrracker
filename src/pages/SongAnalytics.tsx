@@ -214,25 +214,32 @@ const SongAnalytics: React.FC = () => {
 
             {/* Difficulty Pills */}
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => (
-                <button
-                  key={diff}
-                  onClick={() => toggleDiff(diff)}
-                  style={{
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: 'var(--radius-full)',
-                    background: diffFilters.includes(diff) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.3)',
-                    color: '#fff',
-                    border: diffFilters.includes(diff) ? '1px solid var(--accent-primary)' : '1px solid rgba(255,255,255,0.2)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {diff}
-                </button>
-              ))}
+              {['BAS', 'ADV', 'EXP', 'MAS', 'ULT'].map(diff => {
+                const isActive = diffFilters.includes(diff);
+                const diffColor = diff === 'BAS' ? 'var(--diff-bas)' : diff === 'ADV' ? 'var(--diff-adv)' : diff === 'EXP' ? 'var(--diff-exp)' : diff === 'MAS' ? 'var(--diff-mas)' : 'var(--diff-ult)';
+                return (
+                  <button
+                    key={diff}
+                    onClick={() => toggleDiff(diff)}
+                    style={{
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: 'var(--radius-full)',
+                      background: isActive ? diffColor : 'rgba(0,0,0,0.3)',
+                      color: '#fff',
+                      border: isActive ? `1px solid ${diffColor}` : '1px solid rgba(255,255,255,0.2)',
+                      boxShadow: isActive ? `0 0 10px ${diffColor}55` : 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-heading)',
+                      letterSpacing: '0.05em',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {diff}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Server & Version Grid */}

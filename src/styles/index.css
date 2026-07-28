@@ -25,13 +25,13 @@ body {
 /* Glassmorphism utilities */
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 242, 255, 0.12);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
   /* Fix for Chrome backdrop-filter edge rendering bug after CSS animations */
   transform: translate3d(0, 0, 0);
   will-change: transform;
@@ -40,17 +40,24 @@ body {
 
 .glass-panel:hover {
   transform: translate3d(0, -2px, 0);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(0, 242, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 242, 255, 0.08);
 }
 
 /* Typographic utilities */
 h1, h2, h3, h4 {
+  font-family: var(--font-heading);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.stat-heading, .stat-value {
+  font-family: var(--font-heading);
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 60%, var(--accent-gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -70,14 +77,17 @@ h1, h2, h3, h4 {
   align-items: center;
   padding: var(--spacing-md) var(--spacing-lg);
   background: var(--bg-secondary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 242, 255, 0.15);
+  border-top: 2px solid var(--accent-primary);
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .nav-logo {
   padding-right: var(--spacing-lg);
+  font-family: var(--font-heading);
 }
 
 .nav-links {

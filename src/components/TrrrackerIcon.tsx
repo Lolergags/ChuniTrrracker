@@ -1,16 +1,16 @@
 import React from 'react';
 
-interface PenguinIconProps {
+interface TrrrackerIconProps {
   size?: number | string;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export function PenguinIcon({ 
+export function TrrrackerIcon({ 
   size = 32, 
   className = '', 
   style = {}
-}: PenguinIconProps) {
+}: TrrrackerIconProps) {
   const numericSize = typeof size === 'number' ? `${size}px` : size;
 
   return (

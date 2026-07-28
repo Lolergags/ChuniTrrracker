@@ -1,5 +1,5 @@
 import { useContext, useState, useDeferredValue, useMemo } from 'react';
-import { Trophy, BarChart2, ChevronRight, Search, Activity } from 'lucide-react';
+import { Trophy, BarChart2, ChevronRight, Search, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { PenguinIcon } from '../components/PenguinIcon.js';
@@ -62,7 +62,7 @@ export function Landing() {
 
         <div className="glass-panel hover-card" onClick={() => navigate('/global-stats')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ padding: '1rem', background: 'rgba(225, 29, 72, 0.1)', borderRadius: '50%', color: 'var(--accent-secondary)', marginBottom: '1rem' }}>
-            <Activity size={32} />
+            <Globe size={32} />
           </div>
           <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Global Stats</h3>
           <p style={{ color: 'var(--text-secondary)' }}>Explore grade heatmaps, clear rate distributions, and server-wide Overpower statistics.</p>

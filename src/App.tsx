@@ -1,6 +1,6 @@
 import React, { useContext, useState, useDeferredValue, useMemo, useEffect } from 'react';
 import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Activity, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
+import { Globe, BarChart2, Trophy, Search, DownloadCloud, User, Settings } from 'lucide-react';
 import { PenguinIcon } from './components/PenguinIcon.js';
 import { Landing } from './pages/Landing.js';
 import Dashboard from './pages/Dashboard.js';
@@ -98,7 +98,7 @@ const AppContent = () => {
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><BarChart2 size={18} /> Song Leaderboards</span>
           </NavLink>
           <NavLink to="/global-stats" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Activity size={18} /> Global Stats</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Globe size={18} /> Global Stats</span>
           </NavLink>
           <NavLink to="/import" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><DownloadCloud size={18} /> Import Data</span>

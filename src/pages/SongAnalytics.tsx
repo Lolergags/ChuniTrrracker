@@ -563,8 +563,17 @@ const SongAnalytics: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', height: '100%', minHeight: '300px', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-              Select a chart from the left to view its leaderboard.
+            <div className="glass-panel" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              textAlign: 'center',
+              padding: isMobile ? '1.5rem 1rem' : '3rem 2rem', 
+              minHeight: isMobile ? '120px' : '300px', 
+              color: 'var(--text-secondary)',
+              fontSize: isMobile ? '0.9rem' : '1rem'
+            }}>
+              {isMobile ? 'Select a chart from above to view its leaderboard.' : 'Select a chart from the left to view its leaderboard.'}
             </div>
           )}
         </div>

@@ -291,6 +291,13 @@ export function Dashboard() {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
         const t = e.touches[0];
+        const rect = elem.getBoundingClientRect();
+        // If touch starts below the X-axis plot line (in bottom margin), allow native page scrolling
+        if (t.clientY > rect.bottom - 40) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
         panRef.current.startY = t.clientY;
@@ -312,7 +319,16 @@ export function Dashboard() {
       const { defX, defY, curX, curY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         const t = e.touches[0];
-        const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
+        const dx = Math.abs(t.clientX - panRef.current.startX);
+        const dy = Math.abs(t.clientY - panRef.current.startY);
+
+        // If move is predominantly vertical and graph is unzoomed, allow native page scroll
+        if (dy > dx && !scatterZoomXRef.current && !scatterZoomYRef.current) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
+        const moveDist = Math.hypot(dx, dy);
         if (moveDist < 6) return;
 
         e.preventDefault();
@@ -727,9 +743,10 @@ export function Dashboard() {
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
                   const constants = uniqueScores.map(s => s.constant);
-                  const defaultMinX = constants.length ? Math.min(...constants) - 0.5 : 1.0;
+                  const activeMinX = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+                  const currentMinX = scatterZoomX ? scatterZoomX[0] : (constants.length ? Math.max(activeMinX, val - 3.0) : activeMinX);
                   if (!isNaN(val)) {
-                    setScatterZoomX([scatterZoomX ? scatterZoomX[0] : defaultMinX, val]);
+                    setScatterZoomX([currentMinX, val]);
                   } else if (!e.target.value) {
                     setScatterZoomX(null);
                   }
@@ -769,8 +786,10 @@ export function Dashboard() {
                 value={scatterZoomY ? scatterZoomY[1] : ''}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
+                  const activeMinY = 975000;
+                  const currentMinY = scatterZoomY ? scatterZoomY[0] : (val > 975000 ? activeMinY : Math.max(0, val - 50000));
                   if (!isNaN(val)) {
-                    setScatterZoomY([scatterZoomY ? scatterZoomY[0] : 975000, val]);
+                    setScatterZoomY([currentMinY, val]);
                   } else if (!e.target.value) {
                     setScatterZoomY(null);
                   }
@@ -795,7 +814,7 @@ export function Dashboard() {
         <div 
           ref={scatterContainerRef}
           className="scrollable-content-wrapper" 
-          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
         >
           <div className="chart-min-width-md" style={{ height: '430px' }}>
             <ResponsiveContainer width="100%" height="100%">

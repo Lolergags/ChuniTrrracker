@@ -228,6 +228,13 @@ export function GlobalStats() {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
         const t = e.touches[0];
+        const rect = elem.getBoundingClientRect();
+        // If touch starts below the X-axis plot line (in bottom margin), allow native page scrolling
+        if (t.clientY > rect.bottom - 40) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
         panRef.current.startY = t.clientY;
@@ -249,7 +256,16 @@ export function GlobalStats() {
       const { defX, defY, curX, curY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         const t = e.touches[0];
-        const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
+        const dx = Math.abs(t.clientX - panRef.current.startX);
+        const dy = Math.abs(t.clientY - panRef.current.startY);
+
+        // If move is predominantly vertical and graph is unzoomed, allow native page scroll
+        if (dy > dx && !globalScatterZoomXRef.current && !globalScatterZoomYRef.current) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
+        const moveDist = Math.hypot(dx, dy);
         if (moveDist < 6) return;
 
         e.preventDefault();
@@ -712,9 +728,10 @@ export function GlobalStats() {
                       const val = parseFloat(e.target.value);
                       const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
                       const constants = validMeta.map((d: any) => d.constant);
-                      const defaultMinX = constants.length ? Math.min(...constants) - 0.5 : 1.0;
+                      const activeMinX = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+                      const currentMinX = globalScatterZoomX ? globalScatterZoomX[0] : (constants.length ? Math.max(activeMinX, val - 3.0) : activeMinX);
                       if (!isNaN(val)) {
-                        setGlobalScatterZoomX([globalScatterZoomX ? globalScatterZoomX[0] : defaultMinX, val]);
+                        setGlobalScatterZoomX([currentMinX, val]);
                       } else if (!e.target.value) {
                         setGlobalScatterZoomX(null);
                       }
@@ -754,8 +771,10 @@ export function GlobalStats() {
                     value={globalScatterZoomY ? globalScatterZoomY[1] : ''}
                     onChange={(e) => {
                       const val = parseInt(e.target.value, 10);
+                      const activeMinY = 975000;
+                      const currentMinY = globalScatterZoomY ? globalScatterZoomY[0] : (val > 975000 ? activeMinY : Math.max(0, val - 50000));
                       if (!isNaN(val)) {
-                        setGlobalScatterZoomY([globalScatterZoomY ? globalScatterZoomY[0] : 975000, val]);
+                        setGlobalScatterZoomY([currentMinY, val]);
                       } else if (!e.target.value) {
                         setGlobalScatterZoomY(null);
                       }
@@ -780,7 +799,7 @@ export function GlobalStats() {
             <div 
               ref={globalScatterContainerRef}
               className="scrollable-content-wrapper" 
-              style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+              style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
             >
               <div className="chart-min-width-md" style={{ height: '430px' }}>
                 <ResponsiveContainer width="100%" height="100%">

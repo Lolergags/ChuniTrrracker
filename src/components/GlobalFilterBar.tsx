@@ -49,7 +49,7 @@ export function GlobalFilterBar({ showRating = false }: { showRating?: boolean }
   const currentDiffs = Array.isArray(filters.diff) ? filters.diff : ['BAS', 'ADV', 'EXP', 'MAS', 'ULT'];
 
   return (
-    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+    <div className="global-filter-bar" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
       <select 
         value={filters.server}
         onChange={(e) => handleServerChange(e.target.value)}

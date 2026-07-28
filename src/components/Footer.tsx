@@ -15,11 +15,8 @@ export const Footer: React.FC = () => {
       color: 'var(--text-secondary)'
     }}>
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{
+        <div className="footer-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
-          gap: '2.5rem',
-          marginBottom: '2.5rem',
           boxSizing: 'border-box'
         }}>
           {/* Column 1: Brand & Purpose */}

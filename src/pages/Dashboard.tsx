@@ -610,7 +610,7 @@ export function Dashboard() {
         </div>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '2rem' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', width: '100%', boxSizing: 'border-box' }}>
         <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center' }}>
           <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Total OP</h3>
           <h2 className="text-gradient" style={{ fontSize: '2.5rem' }}>{stats.totalOp.toFixed(2)}</h2>

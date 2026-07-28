@@ -112,7 +112,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
 
   if (orientation === 'vertical') {
     const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
-    const heightPercent = Math.max(5, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
+    const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', boxSizing: 'border-box', marginRight: '0.4rem' }}>

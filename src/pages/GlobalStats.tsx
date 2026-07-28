@@ -800,7 +800,7 @@ export function GlobalStats() {
             <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
               <ScatterScrollbar
                 orientation="vertical"
-                min={0}
+                min={defaultYDomain[0]}
                 max={1010000}
                 currentZoom={globalScatterZoomY}
                 onZoomChange={setGlobalScatterZoomY}

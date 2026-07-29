@@ -103,6 +103,11 @@ if (!chartCols.includes('version')) {
 db.exec(`UPDATE charts SET version = (SELECT songs.version FROM songs WHERE songs.id = charts.song_id) WHERE version = '' OR version IS NULL`);
 
 // Index charts version after column migration and backfill
-db.exec(`CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version)`);
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version);
+  CREATE INDEX IF NOT EXISTS idx_scores_player_chart_op ON scores(player_id, chart_id, op, score);
+  CREATE INDEX IF NOT EXISTS idx_charts_ver_diff_song ON charts(version, difficulty, song_id, id);
+  CREATE INDEX IF NOT EXISTS idx_scores_chart_player ON scores(chart_id, player_id);
+`);
 
 export default db;

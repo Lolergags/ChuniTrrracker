@@ -63,10 +63,16 @@ router.post('/players/import', async (req, res) => {
   }
 });
 
-// 1.5 Get All Players
+// 1. Get Players
 router.get('/players', (req, res) => {
   try {
-    const players = db.prepare(`SELECT username, last_synced_at FROM players ORDER BY username ASC`).all();
+    const players = db.prepare(`
+      SELECT p.id, p.username, p.kamaitachi_id, p.kamaitachi_rating, p.last_synced_at, COUNT(s.id) as score_count
+      FROM players p
+      LEFT JOIN scores s ON p.id = s.player_id
+      GROUP BY p.id
+      ORDER BY p.username ASC
+    `).all();
     res.json(players);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -77,6 +83,10 @@ router.get('/players', (req, res) => {
 router.get('/leaderboard', (req, res) => {
   const { page = 1, limit = 50, server = 'jp', version = 'X-VERSE-X' } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
+
+  const cacheKey = `leaderboard:${server}:${version}:${page}:${limit}`;
+  const cached = getLeaderboardCache(cacheKey);
+  if (cached) return res.json(cached);
 
   // Map server query to db column
   let serverCondition = '';
@@ -147,28 +157,52 @@ router.get('/leaderboard', (req, res) => {
   // Pre-calculate total MAS/ULT charts and Max OP for the target version set
   const masUltTotal = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') ${serverCondition} AND c.version IN (${placeholders}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)`).get(...includedVersions) as any).count;
 
-  // Determine possession for each top player
+  // Batch query possession statistics for ALL top players on current page in ONE SQL statement
+  const topPlayerIds = topPlayers.map(p => p.id);
+  const playerScoresMap = new Map<number, { sss: number; ss: number; sPlus: number; s: number }>();
+
+  if (topPlayerIds.length > 0 && masUltTotal > 0) {
+    const playerPlaceholders = topPlayerIds.map(() => '?').join(',');
+    const batchPossessionQuery = `
+      SELECT 
+        s.player_id,
+        SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss,
+        SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss,
+        SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as sPlus,
+        SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      JOIN songs ON c.song_id = songs.id
+      WHERE s.player_id IN (${playerPlaceholders}) 
+        AND c.difficulty IN ('MAS', 'ULT') 
+        AND c.version IN (${placeholders}) 
+        AND (c.song_id NOT IN (50, 81) AND c.id != 239116) 
+        ${serverCondition}
+      GROUP BY s.player_id
+    `;
+
+    const possessionRows = db.prepare(batchPossessionQuery).all(...topPlayerIds, ...includedVersions) as any[];
+    for (const r of possessionRows) {
+      playerScoresMap.set(r.player_id, {
+        sss: r.sss || 0,
+        ss: r.ss || 0,
+        sPlus: r.sPlus || 0,
+        s: r.s || 0
+      });
+    }
+  }
+
+  // Determine possession for each top player using the O(1) dictionary lookup
   const tiers = ['Silver', 'Gold', 'Platinum', 'Rainbow'];
   const result = topPlayers.map(player => {
     let possessionStr = 'None';
 
     if (masUltTotal > 0) {
-      const masUltScores = db.prepare(`
-        SELECT 
-          SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss,
-          SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss,
-          SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as sPlus,
-          SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s
-        FROM scores s
-        JOIN charts c ON s.chart_id = c.id
-        JOIN songs ON c.song_id = songs.id
-        WHERE s.player_id = ? AND c.difficulty IN ('MAS', 'ULT') AND c.version IN (${placeholders}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
-      `).get(player.id, ...includedVersions) as any;
-
-      const sssCount = masUltScores?.sss || 0;
-      const ssCount = masUltScores?.ss || 0;
-      const sPlusCount = masUltScores?.sPlus || 0;
-      const sCount = masUltScores?.s || 0;
+      const masUltScores = playerScoresMap.get(player.id) || { sss: 0, ss: 0, sPlus: 0, s: 0 };
+      const sssCount = masUltScores.sss;
+      const ssCount = masUltScores.ss;
+      const sPlusCount = masUltScores.sPlus;
+      const sCount = masUltScores.s;
 
       const opPercent = player.op_percent || 0;
 
@@ -189,13 +223,16 @@ router.get('/leaderboard', (req, res) => {
     };
   });
 
-  res.json({
+  const responsePayload = {
     data: result,
     total: totalPlayers,
     page,
     limit,
     totalPages: Math.ceil(totalPlayers / Number(limit))
-  });
+  };
+
+  setLeaderboardCache(cacheKey, responsePayload);
+  res.json(responsePayload);
 });
 
 // 3. Get Player Dashboard Data

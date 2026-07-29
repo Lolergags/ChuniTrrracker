@@ -239,6 +239,11 @@ router.get('/leaderboard', (req, res) => {
 // 3. Get Player Dashboard Data
 router.get('/players/:username', (req, res) => {
   const { username } = req.params;
+
+  const cacheKey = `dashboard:${username.toLowerCase()}:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const player = db.prepare(`SELECT id, last_synced_at FROM players WHERE username = ?`).get(username) as any;
   if (!player) return res.status(404).json({ error: 'Player not found' });
 
@@ -337,7 +342,7 @@ router.get('/players/:username', (req, res) => {
     return parseLevel(a.level) - parseLevel(b.level);
   });
 
-  res.json({
+  const responsePayload = {
     username,
     totalOp: Number(totalOp.toFixed(2)),
     totalPossibleOp: Number(totalPossibleOp.toFixed(2)),
@@ -350,13 +355,20 @@ router.get('/players/:username', (req, res) => {
     scoreCount: stats.scoreCount || 0,
     lastSynced: player.last_synced_at,
     levelStats: sortedLevelStats
-  });
+  };
+
+  setCache(cacheKey, responsePayload);
+  res.json(responsePayload);
 });
 
 // 4. Get Player Scores (Top 500 by OP)
 router.get('/players/:username/scores', (req, res) => {
   const { username } = req.params;
   const limit = parseInt(req.query.limit as string) || 500;
+
+  const cacheKey = `dashboard_scores:${username.toLowerCase()}:${limit}:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
   
   const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c');
   
@@ -372,21 +384,17 @@ router.get('/players/:username/scores', (req, res) => {
       s.lamp,
       s.op,
       s.time_achieved as timeAchieved,
-      COALESCE(cp.playCount, 1) as playCount
+      (SELECT COUNT(*) FROM scores s2 WHERE s2.chart_id = c.id) as playCount
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
-    LEFT JOIN (
-      SELECT chart_id, COUNT(*) as playCount
-      FROM scores
-      GROUP BY chart_id
-    ) cp ON cp.chart_id = c.id
     WHERE p.username = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?
   `).all(username, ...bindings, limit);
 
+  setCache(cacheKey, scores);
   res.json(scores);
 });
 

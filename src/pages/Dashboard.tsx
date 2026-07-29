@@ -62,22 +62,36 @@ export function Dashboard() {
   const [sortConfig, setSortConfig] = useState<{ key: keyof ApiProcessedScore | 'lampValue', direction: 'asc' | 'desc' } | null>({ key: 'op', direction: 'desc' });
   const itemsPerPage = 10;
 
+  const prevPlayerRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!activePlayer) return;
-    setIsLoading(true);
-    setError(null);
-    Promise.all([
-      api.getPlayer(activePlayer, filters),
-      api.getPlayerScores(activePlayer, 5000, filters)
-    ]).then(([playerStats, playerScores]) => {
-      setStats(playerStats);
-      setScores(playerScores);
-    }).catch(err => {
-      console.error(err);
-      setError(err.message || 'Failed to load player data');
-    }).finally(() => {
-      setIsLoading(false);
-    });
+    const isPlayerChange = prevPlayerRef.current !== activePlayer;
+    prevPlayerRef.current = activePlayer;
+    
+    const fetchFn = () => {
+      setIsLoading(true);
+      setError(null);
+      Promise.all([
+        api.getPlayer(activePlayer, filters),
+        api.getPlayerScores(activePlayer, 5000, filters)
+      ]).then(([playerStats, playerScores]) => {
+        setStats(playerStats);
+        setScores(playerScores);
+      }).catch(err => {
+        console.error(err);
+        setError(err.message || 'Failed to load player data');
+      }).finally(() => {
+        setIsLoading(false);
+      });
+    };
+
+    if (isPlayerChange) {
+      fetchFn();
+    } else {
+      const timer = setTimeout(fetchFn, 300);
+      return () => clearTimeout(timer);
+    }
   }, [activePlayer, filters]);
 
   useEffect(() => {
@@ -94,6 +108,13 @@ export function Dashboard() {
       }, new Map<number, ApiProcessedScore>()).values()
     );
   }, [scores]);
+
+  const scatterMinMaxC = useMemo(() => {
+    const constants = uniqueScores.map(s => s.constant);
+    const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+    const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+    return { minC, maxC };
+  }, [uniqueScores]);
 
   const sortedScores = useMemo(() => {
     let sortableItems = [...uniqueScores];
@@ -745,12 +766,12 @@ export function Dashboard() {
                     </ul>
                   );
                 }} />
-                <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
-                <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
-                <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
-                <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
-                <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
-                <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
+                <Bar isAnimationActive={false} dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -850,24 +871,17 @@ export function Dashboard() {
           </div>
         </div>
 
-        {(() => {
-          const constants = uniqueScores.map(s => s.constant);
-          const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
-          const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
-          return (
-            <ScatterScrollbar
-              orientation="horizontal"
-              min={minC}
-              max={maxC}
-              currentZoom={scatterZoomX}
-              onZoomChange={setScatterZoomX}
-              accentColor="var(--accent-primary)"
-              label="Level Constant"
-              paddingLeft={isMobile ? '65px' : '85px'}
-              paddingRight="30px"
-            />
-          );
-        })()}
+        <ScatterScrollbar
+          orientation="horizontal"
+          min={scatterMinMaxC.minC}
+          max={scatterMinMaxC.maxC}
+          currentZoom={scatterZoomX}
+          onZoomChange={setScatterZoomX}
+          accentColor="var(--accent-primary)"
+          label="Level Constant"
+          paddingLeft={isMobile ? '65px' : '85px'}
+          paddingRight="30px"
+        />
 
         {selectedDot && (
           <div style={{

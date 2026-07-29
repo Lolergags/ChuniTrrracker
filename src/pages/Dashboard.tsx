@@ -245,8 +245,8 @@ export function Dashboard() {
   const overlappingDots = useMemo(() => {
     if (!selectedDot) return [];
     return visibleDashboardScatterData.filter((d: any) =>
-      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
-      Math.abs(d.score - selectedDot.score) <= 250
+      Math.abs(d.constant - selectedDot.constant) <= 0.25 &&
+      Math.abs(d.score - selectedDot.score) <= 3500
     );
   }, [selectedDot, visibleDashboardScatterData]);
 
@@ -815,7 +815,7 @@ export function Dashboard() {
             accentColor="var(--accent-primary)"
             label="Score"
             marginTop="25px"
-            marginBottom="25px"
+            marginBottom="45px"
           />
 
           <div 

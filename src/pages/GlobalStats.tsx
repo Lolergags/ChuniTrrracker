@@ -174,8 +174,8 @@ export function GlobalStats() {
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
     return visibleScatterData.filter((d: any) =>
-      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
-      Math.abs((d.avgScore || d.score || 0) - (selectedDot.avgScore || selectedDot.score || 0)) <= 250
+      Math.abs(d.constant - selectedDot.constant) <= 0.25 &&
+      Math.abs((d.avgScore || d.score || 0) - (selectedDot.avgScore || selectedDot.score || 0)) <= 3500
     );
   }, [selectedDot, visibleScatterData]);
 
@@ -783,7 +783,7 @@ export function GlobalStats() {
                 accentColor="var(--accent-secondary)"
                 label="Score"
                 marginTop="25px"
-                marginBottom="25px"
+                marginBottom="45px"
               />
 
               <div 

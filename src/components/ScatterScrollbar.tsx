@@ -166,49 +166,61 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
+  const scrollbarRafRef = useRef<number | null>(null);
+
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const minStep = orientation === 'horizontal' ? 0.1 : 1000;
-    const { startPos, startMin, startMax, mode } = dragRef.current;
+    if (scrollbarRafRef.current !== null) return;
 
-    let deltaVal: number;
-    if (orientation === 'horizontal') {
-      const deltaX = e.clientX - startPos;
-      deltaVal = (deltaX / rect.width) * fullSpan;
-    } else {
-      const deltaY = startPos - e.clientY;
-      deltaVal = (deltaY / rect.height) * fullSpan;
-    }
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    if (mode === 'pan') {
-      let newMin = startMin + deltaVal;
-      let newMax = startMax + deltaVal;
+    scrollbarRafRef.current = requestAnimationFrame(() => {
+      scrollbarRafRef.current = null;
+      if (!containerRef.current) return;
 
-      if (newMin < min) {
-        newMin = min;
-        newMax = min + zoomSpan;
-      } else if (newMax > max) {
-        newMax = max;
-        newMin = max - zoomSpan;
+      const rect = containerRef.current.getBoundingClientRect();
+      const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+      const { startPos, startMin, startMax, mode } = dragRef.current;
+
+      let deltaVal: number;
+      if (orientation === 'horizontal') {
+        const deltaX = clientX - startPos;
+        deltaVal = (deltaX / rect.width) * fullSpan;
+      } else {
+        const deltaY = startPos - clientY;
+        deltaVal = (deltaY / rect.height) * fullSpan;
       }
-      onZoomChange([
-        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
-        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
-      ]);
-    } else if (mode === 'min') {
-      let newMin = Math.max(min, Math.min(startMax - minStep, startMin + deltaVal));
-      onZoomChange([
-        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
-        startMax
-      ]);
-    } else if (mode === 'max') {
-      let newMax = Math.min(max, Math.max(startMin + minStep, startMax + deltaVal));
-      onZoomChange([
-        startMin,
-        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
-      ]);
-    }
+
+      if (mode === 'pan') {
+        let newMin = startMin + deltaVal;
+        let newMax = startMax + deltaVal;
+
+        if (newMin < min) {
+          newMin = min;
+          newMax = min + zoomSpan;
+        } else if (newMax > max) {
+          newMax = max;
+          newMin = max - zoomSpan;
+        }
+        onZoomChange([
+          orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+          orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+        ]);
+      } else if (mode === 'min') {
+        let newMin = Math.max(min, Math.min(startMax - minStep, startMin + deltaVal));
+        onZoomChange([
+          orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+          startMax
+        ]);
+      } else if (mode === 'max') {
+        let newMax = Math.min(max, Math.max(startMin + minStep, startMax + deltaVal));
+        onZoomChange([
+          startMin,
+          orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+        ]);
+      }
+    });
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {

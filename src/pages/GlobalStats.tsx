@@ -118,6 +118,34 @@ export function GlobalStats() {
   const defaultYRef = useRef<[number, number]>(defaultYDomain);
   defaultYRef.current = defaultYDomain;
 
+  const validMetaData = useMemo(() => {
+    return metaData.filter((d: any) => d.avgScore >= 975000);
+  }, [metaData]);
+
+  const visibleScatterData = useMemo(() => {
+    if (!globalScatterZoomX && !globalScatterZoomY) {
+      return validMetaData;
+    }
+
+    const [minX, maxX] = globalScatterZoomX || defaultXDomain;
+    const [minY, maxY] = globalScatterZoomY || defaultYDomain;
+
+    const padX = (maxX - minX) * 0.15;
+    const padY = (maxY - minY) * 0.15;
+
+    const lowX = minX - padX;
+    const highX = maxX + padX;
+    const lowY = minY - padY;
+    const highY = maxY + padY;
+
+    return validMetaData.filter((d: any) => 
+      d.constant >= lowX && 
+      d.constant <= highX && 
+      d.avgScore >= lowY && 
+      d.avgScore <= highY
+    );
+  }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
+
   useEffect(() => {
     const elem = globalScatterContainerRef.current;
     if (!elem) return;
@@ -776,7 +804,8 @@ export function GlobalStats() {
                       <Tooltip content={<CustomTooltip />} />
                       <Scatter 
                         name="Charts" 
-                        data={metaData.filter((d: any) => d.avgScore >= 975000)} 
+                        data={visibleScatterData} 
+                        isAnimationActive={false}
                         fill="#ff66ff" 
                         fillOpacity={0.6} 
                         onClick={(node: any) => {
@@ -792,7 +821,7 @@ export function GlobalStats() {
             </div>
 
             {(() => {
-              const validMeta = metaData.filter((d: any) => d.avgScore >= 975000);
+              const validMeta = validMetaData;
               const constants = validMeta.map((d: any) => d.constant);
               const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
               const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;

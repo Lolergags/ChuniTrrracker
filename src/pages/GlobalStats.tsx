@@ -130,6 +130,16 @@ export function GlobalStats() {
       return { defX, defY, curX, curY };
     };
 
+    const updateZoomX = (val: [number, number] | null) => {
+      globalScatterZoomXRef.current = val;
+      setGlobalScatterZoomX(val);
+    };
+
+    const updateZoomY = (val: [number, number] | null) => {
+      globalScatterZoomYRef.current = val;
+      setGlobalScatterZoomY(val);
+    };
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { defX, defY, curX, curY } = getDomains();
@@ -161,15 +171,15 @@ export function GlobalStats() {
       const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
       if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-        setGlobalScatterZoomX(null);
+        updateZoomX(null);
       } else {
-        setGlobalScatterZoomX([newMinX, newMaxX]);
+        updateZoomX([newMinX, newMaxX]);
       }
 
       if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-        setGlobalScatterZoomY(null);
+        updateZoomY(null);
       } else {
-        setGlobalScatterZoomY([newMinY, newMaxY]);
+        updateZoomY([newMinY, newMaxY]);
       }
     };
 
@@ -206,15 +216,15 @@ export function GlobalStats() {
       const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
 
       if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-        setGlobalScatterZoomX(null);
+        updateZoomX(null);
       } else {
-        setGlobalScatterZoomX([newMinX, newMaxX]);
+        updateZoomX([newMinX, newMaxX]);
       }
 
       if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-        setGlobalScatterZoomY(null);
+        updateZoomY(null);
       } else {
-        setGlobalScatterZoomY([newMinY, newMaxY]);
+        updateZoomY([newMinY, newMaxY]);
       }
     };
 
@@ -243,7 +253,7 @@ export function GlobalStats() {
         panRef.current.startDomainX = curX;
         panRef.current.startDomainY = curY;
         setIsPanDragging(true);
-      } else if (e.touches.length === 2) {
+      } else if (e.touches.length >= 2) {
         e.preventDefault();
         panRef.current.isDragging = false;
         setIsPanDragging(false);
@@ -293,22 +303,22 @@ export function GlobalStats() {
         const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, dY, defY, false);
 
         if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-          setGlobalScatterZoomX(null);
+          updateZoomX(null);
         } else {
-          setGlobalScatterZoomX([newMinX, newMaxX]);
+          updateZoomX([newMinX, newMaxX]);
         }
 
         if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-          setGlobalScatterZoomY(null);
+          updateZoomY(null);
         } else {
-          setGlobalScatterZoomY([newMinY, newMaxY]);
+          updateZoomY([newMinY, newMaxY]);
         }
-      } else if (e.touches.length === 2) {
+      } else if (e.touches.length >= 2) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        if (currentDist < 15) return;
+        if (currentDist < 5) return;
 
         const lastDist = panRef.current.lastTouchDist || currentDist;
         panRef.current.lastTouchDist = currentDist;

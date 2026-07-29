@@ -85,14 +85,17 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     const rect = containerRef.current.getBoundingClientRect();
     let mode: 'pan' | 'min' | 'max' = 'pan';
 
+    // 24px hit-test radius for comfortable mobile touch grabbing
+    const hitRadius = 24;
+
     if (orientation === 'horizontal') {
       const leftPx = ((curMin - min) / fullSpan) * rect.width;
       const rightPx = ((curMax - min) / fullSpan) * rect.width;
       const clickX = e.clientX - rect.left;
 
-      if (Math.abs(clickX - leftPx) <= 14) {
+      if (Math.abs(clickX - leftPx) <= hitRadius) {
         mode = 'min';
-      } else if (Math.abs(clickX - rightPx) <= 14) {
+      } else if (Math.abs(clickX - rightPx) <= hitRadius) {
         mode = 'max';
       } else if (clickX >= leftPx && clickX <= rightPx && isZoomed) {
         mode = 'pan';
@@ -122,9 +125,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       const topPx = ((curMax - min) / fullSpan) * rect.height;
       const clickYFromBottom = rect.bottom - e.clientY;
 
-      if (Math.abs(clickYFromBottom - bottomPx) <= 14) {
+      if (Math.abs(clickYFromBottom - bottomPx) <= hitRadius) {
         mode = 'min';
-      } else if (Math.abs(clickYFromBottom - topPx) <= 14) {
+      } else if (Math.abs(clickYFromBottom - topPx) <= hitRadius) {
         mode = 'max';
       } else if (clickYFromBottom >= bottomPx && clickYFromBottom <= topPx && isZoomed) {
         mode = 'pan';
@@ -325,7 +328,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           </div>
         )}
 
-        {/* Slim 14px Vertical Track Bar */}
+        {/* Slim 18px Vertical Track Bar */}
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
           <div
             ref={containerRef}
@@ -335,10 +338,10 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             onPointerCancel={handlePointerUp}
             style={{
               position: 'relative',
-              width: '14px',
+              width: '18px',
               flex: 1,
               background: 'rgba(0, 0, 0, 0.4)',
-              borderRadius: '7px',
+              borderRadius: '9px',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               cursor: isDragging ? 'grabbing' : 'pointer',
               touchAction: 'none',
@@ -386,7 +389,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     );
   }
 
-  // Ultra-Compact Horizontal Orientation (14px Track Height with Floating Popover)
+  // Ultra-Compact Horizontal Orientation (18px Track Height with Floating Popover)
   const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
   const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
@@ -500,9 +503,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         onPointerCancel={handlePointerUp}
         style={{
           position: 'relative',
-          height: '14px',
+          height: '18px',
           background: 'rgba(0, 0, 0, 0.4)',
-          borderRadius: '7px',
+          borderRadius: '9px',
           border: '1px solid rgba(255, 255, 255, 0.12)',
           cursor: isDragging ? 'grabbing' : 'pointer',
           touchAction: 'none',

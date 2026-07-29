@@ -243,8 +243,8 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
   };
 
   if (orientation === 'vertical') {
-    const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
-    const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
+    const heightPercent = Math.max(4, Math.min(100, (zoomSpan / fullSpan) * 100));
+    const bottomPercent = Math.max(0, Math.min(100 - heightPercent, ((curMin - min) / fullSpan) * 100));
 
     return (
       <div style={{
@@ -419,8 +419,8 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
   }
 
   // Ultra-Compact Horizontal Orientation (18px Track Height with Floating Popover)
-  const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
-  const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
+  const widthPercent = Math.max(4, Math.min(100, (zoomSpan / fullSpan) * 100));
+  const leftPercent = Math.max(0, Math.min(100 - widthPercent, ((curMin - min) / fullSpan) * 100));
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (

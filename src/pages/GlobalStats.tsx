@@ -735,7 +735,7 @@ export function GlobalStats() {
               <div 
                 ref={globalScatterContainerRef}
                 className="scrollable-content-wrapper" 
-                style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+                style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
               >
                 <div className="chart-min-width-md" style={{ height: '430px' }}>
                   <ResponsiveContainer width="100%" height="100%">

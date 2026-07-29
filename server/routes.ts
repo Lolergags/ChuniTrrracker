@@ -425,7 +425,11 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
-  const playerQuery = (req.query.player as string) || (req.query.username as string);
+  const playerQuery = (req.query.player as string) || (req.query.username as string) || '';
+
+  const cacheKey = `song_lb:${songId}:${difficulty}:${page}:${limit}:${playerQuery.toLowerCase()}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
 
   // Fetch all scores for calculating accurate distributions and player rank
   const allScoresQuery = db.prepare(`
@@ -510,7 +514,7 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     count: b.count
   }));
 
-  res.json({
+  const responsePayload = {
     data: leaderboard,
     total: allScoresQuery.length,
     page,
@@ -520,7 +524,10 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
     normalDistribution,
     userRank,
     userPage
-  });
+  };
+
+  setCache(cacheKey, responsePayload);
+  res.json(responsePayload);
 });
 
 // 5. Get Aggregate Performance Heatmap Data

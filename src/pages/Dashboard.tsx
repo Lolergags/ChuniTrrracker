@@ -1018,6 +1018,7 @@ export function Dashboard() {
               Page 
               <input 
                 type="number" 
+                tabIndex={-1}
                 value={page || ''} 
                 onChange={(e) => {
                   const val = parseInt(e.target.value);

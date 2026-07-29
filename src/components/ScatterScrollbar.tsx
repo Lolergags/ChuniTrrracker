@@ -64,6 +64,8 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
   };
 
   const handleApplyInputs = () => {
+    const currentScrollY = window.scrollY;
+
     const [finalMin, finalMax] = sanitizeRangeInputs(
       inputMin,
       inputMax,
@@ -86,6 +88,14 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
     onZoomChange([finalMin, finalMax]);
     setInputMin(finalMin.toString());
     setInputMax(finalMax.toString());
+
+    // 4. Restore scroll position on mobile after keyboard dismiss & input blur
+    requestAnimationFrame(() => {
+      window.scrollTo(0, currentScrollY);
+    });
+    setTimeout(() => {
+      window.scrollTo(0, currentScrollY);
+    }, 50);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {

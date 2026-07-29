@@ -76,6 +76,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id);
   CREATE INDEX IF NOT EXISTS idx_scores_chart ON scores(chart_id);
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
+  CREATE INDEX IF NOT EXISTS idx_scores_player_op ON scores(player_id, op DESC);
 `);
 
 // Explicit schema migrations using PRAGMA table_info

@@ -5,7 +5,7 @@ import multer from 'multer';
 import { default as db, DB_PATH } from './db.js';
 import { syncPlayer } from './sync.js';
 import { getChartFilterConditions, AOMN_REMOVE_SONG_IDS } from './utils/filters.js';
-import { getCache, setCache, getLeaderboardCache, setLeaderboardCache } from './utils/cache.js';
+import { getCache, setCache, getLeaderboardCache, setLeaderboardCache, getTotalMaxOp, setTotalMaxOp, normalizeQueryCacheKey } from './utils/cache.js';
 import { exec } from 'node:child_process';
 const upload = multer({ dest: path.join(process.cwd(), 'data', 'temp') });
 
@@ -85,10 +85,6 @@ router.get('/leaderboard', (req, res) => {
   const { page = 1, limit = 50, server = 'jp', version = 'X-VERSE-X' } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
-  const cacheKey = `leaderboard:${server}:${version}:${page}:${limit}`;
-  const cached = getLeaderboardCache(cacheKey);
-  if (cached) return res.json(cached);
-
   // Map server query to db column
   let serverCondition = '';
   const sUpper = (server as string).toUpperCase();
@@ -96,6 +92,10 @@ router.get('/leaderboard', (req, res) => {
   else if (sUpper === 'INTL' || sUpper === 'INT') serverCondition = 'AND songs.is_intl_active = 1';
   else if (sUpper === 'PL_OFFLINE' || sUpper === 'PARADISE_LOST_OFFLINE' || sUpper === 'PARADISE') serverCondition = "AND songs.is_pl_offline_active = 1 AND c.difficulty != 'ULT'";
   else if (sUpper === 'OMNI') serverCondition = `AND songs.id NOT IN (${AOMN_REMOVE_SONG_IDS.join(',')})`;
+
+  const cacheKey = `leaderboard:${sUpper}:${version}:${page}:${limit}`;
+  const cached = getLeaderboardCache(cacheKey);
+  if (cached) return res.json(cached);
   
   const VERSION_ORDER = [
     'CHUNITHM', 'CHUNITHM PLUS', 'AIR', 'AIR PLUS', 'STAR', 'STAR PLUS',
@@ -120,16 +120,21 @@ router.get('/leaderboard', (req, res) => {
   versionParams.push(...includedVersions);
 
   // Determine total max OP for denominator (raw total ratio per reference notebook)
-  const totalMaxOp = (db.prepare(`
-    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
-      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
-      FROM charts c
-      JOIN songs ON c.song_id = songs.id
-      WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
-      ${versionFilter}
-      GROUP BY c.song_id
-    )
-  `).get(...versionParams) as any).total_max_op || 1;
+  const opCacheKey = `totalMaxOp:${sUpper}:${includedVersions.join(',')}`;
+  let totalMaxOp = getTotalMaxOp(opCacheKey);
+  if (totalMaxOp === null) {
+    totalMaxOp = (db.prepare(`
+      SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+        SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+        FROM charts c
+        JOIN songs ON c.song_id = songs.id
+        WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition}
+        ${versionFilter}
+        GROUP BY c.song_id
+      )
+    `).get(...versionParams) as any).total_max_op || 1;
+    setTotalMaxOp(opCacheKey, totalMaxOp!);
+  }
 
   const playersQuery = `
     SELECT p.id, p.username, 
@@ -257,15 +262,20 @@ router.get('/players/:username', (req, res) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get total max OP for the selected filters (raw total ratio per reference notebook)
-  const totalMaxOp = (db.prepare(`
-    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
-      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
-      FROM charts c
-      JOIN songs ON c.song_id = songs.id
-      ${whereClause}
-      GROUP BY c.song_id
-    )
-  `).get(...bindings) as any).total_max_op;
+  const opCacheKey = normalizeQueryCacheKey('totalMaxOp', req.query);
+  let totalMaxOp = getTotalMaxOp(opCacheKey);
+  if (totalMaxOp === null) {
+    totalMaxOp = (db.prepare(`
+      SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+        SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+        FROM charts c
+        JOIN songs ON c.song_id = songs.id
+        ${whereClause}
+        GROUP BY c.song_id
+      )
+    `).get(...bindings) as any).total_max_op;
+    setTotalMaxOp(opCacheKey, totalMaxOp!);
+  }
 
   // Get MAX OP per song to sum
   const opData = (db.prepare(`
@@ -383,6 +393,7 @@ router.get('/players/:username/scores', (req, res) => {
       so.id as songId,
       so.title as songTitle,
       so.artist,
+      c.id as chartId,
       c.difficulty,
       c.constant,
       c.level,
@@ -390,8 +401,7 @@ router.get('/players/:username/scores', (req, res) => {
       s.lamp,
       s.op,
       ROUND((CAST(s.op AS REAL) / (((c.constant * 5000 + 15000) / 5) * 5)) * 100, 2) as opPercent,
-      s.time_achieved as timeAchieved,
-      (SELECT COUNT(*) FROM scores s2 WHERE s2.chart_id = c.id) as playCount
+      s.time_achieved as timeAchieved
     FROM scores s
     JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
@@ -399,7 +409,27 @@ router.get('/players/:username/scores', (req, res) => {
     WHERE p.username = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?
-  `).all(username, ...bindings, limit);
+  `).all(username, ...bindings, limit) as any[];
+
+  if (scores.length > 0) {
+    const chartIds = [...new Set(scores.map(s => s.chartId))];
+    const placeholders = chartIds.map(() => '?').join(',');
+    const counts = db.prepare(`
+      SELECT chart_id, COUNT(*) as playCount
+      FROM scores
+      WHERE chart_id IN (${placeholders})
+      GROUP BY chart_id
+    `).all(...chartIds) as { chart_id: number, playCount: number }[];
+    
+    const countMap = new Map();
+    for (const row of counts) {
+      countMap.set(row.chart_id, row.playCount);
+    }
+    
+    for (const score of scores) {
+      score.playCount = countMap.get(score.chartId) || 0;
+    }
+  }
 
   setCache(cacheKey, scores);
   res.json(scores);
@@ -547,7 +577,7 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
 // 5. Get Aggregate Performance Heatmap Data
 router.get('/performance/heatmap', (req, res) => {
-  const cacheKey = `perf_heatmap:${JSON.stringify(req.query)}`;
+  const cacheKey = normalizeQueryCacheKey('perf_heatmap', req.query);
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
@@ -585,7 +615,7 @@ router.get('/performance/heatmap', (req, res) => {
 
 // 6. Get Aggregate Global Chart Meta (Popularity vs Average Score)
 router.get('/performance/meta', (req, res) => {
-  const cacheKey = `perf_meta:${JSON.stringify(req.query)}`;
+  const cacheKey = normalizeQueryCacheKey('perf_meta', req.query);
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
@@ -617,7 +647,7 @@ router.get('/performance/meta', (req, res) => {
 
 // 7. Get Global Server Lamp Distribution by Constant
 router.get('/performance/lamps', (req, res) => {
-  const cacheKey = `perf_lamps:${JSON.stringify(req.query)}`;
+  const cacheKey = normalizeQueryCacheKey('perf_lamps', req.query);
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
@@ -652,7 +682,7 @@ router.get('/performance/lamps', (req, res) => {
 
 // 8. Get Average OP Yield by Constant
 router.get('/performance/op', (req, res) => {
-  const cacheKey = `perf_op:${JSON.stringify(req.query)}`;
+  const cacheKey = normalizeQueryCacheKey('perf_op', req.query);
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
@@ -684,7 +714,7 @@ router.get('/performance/op', (req, res) => {
 
 // 9. Get Player OP Percent Distribution
 router.get('/performance/players', (req, res) => {
-  const cacheKey = `perf_players:${JSON.stringify(req.query)}`;
+  const cacheKey = normalizeQueryCacheKey('perf_players', req.query);
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
@@ -700,15 +730,20 @@ router.get('/performance/players', (req, res) => {
     pWhere = `WHERE ${pConds.join(' AND ')}`;
   }
 
-  const totalMaxOp = (db.prepare(`
-    SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
-      SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
-      FROM charts c
-      JOIN songs ON c.song_id = songs.id
-      ${chartWhereClause}
-      GROUP BY c.song_id
-    )
-  `).get(...bindings) as any).total_max_op || 1;
+  const opCacheKey = normalizeQueryCacheKey('totalMaxOp', req.query);
+  let totalMaxOp = getTotalMaxOp(opCacheKey);
+  if (totalMaxOp === null) {
+    totalMaxOp = (db.prepare(`
+      SELECT IFNULL(SUM(song_max_op), 0) as total_max_op FROM (
+        SELECT ((MAX(c.constant) * 5000 + 15000) / 5) * 5 as song_max_op
+        FROM charts c
+        JOIN songs ON c.song_id = songs.id
+        ${chartWhereClause}
+        GROUP BY c.song_id
+      )
+    `).get(...bindings) as any).total_max_op || 1;
+    setTotalMaxOp(opCacheKey, totalMaxOp!);
+  }
 
   const rawData = db.prepare(`
     SELECT 

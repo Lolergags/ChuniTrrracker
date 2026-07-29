@@ -1,7 +1,7 @@
 import db from './db.js';
 import { calculateOp } from '../src/lib/calc/overpower.js';
 import type { LampType } from '../src/lib/types/index.js';
-import { clearLeaderboardCache } from './utils/cache.js';
+import { clearAllCaches } from './utils/cache.js';
 
 // Map Kamaitachi lamps to internal lamps
 // Kamaitachi NONE = CLEAR, since it just means cleared without special lamps
@@ -396,7 +396,7 @@ export async function syncPlayer(username: string, apiKey?: string) {
   });
 
   transaction(bestScores.values());
-  clearLeaderboardCache();
+  clearAllCaches();
   console.log(`Synced ${scoreCount} scores for ${username}`);
   return { scoreCount };
 }

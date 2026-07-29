@@ -12,6 +12,21 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
+const CustomTooltip = React.memo(({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title}</p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant.toFixed(1)}</span></p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore).toLocaleString()}</span></p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
+      </div>
+    );
+  }
+  return null;
+});
+
 export function GlobalStats() {
   const { filters } = useGlobal();
   const [heatmapData, setHeatmapData] = useState<ApiHeatmapData[]>([]);
@@ -33,30 +48,33 @@ export function GlobalStats() {
   const globalScatterClipX = 20 + globalScatterYWidth;
 
   useEffect(() => {
-    setIsLoadingGlobal(true);
-    // Fetch global data
-    const apiFilters = { 
-      ...filters, 
-      ratingMin: filters.ratingMin || '0', 
-      ratingMax: filters.ratingMax || '22.0' 
-    };
-    Promise.all([
-      api.getHeatmap(apiFilters),
-      api.getChartMeta(apiFilters),
-      api.getLampDistribution(apiFilters),
-      api.getOpYield(apiFilters),
-      api.getPlayerOpDistribution(apiFilters)
-    ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
-      setHeatmapData(heatmap);
-      setMetaData(meta);
-      setLampData(lamps);
-      setOpYieldData(opYield);
-      setPlayerOpData(playerOp);
-      setIsLoadingGlobal(false);
-    }).catch(err => {
-      console.error(err);
-      setIsLoadingGlobal(false);
-    });
+    const timer = setTimeout(() => {
+      setIsLoadingGlobal(true);
+      // Fetch global data
+      const apiFilters = { 
+        ...filters, 
+        ratingMin: filters.ratingMin || '0', 
+        ratingMax: filters.ratingMax || '22.0' 
+      };
+      Promise.all([
+        api.getHeatmap(apiFilters),
+        api.getChartMeta(apiFilters),
+        api.getLampDistribution(apiFilters),
+        api.getOpYield(apiFilters),
+        api.getPlayerOpDistribution(apiFilters)
+      ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
+        setHeatmapData(heatmap);
+        setMetaData(meta);
+        setLampData(lamps);
+        setOpYieldData(opYield);
+        setPlayerOpData(playerOp);
+        setIsLoadingGlobal(false);
+      }).catch(err => {
+        console.error(err);
+        setIsLoadingGlobal(false);
+      });
+    }, 300);
+    return () => clearTimeout(timer);
   }, [filters]);
 
   const panRef = useRef<{
@@ -121,6 +139,13 @@ export function GlobalStats() {
   const validMetaData = useMemo(() => {
     return metaData.filter((d: any) => d.avgScore >= 975000);
   }, [metaData]);
+
+  const scatterMinMaxC = useMemo(() => {
+    const constants = validMetaData.map((d: any) => d.constant);
+    const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+    const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+    return { minC, maxC };
+  }, [validMetaData]);
 
   const visibleScatterData = useMemo(() => {
     if (!globalScatterZoomX && !globalScatterZoomY) {
@@ -507,20 +532,6 @@ export function GlobalStats() {
     }));
   }, [playerOpData]);
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-          <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title}</p>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant.toFixed(1)}</span></p>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore).toLocaleString()}</span></p>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="container animate-fade-in" style={{ padding: '2rem 0' }}>
@@ -637,8 +648,8 @@ export function GlobalStats() {
                       formatter={(val: any) => [val.toFixed(1) + '%']}
                     />
                     <Legend />
-                    <Line type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
-                    <Line type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
+                    <Line isAnimationActive={false} type="monotone" dataKey="ajRate" stroke="var(--rank-aj)" strokeWidth={3} name="All Justice Rate" dot={{ r: 3, fill: 'var(--rank-aj)' }} />
+                    <Line isAnimationActive={false} type="monotone" dataKey="fcRate" stroke="var(--rank-fc)" strokeWidth={3} name="Full Combo Rate" dot={{ r: 3, fill: 'var(--rank-fc)' }} />
                     <Brush dataKey="constant" height={25} stroke="var(--accent-primary)" fill="rgba(0,0,0,0.4)" tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -674,11 +685,11 @@ export function GlobalStats() {
                         </ul>
                       );
                     }} />
-                    <Bar dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
-                    <Bar dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
-                    <Bar dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
-                    <Bar dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
-                    <Bar dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="ajc" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="aj" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="fc" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="clear" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="failed" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -703,7 +714,7 @@ export function GlobalStats() {
                       itemStyle={{ color: 'var(--text-primary)' }}
                       formatter={(val: any) => [val.toFixed(2) + '%', "Average OP Yield"]}
                     />
-                    <Bar dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="avgOp" fill="var(--accent-secondary)" name="Average OP" radius={[4, 4, 0, 0]} activeBar={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -727,7 +738,7 @@ export function GlobalStats() {
                       contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}
                       itemStyle={{ color: 'var(--text-primary)' }}
                     />
-                    <Bar dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
+                    <Bar isAnimationActive={false} dataKey="count" fill="var(--accent-primary)" name="Players" radius={[4, 4, 0, 0]} activeBar={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -827,25 +838,17 @@ export function GlobalStats() {
               </div>
             </div>
 
-            {(() => {
-              const validMeta = validMetaData;
-              const constants = validMeta.map((d: any) => d.constant);
-              const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
-              const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
-              return (
-                <ScatterScrollbar
-                  orientation="horizontal"
-                  min={minC}
-                  max={maxC}
-                  currentZoom={globalScatterZoomX}
-                  onZoomChange={setGlobalScatterZoomX}
-                  accentColor="var(--accent-secondary)"
-                  label="Level Constant"
-                  paddingLeft={isMobile ? '65px' : '85px'}
-                  paddingRight="30px"
-                />
-              );
-            })()}
+            <ScatterScrollbar
+              orientation="horizontal"
+              min={scatterMinMaxC.minC}
+              max={scatterMinMaxC.maxC}
+              currentZoom={globalScatterZoomX}
+              onZoomChange={setGlobalScatterZoomX}
+              accentColor="var(--accent-secondary)"
+              label="Level Constant"
+              paddingLeft={isMobile ? '65px' : '85px'}
+              paddingRight="30px"
+            />
 
             {selectedDot && (
               <div style={{

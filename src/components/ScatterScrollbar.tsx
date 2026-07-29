@@ -16,7 +16,7 @@ interface ScatterScrollbarProps {
   marginBottom?: string | number;
 }
 
-export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
+export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
   min,
   max,
   currentZoom,
@@ -569,4 +569,4 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       </div>
     </div>
   );
-};
+});

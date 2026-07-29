@@ -1,17 +1,19 @@
-export const LampTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const order = ['AJC', 'AJ', 'FC', 'CLEAR', 'FAILED'];
-    const names: Record<string, string> = {
-      'AJC': 'All Justice Critical',
-      'AJ': 'All Justice',
-      'FC': 'Full Combo',
-      'CLEAR': 'Clear',
-      'FAILED': 'Failed'
-    };
+import React from 'react';
 
+const LAMP_ORDER = ['AJC', 'AJ', 'FC', 'CLEAR', 'FAILED'];
+const LAMP_NAMES: Record<string, string> = {
+  'AJC': 'All Justice Critical',
+  'AJ': 'All Justice',
+  'FC': 'Full Combo',
+  'CLEAR': 'Clear',
+  'FAILED': 'Failed'
+};
+
+export const LampTooltip = React.memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
     const validItems = payload
       .filter((p: any) => p.dataKey?.toUpperCase() !== 'UNPLAYED' && p.value > 0)
-      .sort((a: any, b: any) => order.indexOf(a.dataKey?.toUpperCase()) - order.indexOf(b.dataKey?.toUpperCase()));
+      .sort((a: any, b: any) => LAMP_ORDER.indexOf(a.dataKey?.toUpperCase()) - LAMP_ORDER.indexOf(b.dataKey?.toUpperCase()));
 
     if (validItems.length === 0) return null;
 
@@ -30,7 +32,7 @@ export const LampTooltip = ({ active, payload, label }: any) => {
           return (
             <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
               <span style={{ width: 12, height: 12, backgroundColor: entry.color, display: 'inline-block', marginRight: 8, borderRadius: '2px' }}></span>
-              <span style={{ flex: 1, marginRight: '12px' }}>{names[keyUpper] || entry.name}</span>
+              <span style={{ flex: 1, marginRight: '12px' }}>{LAMP_NAMES[keyUpper] || entry.name}</span>
               <span style={{ fontWeight: 'bold' }}>{entry.value}</span>
             </div>
           );
@@ -40,9 +42,9 @@ export const LampTooltip = ({ active, payload, label }: any) => {
   }
 
   return null;
-};
+});
 
-export const ScatterTooltip = ({ active, payload }: any) => {
+export const ScatterTooltip = React.memo(({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -82,4 +84,4 @@ export const ScatterTooltip = ({ active, payload }: any) => {
     );
   }
   return null;
-};
+});

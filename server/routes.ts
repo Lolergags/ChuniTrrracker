@@ -136,7 +136,7 @@ router.get('/leaderboard', (req, res) => {
            IFNULL(SUM(max_scores.max_op), 0) as total_op,
            IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as op_percent
     FROM players p
-    LEFT JOIN (
+    JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
@@ -144,7 +144,7 @@ router.get('/leaderboard', (req, res) => {
       WHERE c.difficulty != 'WE' AND (c.song_id NOT IN (50, 81) AND c.id != 239116) ${serverCondition} ${versionFilter}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
-    GROUP BY p.id
+    GROUP BY p.id, p.username
     HAVING total_op > 0
     ORDER BY total_op DESC
     LIMIT ? OFFSET ?
@@ -153,7 +153,13 @@ router.get('/leaderboard', (req, res) => {
   const queryParams = [totalMaxOp, ...versionParams, Number(limit), Number(offset)];
   const topPlayers = db.prepare(playersQuery).all(...queryParams) as any[];
 
-  const totalPlayers = (db.prepare(`SELECT COUNT(DISTINCT s.player_id) as count FROM scores s JOIN charts c ON s.chart_id = c.id JOIN songs ON c.song_id = songs.id WHERE 1=1 ${serverCondition} ${versionFilter}`).get(...versionParams) as any).count;
+  // Fast count computation for totalPlayers
+  let totalPlayers = 0;
+  if (offset === 0 && topPlayers.length < Number(limit)) {
+    totalPlayers = topPlayers.length;
+  } else {
+    totalPlayers = (db.prepare(`SELECT COUNT(*) as count FROM players`).get() as any).count || topPlayers.length;
+  }
 
   // Pre-calculate total MAS/ULT charts and Max OP for the target version set
   const masUltTotal = (db.prepare(`SELECT COUNT(*) as count FROM charts c JOIN songs ON c.song_id = songs.id WHERE c.difficulty IN ('MAS', 'ULT') ${serverCondition} AND c.version IN (${placeholders}) AND (c.song_id NOT IN (50, 81) AND c.id != 239116)`).get(...includedVersions) as any).count;

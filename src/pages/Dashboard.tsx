@@ -181,6 +181,43 @@ export function Dashboard() {
   const defaultYRef = useRef<[number, number]>(defaultYDomain);
   defaultYRef.current = defaultYDomain;
 
+  const mappedScatterScores = useMemo(() => {
+    return uniqueScores.map(s => ({
+      name: s.songTitle,
+      score: s.score,
+      constant: s.constant,
+      opDisplay: Number((s.op / 10000).toFixed(2)),
+      playCount: s.playCount || 1,
+      lamp: s.lamp,
+      songId: s.songId,
+      difficulty: s.difficulty
+    }));
+  }, [uniqueScores]);
+
+  const visibleDashboardScatterData = useMemo(() => {
+    if (!scatterZoomX && !scatterZoomY) {
+      return mappedScatterScores;
+    }
+
+    const [minX, maxX] = scatterZoomX || defaultXDomain;
+    const [minY, maxY] = scatterZoomY || defaultYDomain;
+
+    const padX = (maxX - minX) * 0.15;
+    const padY = (maxY - minY) * 0.15;
+
+    const lowX = minX - padX;
+    const highX = maxX + padX;
+    const lowY = minY - padY;
+    const highY = maxY + padY;
+
+    return mappedScatterScores.filter((s: any) =>
+      s.constant >= lowX &&
+      s.constant <= highX &&
+      s.score >= lowY &&
+      s.score <= highY
+    );
+  }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+
   useEffect(() => {
     const elem = scatterContainerRef.current;
     if (!elem) return;
@@ -794,16 +831,8 @@ export function Dashboard() {
                   <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                   <Scatter 
                     name="Scores" 
-                    data={uniqueScores.map(s => ({
-                      name: s.songTitle,
-                      score: s.score,
-                      constant: s.constant,
-                      opDisplay: Number((s.op / 10000).toFixed(2)),
-                      playCount: s.playCount || 1,
-                      lamp: s.lamp,
-                      songId: s.songId,
-                      difficulty: s.difficulty
-                    }))} 
+                    data={visibleDashboardScatterData} 
+                    isAnimationActive={false}
                     fill="var(--accent-primary)" 
                     fillOpacity={0.6}
                     onClick={(node: any) => {

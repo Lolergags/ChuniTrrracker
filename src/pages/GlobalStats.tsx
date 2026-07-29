@@ -173,11 +173,34 @@ export function GlobalStats() {
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
-    return visibleScatterData.filter((d: any) =>
-      Math.abs(d.constant - selectedDot.constant) <= 0.25 &&
-      Math.abs((d.avgScore || d.score || 0) - (selectedDot.avgScore || selectedDot.score || 0)) <= 3500
-    );
-  }, [selectedDot, visibleScatterData]);
+    const selScore = selectedDot.avgScore || selectedDot.score || 0;
+    return validMetaData.filter((d: any) => {
+      const dScore = d.avgScore || d.score || 0;
+      return (
+        Math.abs(d.constant - selectedDot.constant) <= 0.5 &&
+        Math.abs(dScore - selScore) <= 5000
+      );
+    });
+  }, [selectedDot, validMetaData]);
+
+  const currentGlobalDotIndex = useMemo(() => {
+    if (!selectedDot || !overlappingGlobalDots.length) return 0;
+    const selSongId = selectedDot.songId || selectedDot.song_id;
+    const selChartId = selectedDot.chartId || selectedDot.id;
+    const selScore = selectedDot.avgScore || selectedDot.score || 0;
+
+    const idx = overlappingGlobalDots.findIndex((d: any) => {
+      const dSongId = d.songId || d.song_id;
+      const dChartId = d.chartId || d.id;
+      const dScore = d.avgScore || d.score || 0;
+
+      if (dChartId && selChartId && dChartId === selChartId) return true;
+      if (dSongId && selSongId && dSongId === selSongId && d.difficulty && selectedDot.difficulty && d.difficulty === selectedDot.difficulty) return true;
+      return (d.title || d.name) === (selectedDot.title || selectedDot.name) && Math.abs(d.constant - selectedDot.constant) < 0.01 && Math.abs(dScore - selScore) < 5;
+    });
+
+    return idx >= 0 ? idx : 0;
+  }, [selectedDot, overlappingGlobalDots]);
 
   useEffect(() => {
     const elem = globalScatterContainerRef.current;
@@ -882,9 +905,8 @@ export function GlobalStats() {
                   {overlappingGlobalDots.length > 1 && (
                     <button
                       onClick={() => {
-                        const currentIndex = overlappingGlobalDots.findIndex((d: any) => d.song_id === selectedDot.song_id && d.difficulty === selectedDot.difficulty);
-                        const nextDot = overlappingGlobalDots[(currentIndex + 1) % overlappingGlobalDots.length];
-                        setSelectedDot(nextDot);
+                        const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;
+                        setSelectedDot(overlappingGlobalDots[nextIndex]);
                       }}
                       style={{
                         background: 'rgba(255, 255, 255, 0.1)',
@@ -898,7 +920,7 @@ export function GlobalStats() {
                       }}
                       title="Click to cycle between overlapping chart dots"
                     >
-                      Cycle Overlapping ({overlappingGlobalDots.findIndex((d: any) => d.song_id === selectedDot.song_id && d.difficulty === selectedDot.difficulty) + 1}/{overlappingGlobalDots.length}) ➔
+                      Cycle Overlapping ({currentGlobalDotIndex + 1}/{overlappingGlobalDots.length}) ➔
                     </button>
                   )}
                   {selectedDot.difficulty && (

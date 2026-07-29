@@ -74,24 +74,18 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       curMax
     );
 
-    const savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-
-    // Explicitly blur active input element before closing popover
+    // 1. Explicitly blur active input element before closing popover
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
+    // 2. Hide popover state without destroying DOM nodes
+    setIsEditing(false);
+
+    // 3. Update zoom domain callback
     onZoomChange([finalMin, finalMax]);
     setInputMin(finalMin.toString());
     setInputMax(finalMax.toString());
-    setIsEditing(false);
-
-    // Multi-stage scroll lock to counter mobile virtual keyboard slide-down animation
-    [0, 50, 150, 300, 450].forEach((delay) => {
-      setTimeout(() => {
-        window.scrollTo(0, savedScrollY);
-      }, delay);
-    });
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -282,65 +276,64 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           )}
         </div>
 
-        {/* Absolute Floating Popover Editor for Vertical Mode */}
-        {isEditing && (
-          <div 
-            onTouchStart={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                handleApplyInputs();
-              }
-            }}
-            style={{
-              position: 'absolute',
-              left: '26px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 100,
-              background: 'var(--bg-glass)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid var(--accent-primary)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
-              padding: '0.6rem 0.75rem',
-              borderRadius: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.4rem',
-              width: '120px'
-            }}
-          >
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Score Range</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Score:</label>
-              <input
-                type="number"
-                step="1000"
-                value={inputMax}
-                onChange={(e) => setInputMax(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
-              />
-              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Min Score:</label>
-              <input
-                type="number"
-                step="1000"
-                value={inputMin}
-                onChange={(e) => setInputMin(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
-              />
-            </div>
+        {/* Absolute Floating Popover Editor for Vertical Mode (Kept in DOM to prevent mobile unmount scroll jump) */}
+        <div 
+          onTouchStart={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              handleApplyInputs();
+            }
+          }}
+          style={{
+            display: isEditing ? 'flex' : 'none',
+            visibility: isEditing ? 'visible' : 'hidden',
+            position: 'absolute',
+            left: '26px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 100,
+            background: 'var(--bg-glass)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid var(--accent-primary)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+            padding: '0.6rem 0.75rem',
+            borderRadius: '8px',
+            flexDirection: 'column',
+            gap: '0.4rem',
+            width: '120px'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Score Range</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Score:</label>
+            <input
+              type="number"
+              step="1000"
+              value={inputMax}
+              onChange={(e) => setInputMax(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyInputs();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+            />
+            <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Min Score:</label>
+            <input
+              type="number"
+              step="1000"
+              value={inputMin}
+              onChange={(e) => setInputMin(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyInputs();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+            />
           </div>
-        )}
+        </div>
 
         {/* Slim 18px Vertical Track Bar */}
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
@@ -389,12 +382,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             >
               {/* Top Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '8px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
 
               {/* Bottom Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '8px', height: '2px', background: accentColor, borderRadius: '1px' }} />
+                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
             </div>
           </div>
@@ -417,74 +410,73 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      {/* Floating Popover Editor for Horizontal Mode */}
-      {isEditing && (
-        <div 
-          onTouchStart={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              handleApplyInputs();
-            }
-          }}
-          style={{
-            position: 'absolute',
-            left: paddingLeft || 0,
-            bottom: '100%',
-            marginBottom: '0.4rem',
-            zIndex: 100,
-            background: 'var(--bg-glass)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid var(--accent-primary)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
-            padding: '0.6rem 0.75rem',
-            borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.4rem',
-            width: '180px'
-          }}
-        >
-          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Level Range</div>
-          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
-              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Min Level:</label>
-              <input
-                type="number"
-                step="0.1"
-                min="1.0"
-                max="15.4"
-                value={inputMin}
-                onChange={(e) => setInputMin(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
-              />
-            </div>
-            <span style={{ marginTop: '0.8rem', color: 'var(--text-secondary)' }}>–</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
-              <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Level:</label>
-              <input
-                type="number"
-                step="0.1"
-                min="1.0"
-                max="15.4"
-                value={inputMax}
-                onChange={(e) => setInputMax(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyInputs();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
-              />
-            </div>
+      {/* Floating Popover Editor for Horizontal Mode (Kept in DOM to prevent mobile unmount scroll jump) */}
+      <div 
+        onTouchStart={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            handleApplyInputs();
+          }
+        }}
+        style={{
+          display: isEditing ? 'flex' : 'none',
+          visibility: isEditing ? 'visible' : 'hidden',
+          position: 'absolute',
+          left: paddingLeft || 0,
+          bottom: '100%',
+          marginBottom: '0.4rem',
+          zIndex: 100,
+          background: 'var(--bg-glass)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid var(--accent-primary)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+          padding: '0.6rem 0.75rem',
+          borderRadius: '8px',
+          flexDirection: 'column',
+          gap: '0.4rem',
+          width: '180px'
+        }}
+      >
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)' }}>Set Level Range</div>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+            <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Min Level:</label>
+            <input
+              type="number"
+              step="0.1"
+              min="1.0"
+              max="15.4"
+              value={inputMin}
+              onChange={(e) => setInputMin(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyInputs();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+            />
+          </div>
+          <span style={{ marginTop: '0.8rem', color: 'var(--text-secondary)' }}>–</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
+            <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Level:</label>
+            <input
+              type="number"
+              step="0.1"
+              min="1.0"
+              max="15.4"
+              value={inputMax}
+              onChange={(e) => setInputMax(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyInputs();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
+            />
           </div>
         </div>
-      )}
+      </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -555,11 +547,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           }}
         >
           <div style={{ height: '100%', width: '4px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '8px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+            <div style={{ height: '10px', width: '3px', background: accentColor, borderRadius: '1.5px' }} />
           </div>
 
           <div style={{ height: '100%', width: '4px', cursor: 'ew-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ height: '8px', width: '2px', background: accentColor, borderRadius: '1px' }} />
+            <div style={{ height: '10px', width: '3px', background: accentColor, borderRadius: '1.5px' }} />
           </div>
         </div>
       </div>

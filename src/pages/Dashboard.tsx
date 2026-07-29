@@ -325,8 +325,10 @@ export function Dashboard() {
         const dx = Math.abs(deltaX);
         const dy = Math.abs(deltaY);
 
-        // 1-finger horizontal touch swipe smoothly scrolls the graph DOM container left and right
-        if (dx > dy) {
+        const isDOMScrollable = elem.scrollWidth > elem.clientWidth + 5;
+
+        // If DOM scrollbar is active (graph overflows container width), 1-finger horizontal swipe scrolls the container DOM
+        if (dx > dy && isDOMScrollable) {
           e.preventDefault();
           elem.scrollLeft = panRef.current.startScrollLeft - deltaX;
           return;
@@ -344,10 +346,20 @@ export function Dashboard() {
         e.preventDefault();
 
         const rect = elem.getBoundingClientRect();
+        const plotWidth = Math.max(100, rect.width - 105);
         const plotHeight = Math.max(100, rect.height - 60);
 
+        const dX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
         const dY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
+
+        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, dX, defX, true);
         const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, dY, defY, false);
+
+        if (newMinX <= defX[0] && newMaxX >= defX[1]) {
+          setScatterZoomX(null);
+        } else {
+          setScatterZoomX([newMinX, newMaxX]);
+        }
 
         if (newMinY <= defY[0] && newMaxY >= defY[1]) {
           setScatterZoomY(null);

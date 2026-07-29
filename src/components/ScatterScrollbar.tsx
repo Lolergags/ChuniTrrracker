@@ -74,6 +74,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       curMax
     );
 
+    // Explicitly blur active input element before unmounting popover to prevent mobile browser scroll jump
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     onZoomChange([finalMin, finalMax]);
     setInputMin(finalMin.toString());
     setInputMax(finalMax.toString());

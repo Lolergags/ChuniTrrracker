@@ -63,16 +63,36 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   };
 
   const handleApplyInputs = () => {
-    const minVal = parseFloat(inputMin);
-    const maxVal = parseFloat(inputMax);
-    if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
-      const clampedMin = Math.max(min, minVal);
-      const clampedMax = Math.min(max, maxVal);
-      onZoomChange([
-        orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin),
-        orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax)
-      ]);
+    let minVal = parseFloat(inputMin);
+    let maxVal = parseFloat(inputMax);
+
+    if (isNaN(minVal) && isNaN(maxVal)) {
+      setIsEditing(false);
+      return;
     }
+
+    if (isNaN(minVal)) minVal = curMin;
+    if (isNaN(maxVal)) maxVal = curMax;
+
+    const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+
+    // Auto-adjust if user inputs max <= min
+    if (minVal >= maxVal) {
+      minVal = Math.max(min, maxVal - minStep);
+      if (minVal >= maxVal) {
+        maxVal = Math.min(max, minVal + minStep);
+      }
+    }
+
+    const clampedMin = Math.max(min, Math.min(max - minStep, minVal));
+    const clampedMax = Math.min(max, Math.max(clampedMin + minStep, maxVal));
+
+    const finalMin = orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin);
+    const finalMax = orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax);
+
+    onZoomChange([finalMin, finalMax]);
+    setInputMin(finalMin.toString());
+    setInputMax(finalMax.toString());
     setIsEditing(false);
   };
 

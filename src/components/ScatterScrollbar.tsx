@@ -397,19 +397,19 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '1px 0',
+                padding: '2px 0',
                 boxSizing: 'border-box',
                 transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
               }}
             >
               {/* Top Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
+                <div style={{ width: '8px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
 
               {/* Bottom Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
+                <div style={{ width: '8px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
             </div>
           </div>

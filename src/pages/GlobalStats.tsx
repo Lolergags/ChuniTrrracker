@@ -206,10 +206,10 @@ export function GlobalStats() {
       const { defX, defY, curX, curY } = getDomains();
 
       const rect = elem.getBoundingClientRect();
-      const plotLeft = rect.left + 85;
-      const plotWidth = Math.max(100, rect.width - 105);
-      const plotTop = rect.top + 20;
-      const plotHeight = Math.max(100, rect.height - 60);
+      const plotLeft = rect.left + 65;
+      const plotWidth = Math.max(100, rect.width - 95);
+      const plotTop = rect.top + 25;
+      const plotHeight = Math.max(100, rect.height - 70);
 
       const xFrac = Math.max(0, Math.min(1, (e.clientX - plotLeft) / plotWidth));
       const yFrac = Math.max(0, Math.min(1, 1 - (e.clientY - plotTop) / plotHeight));
@@ -217,11 +217,10 @@ export function GlobalStats() {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
-      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.3;
+      // Exponential scaling based on deltaY magnitude for smooth wheel & trackpad zooming
+      const zoomFactor = Math.pow(1.002, e.deltaY);
       const spanX = (curX[1] - curX[0]) * zoomFactor;
       const spanY = (curY[1] - curY[0]) * zoomFactor;
-
-      if (spanX < 0.05 && spanY < 20 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;

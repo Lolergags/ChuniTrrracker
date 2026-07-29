@@ -74,9 +74,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       curMax
     );
 
-    const savedScrollY = window.scrollY;
+    const savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
 
-    // Explicitly blur active input element before unmounting popover
+    // Explicitly blur active input element before closing popover
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -86,9 +86,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     setInputMax(finalMax.toString());
     setIsEditing(false);
 
-    // Prevent mobile keyboard dismiss scroll jump by restoring window scroll position
-    requestAnimationFrame(() => {
-      window.scrollTo(0, savedScrollY);
+    // Multi-stage scroll lock to counter mobile virtual keyboard slide-down animation
+    [0, 50, 150, 300, 450].forEach((delay) => {
+      setTimeout(() => {
+        window.scrollTo(0, savedScrollY);
+      }, delay);
     });
   };
 

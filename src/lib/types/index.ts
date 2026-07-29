@@ -48,6 +48,7 @@ export interface ApiProcessedScore {
   score: number;
   lamp: LampType;
   op: number;
+  opPercent?: number;
   timeAchieved: number;
   playCount?: number;
 }

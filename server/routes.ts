@@ -389,6 +389,7 @@ router.get('/players/:username/scores', (req, res) => {
       s.score,
       s.lamp,
       s.op,
+      ROUND((CAST(s.op AS REAL) / (((c.constant * 5000 + 15000) / 5) * 5)) * 100, 2) as opPercent,
       s.time_achieved as timeAchieved,
       (SELECT COUNT(*) FROM scores s2 WHERE s2.chart_id = c.id) as playCount
     FROM scores s

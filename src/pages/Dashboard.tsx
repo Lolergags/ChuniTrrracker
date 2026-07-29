@@ -110,6 +110,9 @@ export function Dashboard() {
         } else if (sortConfig.key === 'constant') {
           valA = a.constant;
           valB = b.constant;
+        } else if (sortConfig.key === 'opPercent') {
+          valA = a.opPercent ?? ((a.op / (((a.constant * 5000 + 15000) / 5) * 5)) * 100);
+          valB = b.opPercent ?? ((b.op / (((b.constant * 5000 + 15000) / 5) * 5)) * 100);
         } else {
           valA = a[sortConfig.key as keyof ApiProcessedScore];
           valB = b[sortConfig.key as keyof ApiProcessedScore];
@@ -956,6 +959,9 @@ export function Dashboard() {
               <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('op')}>
                 OP {sortConfig?.key === 'op' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
               </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('opPercent')}>
+                OP% {sortConfig?.key === 'opPercent' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -976,6 +982,7 @@ export function Dashboard() {
                 <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{score.score.toLocaleString()}</td>
                 <td style={{ padding: '1rem', color: `var(--rank-${score.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{score.lamp}</td>
                 <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{(score.op / 10000).toFixed(2)}</td>
+                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{(score.opPercent ?? ((score.op / (((score.constant * 5000 + 15000) / 5) * 5)) * 100)).toFixed(2)}%</td>
               </tr>
             ))}
           </tbody>

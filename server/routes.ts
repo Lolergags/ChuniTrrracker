@@ -5,6 +5,7 @@ import multer from 'multer';
 import { default as db, DB_PATH } from './db.js';
 import { syncPlayer } from './sync.js';
 import { getChartFilterConditions, AOMN_REMOVE_SONG_IDS } from './utils/filters.js';
+import { getCache, setCache, getLeaderboardCache, setLeaderboardCache } from './utils/cache.js';
 import { exec } from 'node:child_process';
 const upload = multer({ dest: path.join(process.cwd(), 'data', 'temp') });
 
@@ -524,6 +525,10 @@ router.get('/songs/:songId/charts/:difficulty/leaderboard', (req, res) => {
 
 // 5. Get Aggregate Performance Heatmap Data
 router.get('/performance/heatmap', (req, res) => {
+  const cacheKey = `perf_heatmap:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const groupByCol = 'c.constant';
@@ -548,11 +553,17 @@ router.get('/performance/heatmap', (req, res) => {
     ${whereClause}
     GROUP BY ${groupByCol}, grade
   `).all(...bindings);
+
+  setCache(cacheKey, data);
   res.json(data);
 });
 
 // 6. Get Aggregate Global Chart Meta (Popularity vs Average Score)
 router.get('/performance/meta', (req, res) => {
+  const cacheKey = `perf_meta:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c', 'p');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -571,11 +582,17 @@ router.get('/performance/meta', (req, res) => {
     ${whereClause}
     GROUP BY c.id
   `).all(...bindings);
+
+  setCache(cacheKey, data);
   res.json(data);
 });
 
 // 7. Get Global Server Lamp Distribution by Constant
 router.get('/performance/lamps', (req, res) => {
+  const cacheKey = `perf_lamps:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const isMasUltOnly = typeof req.query.diff === 'string' ? req.query.diff.split(',').every(d => d === 'MAS' || d === 'ULT') : false;
@@ -597,11 +614,17 @@ router.get('/performance/lamps', (req, res) => {
     ${whereClause}
     GROUP BY ${groupByCol}
   `).all(...bindings);
+
+  setCache(cacheKey, data);
   res.json(data);
 });
 
 // 8. Get Average OP Yield by Constant
 router.get('/performance/op', (req, res) => {
+  const cacheKey = `perf_op:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const isMasUltOnly = typeof req.query.diff === 'string' ? req.query.diff.split(',').every(d => d === 'MAS' || d === 'ULT') : false;
@@ -620,11 +643,17 @@ router.get('/performance/op', (req, res) => {
     ${whereClause}
     GROUP BY ${groupByCol}
   `).all(...bindings);
+
+  setCache(cacheKey, data);
   res.json(data);
 });
 
 // 9. Get Player OP Percent Distribution
 router.get('/performance/players', (req, res) => {
+  const cacheKey = `perf_players:${JSON.stringify(req.query)}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c');
   const chartWhereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -675,6 +704,7 @@ router.get('/performance/players', (req, res) => {
     };
   });
 
+  setCache(cacheKey, data);
   res.json(data);
 });
 

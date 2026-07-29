@@ -242,6 +242,14 @@ export function Dashboard() {
     );
   }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
+  const overlappingDots = useMemo(() => {
+    if (!selectedDot) return [];
+    return visibleDashboardScatterData.filter((d: any) =>
+      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
+      Math.abs(d.score - selectedDot.score) <= 250
+    );
+  }, [selectedDot, visibleDashboardScatterData]);
+
   useEffect(() => {
     const elem = scatterContainerRef.current;
     if (!elem) return;
@@ -284,7 +292,7 @@ export function Dashboard() {
       const spanX = (curX[1] - curX[0]) * zoomFactor;
       const spanY = (curY[1] - curY[0]) * zoomFactor;
 
-      if (spanX < 0.2 && spanY < 1000 && e.deltaY < 0) return;
+      if (spanX < 0.05 && spanY < 20 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;
@@ -905,6 +913,28 @@ export function Dashboard() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {overlappingDots.length > 1 && (
+                <button
+                  onClick={() => {
+                    const currentIndex = overlappingDots.findIndex((d: any) => d.songId === selectedDot.songId && d.difficulty === selectedDot.difficulty);
+                    const nextDot = overlappingDots[(currentIndex + 1) % overlappingDots.length];
+                    setSelectedDot(nextDot);
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: '#fff',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Click to cycle between overlapping chart dots"
+                >
+                  Cycle Overlapping ({overlappingDots.findIndex((d: any) => d.songId === selectedDot.songId && d.difficulty === selectedDot.difficulty) + 1}/{overlappingDots.length}) ➔
+                </button>
+              )}
               {selectedDot.lamp && (
                 <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
                   {selectedDot.lamp}

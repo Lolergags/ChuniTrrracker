@@ -96,7 +96,7 @@ describe('scatterZoom utilities', () => {
       // User inputs Max = 980,000 while Min was 1,000,000
       const [minY, maxY] = sanitizeRangeInputs('1000000', '980000', 975000, 1010000, 'vertical');
       expect(minY).toBeLessThan(maxY);
-      expect(minY).toBe(979000);
+      expect(minY).toBe(979990);
       expect(maxY).toBe(980000);
     });
 

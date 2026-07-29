@@ -190,7 +190,7 @@ export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
       if (!containerRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
-      const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+      const minStep = orientation === 'horizontal' ? 0.1 : 10;
       const { startPos, startMin, startMax, mode } = dragRef.current;
 
       let deltaVal: number;

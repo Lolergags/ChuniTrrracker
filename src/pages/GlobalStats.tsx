@@ -171,6 +171,14 @@ export function GlobalStats() {
     );
   }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
+  const overlappingGlobalDots = useMemo(() => {
+    if (!selectedDot) return [];
+    return visibleScatterData.filter((d: any) =>
+      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
+      Math.abs((d.avgScore || d.score || 0) - (selectedDot.avgScore || selectedDot.score || 0)) <= 250
+    );
+  }, [selectedDot, visibleScatterData]);
+
   useEffect(() => {
     const elem = globalScatterContainerRef.current;
     if (!elem) return;
@@ -213,7 +221,7 @@ export function GlobalStats() {
       const spanX = (curX[1] - curX[0]) * zoomFactor;
       const spanY = (curY[1] - curY[0]) * zoomFactor;
 
-      if (spanX < 0.2 && spanY < 1000 && e.deltaY < 0) return;
+      if (spanX < 0.05 && spanY < 20 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;
@@ -872,6 +880,28 @@ export function GlobalStats() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {overlappingGlobalDots.length > 1 && (
+                    <button
+                      onClick={() => {
+                        const currentIndex = overlappingGlobalDots.findIndex((d: any) => d.song_id === selectedDot.song_id && d.difficulty === selectedDot.difficulty);
+                        const nextDot = overlappingGlobalDots[(currentIndex + 1) % overlappingGlobalDots.length];
+                        setSelectedDot(nextDot);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.35rem 0.65rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                      title="Click to cycle between overlapping chart dots"
+                    >
+                      Cycle Overlapping ({overlappingGlobalDots.findIndex((d: any) => d.song_id === selectedDot.song_id && d.difficulty === selectedDot.difficulty) + 1}/{overlappingGlobalDots.length}) ➔
+                    </button>
+                  )}
                   {selectedDot.difficulty && (
                     <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
                       {selectedDot.difficulty}

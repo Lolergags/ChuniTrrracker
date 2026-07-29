@@ -24,7 +24,7 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
   let minY = rawMinY;
   let maxY = rawMaxY;
 
-  const minAllowedSpan = 500;
+  const minAllowedSpan = 20;
   if (maxY - minY < minAllowedSpan) {
     const mid = (minY + maxY) / 2;
     minY = mid - minAllowedSpan / 2;
@@ -92,7 +92,7 @@ export function getSmartYTicks(yMin: number, yMax: number, defaultYMin: number =
   if (span <= 0) return [Math.round(yMin)];
 
   const roughStep = span / 5;
-  const steps = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+  const steps = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
   let step = steps[steps.length - 1];
   for (let i = 0; i < steps.length; i++) {
     if (steps[i] >= roughStep) {
@@ -130,7 +130,7 @@ export function sanitizeRangeInputs(
   if (isNaN(minVal)) minVal = curMin;
   if (isNaN(maxVal)) maxVal = curMax;
 
-  const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+  const minStep = orientation === 'horizontal' ? 0.1 : 10;
 
   if (minVal >= maxVal) {
     minVal = Math.max(min, maxVal - minStep);

@@ -554,10 +554,17 @@ export function GlobalStats() {
         </div>
       </div>
 
-      {isLoadingGlobal ? (
+      {isLoadingGlobal && heatmapData.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)' }}>Loading global statistics...</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '2rem',
+          opacity: isLoadingGlobal ? 0.45 : 1,
+          pointerEvents: isLoadingGlobal ? 'none' : 'auto',
+          transition: 'opacity 0.15s ease'
+        }}>
           
           {/* Heatmap */}
           <div className="glass-panel" style={{ overflowX: 'auto' }}>

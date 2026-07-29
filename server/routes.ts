@@ -544,9 +544,12 @@ router.get('/performance/heatmap', (req, res) => {
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
-  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
+  const hasRatingFilter = !!(req.query.ratingMin || req.query.ratingMax);
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', hasRatingFilter ? 'p' : undefined);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const groupByCol = 'c.constant';
+
+  const playerJoin = hasRatingFilter ? `JOIN players p ON s.player_id = p.id` : '';
 
   const data = db.prepare(`
     SELECT 
@@ -562,7 +565,7 @@ router.get('/performance/heatmap', (req, res) => {
       END as grade,
       COUNT(*) as count
     FROM scores s
-    JOIN players p ON s.player_id = p.id
+    ${playerJoin}
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
@@ -579,8 +582,11 @@ router.get('/performance/meta', (req, res) => {
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
-  const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c', 'p');
+  const hasRatingFilter = !!(req.query.ratingMin || req.query.ratingMax);
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c', hasRatingFilter ? 'p' : undefined);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const playerJoin = hasRatingFilter ? `JOIN players p ON s.player_id = p.id` : '';
 
   const data = db.prepare(`
     SELECT 
@@ -591,7 +597,7 @@ router.get('/performance/meta', (req, res) => {
       COUNT(s.player_id) as playCount,
       AVG(s.score) as avgScore
     FROM scores s
-    JOIN players p ON s.player_id = p.id
+    ${playerJoin}
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
     ${whereClause}
@@ -608,10 +614,13 @@ router.get('/performance/lamps', (req, res) => {
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
-  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
+  const hasRatingFilter = !!(req.query.ratingMin || req.query.ratingMax);
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', hasRatingFilter ? 'p' : undefined);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const isMasUltOnly = typeof req.query.diff === 'string' ? req.query.diff.split(',').every(d => d === 'MAS' || d === 'ULT') : false;
   const groupByCol = isMasUltOnly ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
+
+  const playerJoin = hasRatingFilter ? `JOIN players p ON s.player_id = p.id` : '';
 
   const data = db.prepare(`
     SELECT 
@@ -623,7 +632,7 @@ router.get('/performance/lamps', (req, res) => {
       SUM(CASE WHEN s.lamp = 'FAILED' THEN 1 ELSE 0 END) as failed,
       COUNT(*) as total
     FROM scores s
-    JOIN players p ON s.player_id = p.id
+    ${playerJoin}
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
@@ -640,10 +649,13 @@ router.get('/performance/op', (req, res) => {
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
 
-  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', 'p');
+  const hasRatingFilter = !!(req.query.ratingMin || req.query.ratingMax);
+  const { conditions, bindings } = getChartFilterConditions(req.query, 'songs', 'c', hasRatingFilter ? 'p' : undefined);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const isMasUltOnly = typeof req.query.diff === 'string' ? req.query.diff.split(',').every(d => d === 'MAS' || d === 'ULT') : false;
   const groupByCol = isMasUltOnly ? 'c.constant' : 'CAST((c.constant * 2) AS INTEGER) / 2.0';
+
+  const playerJoin = hasRatingFilter ? `JOIN players p ON s.player_id = p.id` : '';
 
   const data = db.prepare(`
     SELECT 
@@ -652,7 +664,7 @@ router.get('/performance/op', (req, res) => {
       MAX(s.op) as maxOp,
       COUNT(*) as playCount
     FROM scores s
-    JOIN players p ON s.player_id = p.id
+    ${playerJoin}
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
     ${whereClause}
@@ -696,7 +708,7 @@ router.get('/performance/players', (req, res) => {
       p.username,
       IFNULL(SUM(max_scores.max_op), 0) as totalOp,
       IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as opPercent
-    FROM players p
+    FROM (SELECT id, username FROM players p ${pWhere}) p
     JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
@@ -705,8 +717,7 @@ router.get('/performance/players', (req, res) => {
       ${chartWhereClause}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
-    ${pWhere}
-    GROUP BY p.username
+    GROUP BY p.id, p.username
     HAVING totalOp > 0
     ORDER BY totalOp DESC
   `).all(totalMaxOp, ...bindings, ...pBindings) as any[];

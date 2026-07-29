@@ -412,12 +412,19 @@ const SongAnalytics: React.FC = () => {
                   </span>
                 )}
               </div>
-              {isLoadingBoard ? (
+              {isLoadingBoard && leaderboard.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)' }}>Loading leaderboard...</p>
               ) : leaderboard.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)' }}>No imported players have played this chart yet!</p>
               ) : (
-                <div className="scrollable-content-wrapper">
+                <div 
+                  className="scrollable-content-wrapper"
+                  style={{
+                    opacity: isLoadingBoard ? 0.45 : 1,
+                    pointerEvents: isLoadingBoard ? 'none' : 'auto',
+                    transition: 'opacity 0.15s ease'
+                  }}
+                >
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '420px' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

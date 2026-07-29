@@ -118,7 +118,7 @@ const Leaderboard: React.FC = () => {
         </div>
       </div>
       
-      {isLoading ? (
+      {isLoading && players.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
           Loading leaderboard data...
         </div>
@@ -127,7 +127,15 @@ const Leaderboard: React.FC = () => {
           No players found in the database.
         </div>
       ) : (
-        <div className="scrollable-content-wrapper" style={{ marginTop: '2rem' }}>
+        <div 
+          className="scrollable-content-wrapper" 
+          style={{ 
+            marginTop: '2rem',
+            opacity: isLoading ? 0.45 : 1,
+            pointerEvents: isLoading ? 'none' : 'auto',
+            transition: 'opacity 0.15s ease'
+          }}
+        >
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-heading)', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.9rem' }}>

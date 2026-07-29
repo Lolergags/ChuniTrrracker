@@ -23,8 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Database
-data/
-*.db
+# Database files
 *.sqlite
-*.db-*
+*.sqlite3
+*.db
+data/*.db-*

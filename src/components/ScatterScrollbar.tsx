@@ -261,7 +261,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           )}
         </div>
 
-        {/* Absolute Floating Popover Editor for Vertical Mode (Prevents Page Scroll Jump) */}
+        {/* Absolute Floating Popover Editor for Vertical Mode */}
         {isEditing && (
           <div 
             onTouchStart={(e) => e.stopPropagation()}
@@ -377,25 +377,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               </div>
             </div>
           </div>
-
-          {isZoomed && (
-            <button
-              onClick={() => onZoomChange(null)}
-              title="Reset Score Zoom"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: accentColor,
-                fontSize: '0.65rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginTop: '0.2rem',
-                padding: '0'
-              }}
-            >
-              Reset
-            </button>
-          )}
         </div>
       </div>
     );
@@ -415,7 +396,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      {/* Floating Popover Editor for Horizontal Mode (Prevents Page Scroll Jump) */}
+      {/* Floating Popover Editor for Horizontal Mode */}
       {isEditing && (
         <div 
           onTouchStart={(e) => e.stopPropagation()}
@@ -505,22 +486,6 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             </span>
           )}
         </span>
-        {isZoomed && (
-          <button
-            onClick={() => onZoomChange(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: accentColor,
-              fontSize: '0.68rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: '0 0.2rem'
-            }}
-          >
-            Reset
-          </button>
-        )}
       </div>
 
       <div

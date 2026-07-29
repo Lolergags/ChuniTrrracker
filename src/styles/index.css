@@ -6,6 +6,15 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-primary);
@@ -22,6 +31,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Glassmorphism utilities */
@@ -77,6 +89,8 @@ h1, h2, h3, h4 {
   font-family: var(--font-heading);
   letter-spacing: 0.04em;
   color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-bas { background: var(--diff-bas); border: 1px solid var(--diff-bas); box-shadow: 0 0 10px rgba(22, 163, 74, 0.35); }
@@ -88,6 +102,10 @@ h1, h2, h3, h4 {
 /* Layout */
 main.container {
   flex: 1 0 auto;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .container {
@@ -95,6 +113,7 @@ main.container {
   margin: 0 auto;
   padding: var(--spacing-lg);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .navbar {
@@ -109,6 +128,10 @@ main.container {
   top: 0;
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .nav-logo {
@@ -176,51 +199,121 @@ main.container {
   animation: fadeIn var(--transition-smooth) forwards;
 }
 
+/* Layout Grids */
+.landing-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.footer-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
 /* Responsive sticky column */
-@media (min-width: 768px) {
+@media (min-width: 769px) and (min-height: 501px) {
   .sticky-column {
     position: sticky;
     top: 4.5rem;
-    /* max-height: calc(100vh - 5rem); optional if we want to ensure it doesn't overflow bottom */
   }
 }
 
-/* Responsive Overrides */
-@media (max-width: 768px) {
-  /* Reduce padding on mobile to maximize screen real estate */
-  .container {
-    padding: var(--spacing-md);
+/* Responsive Overrides for Mobile & Mobile Landscape */
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
+  html, body, #root {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
+
+  .landing-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .dashboard-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .global-filter-bar {
+    gap: 0.4rem !important;
+  }
+
+  .global-filter-bar select {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    min-width: 0 !important;
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.5rem !important;
+  }
+
+  /* Condensed padding on mobile to maximize screen real estate */
+  .container {
+    padding: 0.75rem 0.6rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
   .glass-panel {
-    padding: var(--spacing-md);
+    padding: 0.85rem 0.75rem !important;
+    border-radius: 10px !important;
+    margin-bottom: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
   }
   
-  /* Make navbar layout stack cleanly with generous spacing */
+  /* Make navbar layout stack cleanly with compact, scrollable pill tabs */
   .navbar {
     flex-direction: column;
-    align-items: flex-start;
-    padding: var(--spacing-sm) var(--spacing-md);
-    gap: 0.5rem;
+    align-items: stretch;
+    padding: 0.6rem 0.75rem;
+    gap: 0.4rem;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box;
+    overflow-x: visible !important;
   }
   
   .nav-logo {
     padding-right: 0;
-    padding-bottom: 0.4rem;
-    margin-bottom: 0.25rem;
+    padding-bottom: 0.15rem;
+    margin-bottom: 0;
   }
   
   .nav-logo h2 {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
   }
 
   .nav-links {
     width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
     white-space: nowrap;
-    padding-top: 0.4rem;
-    padding-bottom: 0.6rem;
-    /* Hide scrollbar for a cleaner look while keeping it scrollable */
+    padding: 0.3rem 0;
+    margin: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -228,10 +321,29 @@ main.container {
     display: none;
   }
 
+  .nav-link {
+    font-size: 0.825rem;
+    padding: 0.35rem 0.65rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .nav-link.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
   .nav-search-form {
     width: 100%;
-    margin-top: 0.5rem;
-    margin-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.1rem;
   }
 
   .nav-search-container {
@@ -240,8 +352,41 @@ main.container {
 
   .nav-search-input {
     width: 100%;
-    padding: 0.6rem 1rem 0.6rem 2.4rem;
-    font-size: 0.95rem;
+    padding: 0.45rem 1rem 0.45rem 2.2rem;
+    font-size: 0.85rem;
+  }
+
+  /* Condensed Mobile Typography & Spacing */
+  h1 {
+    font-size: clamp(1.4rem, 5vw, 2.2rem) !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  h2 {
+    font-size: clamp(1.15rem, 4vw, 1.5rem) !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  h3 {
+    font-size: 1rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  p {
+    font-size: 0.85rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Condensed Mobile Tables */
+  table th, table td {
+    padding: 0.45rem 0.35rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Condensed Mobile Badges */
+  .badge {
+    padding: 0.15rem 0.45rem !important;
+    font-size: 0.75rem !important;
   }
 }
 
@@ -253,7 +398,7 @@ main.container {
   padding-bottom: var(--spacing-sm);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-height: 501px) {
   .scrollable-content-wrapper {
     overflow-x: hidden;
   }
@@ -265,7 +410,7 @@ main.container {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
   .chart-min-width-sm { min-width: 550px; height: 100%; }
   .chart-min-width-md { min-width: 680px; height: 100%; }
   .chart-min-width-lg { min-width: 900px; height: 100%; }
@@ -276,7 +421,7 @@ main.container {
   font-size: 13px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
   .recharts-cartesian-axis-tick-value {
     font-size: 11px !important;
   }

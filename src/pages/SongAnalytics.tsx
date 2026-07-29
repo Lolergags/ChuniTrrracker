@@ -5,6 +5,7 @@ import { api } from '../lib/api/client.js';
 import type { ApiSong, ChartLeaderboardResponse } from '../lib/types/index.js';
 import { GlobalContext } from '../lib/context/GlobalContext.js';
 import { ALL_VERSIONS } from '../lib/constants.js';
+import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 
 const SongAnalytics: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -24,13 +25,7 @@ const SongAnalytics: React.FC = () => {
   const [versionFilter, setVersionFilter] = useState<string>('ALL');
   const [chartPage, setChartPage] = useState(1);
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   const initialPlayerRef = useRef<string | null>(urlPlayer);
 
@@ -196,9 +191,9 @@ const SongAnalytics: React.FC = () => {
         Search for a song and select a chart to view the leaderboard across all imported players.
       </p>
 
-      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center' }}>
         {/* Left column: Song List */}
-        <div className="sticky-column" style={{ flex: '1 1 320px', maxWidth: isMobile ? '100%' : '380px', minWidth: 0 }}>
+        <div className="sticky-column" style={{ flex: isMobile ? '1 1 100%' : '1 1 320px', maxWidth: isMobile ? '100%' : '380px', minWidth: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
             <input 
               type="text" 
@@ -568,8 +563,17 @@ const SongAnalytics: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', height: '100%', minHeight: '300px', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-              Select a chart from the left to view its leaderboard.
+            <div className="glass-panel" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              textAlign: 'center',
+              padding: isMobile ? '1.5rem 1rem' : '3rem 2rem', 
+              minHeight: isMobile ? '120px' : '300px', 
+              color: 'var(--text-secondary)',
+              fontSize: isMobile ? '0.9rem' : '1rem'
+            }}>
+              {isMobile ? 'Select a chart from above to view its leaderboard.' : 'Select a chart from the left to view its leaderboard.'}
             </div>
           )}
         </div>

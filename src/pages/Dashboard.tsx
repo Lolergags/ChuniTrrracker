@@ -9,6 +9,8 @@ import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
+import { useIsMobile } from '../lib/hooks/useIsMobile.js';
+import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -28,13 +30,7 @@ export function Dashboard() {
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
 
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   const scatterYWidth = scatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
   const scatterClipX = 20 + scatterYWidth;
@@ -197,6 +193,16 @@ export function Dashboard() {
       return { defX, defY, curX, curY };
     };
 
+    const updateZoomX = (val: [number, number] | null) => {
+      scatterZoomXRef.current = val;
+      setScatterZoomX(val);
+    };
+
+    const updateZoomY = (val: [number, number] | null) => {
+      scatterZoomYRef.current = val;
+      setScatterZoomY(val);
+    };
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { defX, defY, curX, curY } = getDomains();
@@ -228,15 +234,15 @@ export function Dashboard() {
       const [newMinY, newMaxY] = clampDomainY(rawMinY, rawMaxY, defY);
 
       if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-        setScatterZoomX(null);
+        updateZoomX(null);
       } else {
-        setScatterZoomX([newMinX, newMaxX]);
+        updateZoomX([newMinX, newMaxX]);
       }
 
       if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-        setScatterZoomY(null);
+        updateZoomY(null);
       } else {
-        setScatterZoomY([newMinY, newMaxY]);
+        updateZoomY([newMinY, newMaxY]);
       }
     };
 
@@ -273,15 +279,15 @@ export function Dashboard() {
       const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
 
       if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-        setScatterZoomX(null);
+        updateZoomX(null);
       } else {
-        setScatterZoomX([newMinX, newMaxX]);
+        updateZoomX([newMinX, newMaxX]);
       }
 
       if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-        setScatterZoomY(null);
+        updateZoomY(null);
       } else {
-        setScatterZoomY([newMinY, newMaxY]);
+        updateZoomY([newMinY, newMaxY]);
       }
     };
 
@@ -296,6 +302,13 @@ export function Dashboard() {
       const { curX, curY } = getDomains();
       if (e.touches.length === 1) {
         const t = e.touches[0];
+        const rect = elem.getBoundingClientRect();
+        // If touch starts below the X-axis plot line (in bottom margin), allow native page scrolling
+        if (t.clientY > rect.bottom - 40) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
         panRef.current.isDragging = true;
         panRef.current.startX = t.clientX;
         panRef.current.startY = t.clientY;
@@ -303,7 +316,7 @@ export function Dashboard() {
         panRef.current.startDomainX = curX;
         panRef.current.startDomainY = curY;
         setIsPanDragging(true);
-      } else if (e.touches.length === 2) {
+      } else if (e.touches.length >= 2) {
         e.preventDefault();
         panRef.current.isDragging = false;
         setIsPanDragging(false);
@@ -317,44 +330,58 @@ export function Dashboard() {
       const { defX, defY, curX, curY } = getDomains();
       if (e.touches.length === 1 && panRef.current.isDragging) {
         const t = e.touches[0];
-        const moveDist = Math.hypot(t.clientX - panRef.current.startX, t.clientY - panRef.current.startY);
+        const deltaX = t.clientX - panRef.current.startX;
+        const deltaY = t.clientY - panRef.current.startY;
+        const dx = Math.abs(deltaX);
+        const dy = Math.abs(deltaY);
+
+        const isDOMScrollable = elem.scrollWidth > elem.clientWidth + 5;
+
+        // If DOM scrollbar is active (graph overflows container width), 1-finger horizontal swipe scrolls the container DOM
+        if (dx > dy && isDOMScrollable) {
+          e.preventDefault();
+          elem.scrollLeft = panRef.current.startScrollLeft - deltaX;
+          return;
+        }
+
+        // If move is predominantly vertical and graph is unzoomed, allow native page scroll
+        if (dy > dx && !scatterZoomXRef.current && !scatterZoomYRef.current) {
+          panRef.current.isDragging = false;
+          return;
+        }
+
+        const moveDist = Math.hypot(dx, dy);
         if (moveDist < 6) return;
 
         e.preventDefault();
-
-        if (elem.scrollWidth > elem.clientWidth && !scatterZoomXRef.current) {
-          elem.scrollLeft = panRef.current.startScrollLeft - (t.clientX - panRef.current.startX);
-          return;
-        }
 
         const rect = elem.getBoundingClientRect();
         const plotWidth = Math.max(100, rect.width - 105);
         const plotHeight = Math.max(100, rect.height - 60);
 
-        const deltaX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
-        const deltaY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
+        const dX = -((t.clientX - panRef.current.startX) / plotWidth) * (panRef.current.startDomainX[1] - panRef.current.startDomainX[0]);
+        const dY = ((t.clientY - panRef.current.startY) / plotHeight) * (panRef.current.startDomainY[1] - panRef.current.startDomainY[0]);
 
-        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, deltaX, defX, true);
-        const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, deltaY, defY, false);
+        const [newMinX, newMaxX] = panDomain(panRef.current.startDomainX, dX, defX, true);
+        const [newMinY, newMaxY] = panDomain(panRef.current.startDomainY, dY, defY, false);
 
-        if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
         if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-          setScatterZoomX(null);
+          updateZoomX(null);
         } else {
-          setScatterZoomX([newMinX, newMaxX]);
+          updateZoomX([newMinX, newMaxX]);
         }
 
         if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-          setScatterZoomY(null);
+          updateZoomY(null);
         } else {
-          setScatterZoomY([newMinY, newMaxY]);
+          updateZoomY([newMinY, newMaxY]);
         }
-      } else if (e.touches.length === 2) {
+      } else if (e.touches.length >= 2) {
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        if (currentDist < 15) return;
+        if (currentDist < 5) return;
 
         const lastDist = panRef.current.lastTouchDist || currentDist;
         panRef.current.lastTouchDist = currentDist;
@@ -391,15 +418,15 @@ export function Dashboard() {
         if (elem.scrollLeft !== 0) elem.scrollLeft = 0;
 
         if (newMinX <= defX[0] && newMaxX >= defX[1]) {
-          setScatterZoomX(null);
+          updateZoomX(null);
         } else {
-          setScatterZoomX([newMinX, newMaxX]);
+          updateZoomX([newMinX, newMaxX]);
         }
 
         if (newMinY <= defY[0] && newMaxY >= defY[1]) {
-          setScatterZoomY(null);
+          updateZoomY(null);
         } else {
-          setScatterZoomY([newMinY, newMaxY]);
+          updateZoomY([newMinY, newMaxY]);
         }
       }
     };
@@ -610,12 +637,12 @@ export function Dashboard() {
         </div>
 
         {/* Row 2: Global Filters Bar (Server, Version, Difficulty) */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: isMobile ? 'flex-start' : 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', width: '100%' }}>
           <GlobalFilterBar showRating={false} />
         </div>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '2rem' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', width: '100%', boxSizing: 'border-box' }}>
         <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center' }}>
           <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Total OP</h3>
           <h2 className="text-gradient" style={{ fontSize: '2.5rem' }}>{stats.totalOp.toFixed(2)}</h2>
@@ -695,175 +722,120 @@ export function Dashboard() {
           <div>
             <h2 className="text-gradient" style={{ marginBottom: '0.25rem' }}>Score vs Level Constant Scatter</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Click and drag a box to zoom into any area. Scroll mouse wheel to zoom in/out.
+              Drag slider edges to resize, drag center to pan. Scroll mouse wheel to zoom in/out.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              <span>Level:</span>
-              <input
-                type="number"
-                step="0.1"
-                min="1.0"
-                max="15.4"
-                placeholder="Min"
-                value={scatterZoomX ? scatterZoomX[0] : ''}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  const constants = uniqueScores.map(s => s.constant);
-                  const defaultMaxX = constants.length ? Math.max(...constants) + 0.2 : 15.4;
-                  if (!isNaN(val)) {
-                    setScatterZoomX([val, scatterZoomX ? scatterZoomX[1] : defaultMaxX]);
-                  } else if (!e.target.value) {
-                    setScatterZoomX(null);
-                  }
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
-              />
-              <span>-</span>
-              <input
-                type="number"
-                step="0.1"
-                min="1.0"
-                max="15.4"
-                placeholder="Max"
-                value={scatterZoomX ? scatterZoomX[1] : ''}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  const constants = uniqueScores.map(s => s.constant);
-                  const defaultMinX = constants.length ? Math.min(...constants) - 0.5 : 1.0;
-                  if (!isNaN(val)) {
-                    setScatterZoomX([scatterZoomX ? scatterZoomX[0] : defaultMinX, val]);
-                  } else if (!e.target.value) {
-                    setScatterZoomX(null);
-                  }
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '55px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
-              />
-            </div>
+          {(scatterZoomX || scatterZoomY) && (
+            <button
+              onClick={() => { setScatterZoomX(null); setScatterZoomY(null); }}
+              title="Reset Zoom"
+              style={{ padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 'bold' }}
+            >
+              <RotateCcw size={14} /> Reset Zoom
+            </button>
+          )}
+        </div>
 
-            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              <span>Score:</span>
-              <input
-                type="number"
-                step="1000"
-                min="0"
-                max="1010000"
-                placeholder="Min"
-                value={scatterZoomY ? scatterZoomY[0] : ''}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) {
-                    setScatterZoomY([val, scatterZoomY ? scatterZoomY[1] : 1010000]);
-                  } else if (!e.target.value) {
-                    setScatterZoomY(null);
-                  }
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
-              />
-              <span>-</span>
-              <input
-                type="number"
-                step="1000"
-                min="0"
-                max="1010000"
-                placeholder="Max"
-                value={scatterZoomY ? scatterZoomY[1] : ''}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) {
-                    setScatterZoomY([scatterZoomY ? scatterZoomY[0] : 975000, val]);
-                  } else if (!e.target.value) {
-                    setScatterZoomY(null);
-                  }
-                }}
-                data-1p-ignore="true" data-bwignore="true" autoComplete="off" autoCorrect="off" spellCheck="false"
-                style={{ width: '75px', padding: '0.2rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.8rem' }}
-              />
-            </div>
+        <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '0.25rem' }}>
+          <ScatterScrollbar
+            orientation="vertical"
+            min={defaultYDomain?.[0] ?? 975000}
+            max={1010000}
+            currentZoom={scatterZoomY}
+            onZoomChange={setScatterZoomY}
+            accentColor="var(--accent-primary)"
+            label="Score"
+            marginTop="25px"
+            marginBottom="25px"
+          />
 
-            {(scatterZoomX || scatterZoomY) && (
-              <button
-                onClick={() => { setScatterZoomX(null); setScatterZoomY(null); }}
-                title="Reset Zoom"
-                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--accent-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}
-              >
-                <RotateCcw size={13} /> Reset
-              </button>
-            )}
+          <div 
+            ref={scatterContainerRef}
+            className="scrollable-content-wrapper" 
+            style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+          >
+            <div className="chart-min-width-md" style={{ height: '430px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart 
+                  margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
+                >
+                  <defs>
+                    <clipPath id="custom-scatter-clip">
+                      <rect x={scatterClipX} y="-500" width="10000" height="875" />
+                    </clipPath>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis 
+                    type="number" 
+                    dataKey="constant" 
+                    allowDataOverflow={true}
+                    domain={scatterZoomX || defaultXDomain} 
+                    stroke="var(--text-secondary)" 
+                    tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
+                    tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
+                  />
+                  <YAxis 
+                    type="number" 
+                    dataKey="score" 
+                    name="Score" 
+                    allowDataOverflow={true}
+                    domain={scatterZoomY || defaultYDomain} 
+                    ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
+                    stroke="var(--text-secondary)"
+                    tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
+                    tickFormatter={(val) => {
+                      if (typeof val !== 'number') return val;
+                      if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
+                      return (val / 1000).toFixed(1) + 'k';
+                    }}
+                    width={scatterYWidth}
+                  />
+                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
+                  <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Scatter 
+                    name="Scores" 
+                    data={uniqueScores.map(s => ({
+                      name: s.songTitle,
+                      score: s.score,
+                      constant: s.constant,
+                      opDisplay: Number((s.op / 10000).toFixed(2)),
+                      playCount: s.playCount || 1,
+                      lamp: s.lamp,
+                      songId: s.songId,
+                      difficulty: s.difficulty
+                    }))} 
+                    fill="var(--accent-primary)" 
+                    fillOpacity={0.6}
+                    onClick={(node: any) => {
+                      if (node && (node.payload || node.name)) {
+                        setSelectedDot(node.payload || node);
+                      }
+                    }} 
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        <div 
-          ref={scatterContainerRef}
-          className="scrollable-content-wrapper" 
-          style={{ overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
-        >
-          <div className="chart-min-width-md" style={{ height: '430px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart 
-                margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
-              >
-                <defs>
-                  <clipPath id="custom-scatter-clip">
-                    <rect x={scatterClipX} y="-500" width="10000" height="875" />
-                  </clipPath>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis 
-                  type="number" 
-                  dataKey="constant" 
-                  allowDataOverflow={true}
-                  domain={scatterZoomX || defaultXDomain} 
-                  stroke="var(--text-secondary)" 
-                  tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
-                  tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
-                />
-                <YAxis 
-                  type="number" 
-                  dataKey="score" 
-                  name="Score" 
-                  allowDataOverflow={true}
-                  domain={scatterZoomY || defaultYDomain} 
-                  ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
-                  stroke="var(--text-secondary)"
-                  tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
-                  tickFormatter={(val) => {
-                    if (typeof val !== 'number') return val;
-                    if (val % 1000 === 0) return (val / 1000).toFixed(0) + 'k';
-                    return (val / 1000).toFixed(1) + 'k';
-                  }}
-                  width={scatterYWidth}
-                />
-                <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
-                <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-                <Scatter 
-                  name="Scores" 
-                  data={uniqueScores.map(s => ({
-                    name: s.songTitle,
-                    score: s.score,
-                    constant: s.constant,
-                    opDisplay: Number((s.op / 10000).toFixed(2)),
-                    playCount: s.playCount || 1,
-                    lamp: s.lamp,
-                    songId: s.songId,
-                    difficulty: s.difficulty
-                  }))} 
-                  fill="var(--accent-primary)" 
-                  fillOpacity={0.6}
-                  onClick={(node: any) => {
-                    if (node && (node.payload || node.name)) {
-                      setSelectedDot(node.payload || node);
-                    }
-                  }} 
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {(() => {
+          const constants = uniqueScores.map(s => s.constant);
+          const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+          const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+          return (
+            <ScatterScrollbar
+              orientation="horizontal"
+              min={minC}
+              max={maxC}
+              currentZoom={scatterZoomX}
+              onZoomChange={setScatterZoomX}
+              accentColor="var(--accent-primary)"
+              label="Level Constant"
+              paddingLeft={isMobile ? '65px' : '85px'}
+              paddingRight="30px"
+            />
+          );
+        })()}
 
         {selectedDot && (
           <div style={{
@@ -968,9 +940,9 @@ export function Dashboard() {
                 title="Click to view on Song Leaderboard"
               >
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{score.songTitle}</td>
-                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                  <span className={`badge badge-${score.difficulty.toLowerCase()}`} style={{ marginRight: '0.4rem' }}>{score.difficulty} {score.level}</span>
-                  <span>({score.constant.toFixed(1)})</span>
+                <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  <span className={`badge badge-${score.difficulty.toLowerCase()}`} style={{ marginRight: '0.35rem' }}>{score.difficulty} {score.level}</span>
+                  <span style={{ fontSize: '0.85rem' }}>({score.constant.toFixed(1)})</span>
                 </td>
                 <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{score.score.toLocaleString()}</td>
                 <td style={{ padding: '1rem', color: `var(--rank-${score.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{score.lamp}</td>

@@ -6,20 +6,19 @@ export const Footer: React.FC = () => {
   return (
     <footer style={{
       marginTop: 'auto',
-      paddingTop: '4rem',
       borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-      background: 'var(--bg-glass)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
+      background: 'var(--bg-secondary)',
       padding: '3rem 1.5rem calc(4rem + env(safe-area-inset-bottom, 0px)) 1.5rem',
-      color: 'var(--text-secondary)'
+      color: 'var(--text-secondary)',
+      minHeight: '280px',
+      boxSizing: 'border-box',
+      contentVisibility: 'auto',
+      containIntrinsicSize: '0 280px'
     }}>
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{
+        <div className="footer-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '2.5rem',
-          marginBottom: '2.5rem'
+          boxSizing: 'border-box'
         }}>
           {/* Column 1: Brand & Purpose */}
           <div>
@@ -141,8 +140,25 @@ export const Footer: React.FC = () => {
           <div>
             © {new Date().getFullYear()} ChuniTrrracker. Built with React & TypeScript.
           </div>
-          <div>
-            CHUNITHM is a registered trademark of SEGA. This site is fan-made and not affiliated with SEGA.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span>CHUNITHM is a registered trademark of SEGA. Fan-made project.</span>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-primary)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.2rem'
+              }}
+            >
+              Back to Top ↑
+            </button>
           </div>
         </div>
       </div>

@@ -24,7 +24,7 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
   let minY = rawMinY;
   let maxY = rawMaxY;
 
-  const minAllowedSpan = 100;
+  const minAllowedSpan = 500;
   if (maxY - minY < minAllowedSpan) {
     const mid = (minY + maxY) / 2;
     minY = mid - minAllowedSpan / 2;
@@ -36,8 +36,16 @@ export function clampDomainY(rawMinY: number, rawMaxY: number, defY: [number, nu
     return [defY[0], defY[1]];
   }
 
-  minY = Math.max(0, Math.max(defY[0], minY));
-  maxY = Math.min(1010000, Math.min(defY[1], maxY));
+  if (minY < defY[0]) {
+    const span = maxY - minY;
+    minY = defY[0];
+    maxY = Math.min(defY[1], minY + span);
+  }
+  if (maxY > defY[1]) {
+    const span = maxY - minY;
+    maxY = defY[1];
+    minY = Math.max(defY[0], maxY - span);
+  }
 
   return [Math.round(minY), Math.round(maxY)];
 }
@@ -102,3 +110,41 @@ export function getSmartYTicks(yMin: number, yMax: number, defaultYMin: number =
 
   return Array.from(new Set(ticks));
 }
+
+export function sanitizeRangeInputs(
+  inputMinStr: string,
+  inputMaxStr: string,
+  min: number,
+  max: number,
+  orientation: 'horizontal' | 'vertical' = 'horizontal',
+  curMin: number = min,
+  curMax: number = max
+): [number, number] {
+  let minVal = parseFloat(inputMinStr);
+  let maxVal = parseFloat(inputMaxStr);
+
+  if (isNaN(minVal) && isNaN(maxVal)) {
+    return [curMin, curMax];
+  }
+
+  if (isNaN(minVal)) minVal = curMin;
+  if (isNaN(maxVal)) maxVal = curMax;
+
+  const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+
+  if (minVal >= maxVal) {
+    minVal = Math.max(min, maxVal - minStep);
+    if (minVal >= maxVal) {
+      maxVal = Math.min(max, minVal + minStep);
+    }
+  }
+
+  const clampedMin = Math.max(min, Math.min(max - minStep, minVal));
+  const clampedMax = Math.min(max, Math.max(clampedMin + minStep, maxVal));
+
+  return [
+    orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin),
+    orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax)
+  ];
+}
+

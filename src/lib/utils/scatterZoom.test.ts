@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from './scatterZoom';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, sanitizeRangeInputs } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -88,6 +88,30 @@ describe('scatterZoom utilities', () => {
       expect(minX).toBe(1.0);
       expect(maxX).toBe(15.5);
       expect(maxX - minX).toBeCloseTo(14.5);
+    });
+  });
+
+  describe('sanitizeRangeInputs', () => {
+    it('should auto-adjust when max input is less than or equal to min input in vertical mode', () => {
+      // User inputs Max = 980,000 while Min was 1,000,000
+      const [minY, maxY] = sanitizeRangeInputs('1000000', '980000', 975000, 1010000, 'vertical');
+      expect(minY).toBeLessThan(maxY);
+      expect(minY).toBe(979000);
+      expect(maxY).toBe(980000);
+    });
+
+    it('should auto-adjust when min input is greater than or equal to max input in horizontal mode', () => {
+      // User inputs Min = 14.5 while Max was 12.0
+      const [minX, maxX] = sanitizeRangeInputs('14.5', '12.0', 1.0, 15.4, 'horizontal');
+      expect(minX).toBeLessThan(maxX);
+      expect(minX).toBe(11.9);
+      expect(maxX).toBe(12.0);
+    });
+
+    it('should fallback to current values if inputs are invalid NaN strings', () => {
+      const [minX, maxX] = sanitizeRangeInputs('abc', 'xyz', 1.0, 15.4, 'horizontal', 5.0, 10.0);
+      expect(minX).toBe(5.0);
+      expect(maxX).toBe(10.0);
     });
   });
 });

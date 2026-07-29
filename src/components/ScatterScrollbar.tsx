@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { sanitizeRangeInputs } from '../lib/utils/scatterZoom.js';
 
 interface ScatterScrollbarProps {
   min: number;
@@ -63,32 +64,15 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   };
 
   const handleApplyInputs = () => {
-    let minVal = parseFloat(inputMin);
-    let maxVal = parseFloat(inputMax);
-
-    if (isNaN(minVal) && isNaN(maxVal)) {
-      setIsEditing(false);
-      return;
-    }
-
-    if (isNaN(minVal)) minVal = curMin;
-    if (isNaN(maxVal)) maxVal = curMax;
-
-    const minStep = orientation === 'horizontal' ? 0.1 : 1000;
-
-    // Auto-adjust if user inputs max <= min
-    if (minVal >= maxVal) {
-      minVal = Math.max(min, maxVal - minStep);
-      if (minVal >= maxVal) {
-        maxVal = Math.min(max, minVal + minStep);
-      }
-    }
-
-    const clampedMin = Math.max(min, Math.min(max - minStep, minVal));
-    const clampedMax = Math.min(max, Math.max(clampedMin + minStep, maxVal));
-
-    const finalMin = orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin);
-    const finalMax = orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax);
+    const [finalMin, finalMax] = sanitizeRangeInputs(
+      inputMin,
+      inputMax,
+      min,
+      max,
+      orientation,
+      curMin,
+      curMax
+    );
 
     onZoomChange([finalMin, finalMax]);
     setInputMin(finalMin.toString());

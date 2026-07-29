@@ -110,3 +110,41 @@ export function getSmartYTicks(yMin: number, yMax: number, defaultYMin: number =
 
   return Array.from(new Set(ticks));
 }
+
+export function sanitizeRangeInputs(
+  inputMinStr: string,
+  inputMaxStr: string,
+  min: number,
+  max: number,
+  orientation: 'horizontal' | 'vertical' = 'horizontal',
+  curMin: number = min,
+  curMax: number = max
+): [number, number] {
+  let minVal = parseFloat(inputMinStr);
+  let maxVal = parseFloat(inputMaxStr);
+
+  if (isNaN(minVal) && isNaN(maxVal)) {
+    return [curMin, curMax];
+  }
+
+  if (isNaN(minVal)) minVal = curMin;
+  if (isNaN(maxVal)) maxVal = curMax;
+
+  const minStep = orientation === 'horizontal' ? 0.1 : 1000;
+
+  if (minVal >= maxVal) {
+    minVal = Math.max(min, maxVal - minStep);
+    if (minVal >= maxVal) {
+      maxVal = Math.min(max, minVal + minStep);
+    }
+  }
+
+  const clampedMin = Math.max(min, Math.min(max - minStep, minVal));
+  const clampedMax = Math.min(max, Math.max(clampedMin + minStep, maxVal));
+
+  return [
+    orientation === 'horizontal' ? Number(clampedMin.toFixed(2)) : Math.round(clampedMin),
+    orientation === 'horizontal' ? Number(clampedMax.toFixed(2)) : Math.round(clampedMax)
+  ];
+}
+

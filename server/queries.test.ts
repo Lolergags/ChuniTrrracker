@@ -195,5 +195,47 @@ describe('Chart Query Logic & Ghost Chart Exclusions', () => {
     expect(charlieRank).toBe(3);
     expect(charliePage).toBe(2);
   });
+
+  it('should correctly query performance players OP distribution with exact binding positions', () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, username TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, player_id INTEGER, chart_id INTEGER, score INTEGER, lamp TEXT, op INTEGER, time_achieved INTEGER);
+    `);
+
+    db.prepare('INSERT INTO players (id, username) VALUES (?, ?)').run(1, 'Alice');
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op, time_achieved) VALUES (?, 1, 1009000, 'AJ', 10000, 100)").run(1);
+
+    const filter = getChartFilterConditions({ server: 'JP' }, 'songs', 'c');
+    const chartWhereClause = filter.conditions.length > 0 ? `WHERE ${filter.conditions.join(' AND ')}` : '';
+    
+    let pWhere = '';
+    const pBindings: any[] = [];
+
+    const totalMaxOp = 100000;
+    const rawData = db.prepare(`
+      SELECT 
+        p.username,
+        IFNULL(SUM(max_scores.max_op), 0) as totalOp,
+        IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as opPercent
+      FROM players p
+      JOIN (
+        SELECT s.player_id, c.song_id, MAX(s.op) as max_op
+        FROM scores s
+        JOIN charts c ON s.chart_id = c.id
+        JOIN songs ON c.song_id = songs.id
+        ${chartWhereClause}
+        GROUP BY s.player_id, c.song_id
+      ) max_scores ON p.id = max_scores.player_id
+      ${pWhere}
+      GROUP BY p.id, p.username
+      HAVING totalOp > 0
+      ORDER BY totalOp DESC
+    `).all(totalMaxOp, ...filter.bindings, ...pBindings) as any[];
+
+    expect(Array.isArray(rawData)).toBe(true);
+    expect(rawData.length).toBeGreaterThan(0);
+    expect(rawData[0].username).toBe('Alice');
+    expect(rawData[0].opPercent).toBeGreaterThan(0);
+  });
 });
 

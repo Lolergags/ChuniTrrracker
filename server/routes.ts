@@ -714,7 +714,7 @@ router.get('/performance/players', (req, res) => {
       p.username,
       IFNULL(SUM(max_scores.max_op), 0) as totalOp,
       IFNULL(ROUND(CAST(SUM(max_scores.max_op) AS REAL) / ? * 100, 2), 0) as opPercent
-    FROM (SELECT id, username FROM players p ${pWhere}) p
+    FROM players p
     JOIN (
       SELECT s.player_id, c.song_id, MAX(s.op) as max_op
       FROM scores s
@@ -723,6 +723,7 @@ router.get('/performance/players', (req, res) => {
       ${chartWhereClause}
       GROUP BY s.player_id, c.song_id
     ) max_scores ON p.id = max_scores.player_id
+    ${pWhere}
     GROUP BY p.id, p.username
     HAVING totalOp > 0
     ORDER BY totalOp DESC

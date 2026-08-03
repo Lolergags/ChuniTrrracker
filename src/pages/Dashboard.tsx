@@ -13,7 +13,9 @@ import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot, size } = props;
+  const { cx, cy, fill, payload, selectedDot, hoveredDot, size, onNavigate, activePlayer } = props;
+  const lastClickRef = useRef<number>(0);
+
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
 
   const isSelected = selectedDot && (
@@ -38,10 +40,34 @@ const CustomScatterDot = React.memo((props: any) => {
 
   const { dotR } = calculateDotRadius(payload.playCount || size, isSelected, isHovered);
 
+  const triggerNavigate = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    const sId = payload.songId || payload.song_id;
+    if (sId && onNavigate) {
+      const diff = payload.difficulty ? `&diff=${payload.difficulty}` : '';
+      const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+      onNavigate(`/analytics?songId=${sId}${diff}${player}`);
+    }
+  };
+
+  const handlePointerDown = () => {
+    const now = Date.now();
+    if (now - lastClickRef.current < 350) {
+      triggerNavigate();
+    }
+    lastClickRef.current = now;
+  };
+
   if (isActive && overlapCount > 1) {
     const badgeOffset = Math.max(5, dotR * 0.8);
     return (
-      <g style={{ cursor: 'pointer' }}>
+      <g 
+        style={{ cursor: 'pointer' }}
+        onPointerDown={handlePointerDown}
+        onDoubleClick={triggerNavigate}
+      >
         <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
         <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
         <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
@@ -62,6 +88,8 @@ const CustomScatterDot = React.memo((props: any) => {
       stroke={isSelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
       strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      onPointerDown={handlePointerDown}
+      onDoubleClick={triggerNavigate}
     />
   );
 });
@@ -414,8 +442,14 @@ export function Dashboard() {
   );
 
   const renderScatterDot = useCallback((props: any) => 
-    <CustomScatterDot {...props} selectedDot={selectedDot} hoveredDot={hoveredDot} />
-  , [selectedDot, hoveredDot]);
+    <CustomScatterDot 
+      {...props} 
+      selectedDot={selectedDot} 
+      hoveredDot={hoveredDot} 
+      onNavigate={navigate}
+      activePlayer={activePlayer}
+    />
+  , [selectedDot, hoveredDot, navigate, activePlayer]);
 
   useEffect(() => {
     const elem = scatterContainerRef.current;

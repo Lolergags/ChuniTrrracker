@@ -174,14 +174,19 @@ export function GlobalStats() {
         api.getOpYield(apiFilters),
         api.getPlayerOpDistribution(apiFilters)
       ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
-        setHeatmapData(heatmap);
-        setMetaData(meta);
-        setLampData(lamps);
-        setOpYieldData(opYield);
-        setPlayerOpData(playerOp);
+        setHeatmapData(Array.isArray(heatmap) ? heatmap : []);
+        setMetaData(Array.isArray(meta) ? meta : []);
+        setLampData(Array.isArray(lamps) ? lamps : []);
+        setOpYieldData(Array.isArray(opYield) ? opYield : []);
+        setPlayerOpData(Array.isArray(playerOp) ? playerOp : []);
         setIsLoadingGlobal(false);
       }).catch(err => {
         console.error(err);
+        setHeatmapData([]);
+        setMetaData([]);
+        setLampData([]);
+        setOpYieldData([]);
+        setPlayerOpData([]);
         setIsLoadingGlobal(false);
       });
     }, 150);

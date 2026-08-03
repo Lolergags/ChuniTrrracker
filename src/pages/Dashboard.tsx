@@ -38,9 +38,9 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const { dotR } = calculateDotRadius(payload.playCount || size, isSelected, isHovered);
+  const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
-  const triggerNavigate = (e?: React.MouseEvent) => {
+  const triggerNavigate = (e?: React.MouseEvent | React.PointerEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -52,12 +52,17 @@ const CustomScatterDot = React.memo((props: any) => {
     }
   };
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     const now = Date.now();
-    if (now - lastClickRef.current < 350) {
-      triggerNavigate();
+    if (now - lastClickRef.current < 400) {
+      triggerNavigate(e);
+      lastClickRef.current = 0;
+    } else {
+      lastClickRef.current = now;
+      if (props.onClick) {
+        props.onClick(props, e);
+      }
     }
-    lastClickRef.current = now;
   };
 
   if (isActive && overlapCount > 1) {
@@ -66,7 +71,7 @@ const CustomScatterDot = React.memo((props: any) => {
       <g 
         style={{ cursor: 'pointer' }}
         onPointerDown={handlePointerDown}
-        onDoubleClick={triggerNavigate}
+        onDoubleClick={triggerNavigate as any}
       >
         <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
         <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
@@ -89,7 +94,7 @@ const CustomScatterDot = React.memo((props: any) => {
       strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
       onPointerDown={handlePointerDown}
-      onDoubleClick={triggerNavigate}
+      onDoubleClick={triggerNavigate as any}
     />
   );
 });
@@ -295,7 +300,6 @@ export function Dashboard() {
       score: s.score,
       constant: s.constant,
       opDisplay: Number((s.op / 10000).toFixed(2)),
-      playCount: s.playCount || 1,
       lamp: s.lamp,
       songId: s.songId,
       difficulty: s.difficulty,
@@ -329,7 +333,6 @@ export function Dashboard() {
         score: s.score,
         constant: s.constant,
         opDisplay: Number((s.op / 10000).toFixed(2)),
-        playCount: s.playCount || 1,
         lamp: s.lamp,
         songId: s.songId,
         difficulty: s.difficulty,
@@ -1072,7 +1075,7 @@ export function Dashboard() {
                     }}
                     width={scatterYWidth}
                   />
-                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
+                  <ZAxis type="number" dataKey="overlapCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Overlap Count" />
                   <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                   <Scatter 
                     name="Scores" 
@@ -1090,22 +1093,6 @@ export function Dashboard() {
                     onClick={(node: any) => {
                       const data = node?.payload || node;
                       if (!data || (!data.name && !data.title)) return;
-
-                      const dotId = `${data.chartId || data.id || data.songId || data.song_id}_${data.difficulty}`;
-                      const now = Date.now();
-
-                      if (lastScatterDotClickRef.current.id === dotId && (now - lastScatterDotClickRef.current.time) < 400) {
-                        const sId = data.songId || data.song_id;
-                        if (sId) {
-                          const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
-                          const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
-                          navigate(`/analytics?songId=${sId}${diff}${player}`);
-                        }
-                        lastScatterDotClickRef.current = { id: '', time: 0 };
-                        return;
-                      }
-
-                      lastScatterDotClickRef.current = { id: dotId, time: now };
                       setSelectedDot(data);
                     }}
                   />

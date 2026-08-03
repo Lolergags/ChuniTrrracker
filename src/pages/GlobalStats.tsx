@@ -60,9 +60,9 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const { dotR } = calculateDotRadius(payload.playCount || payload.plays || size, isSelected, isHovered);
+  const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
-  const triggerNavigate = (e?: React.MouseEvent) => {
+  const triggerNavigate = (e?: React.MouseEvent | React.PointerEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -73,12 +73,17 @@ const CustomScatterDot = React.memo((props: any) => {
     }
   };
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     const now = Date.now();
-    if (now - lastClickRef.current < 350) {
-      triggerNavigate();
+    if (now - lastClickRef.current < 400) {
+      triggerNavigate(e);
+      lastClickRef.current = 0;
+    } else {
+      lastClickRef.current = now;
+      if (props.onClick) {
+        props.onClick(props, e);
+      }
     }
-    lastClickRef.current = now;
   };
 
   if (isActive && overlapCount > 1) {
@@ -87,7 +92,7 @@ const CustomScatterDot = React.memo((props: any) => {
       <g 
         style={{ cursor: 'pointer' }}
         onPointerDown={handlePointerDown}
-        onDoubleClick={triggerNavigate}
+        onDoubleClick={triggerNavigate as any}
       >
         <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
         <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
@@ -110,7 +115,7 @@ const CustomScatterDot = React.memo((props: any) => {
       strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
       onPointerDown={handlePointerDown}
-      onDoubleClick={triggerNavigate}
+      onDoubleClick={triggerNavigate as any}
     />
   );
 });
@@ -1079,7 +1084,7 @@ export function GlobalStats() {
                         }}
                         width={globalScatterYWidth}
                       />
-                      <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Plays" />
+                      <ZAxis type="number" dataKey="overlapCount" range={[20, 1200]} name="Overlap Count" />
                       <Tooltip content={<CustomTooltip />} />
                       <Scatter 
                         name="Charts" 

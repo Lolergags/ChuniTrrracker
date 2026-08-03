@@ -9,7 +9,10 @@ describe('searchPlayers', () => {
     'darius',
     'xxdarxx',
     'Dar',
-    'Zdar'
+    'Zdar',
+    '[TEST]Player',
+    'Player 123',
+    'Special_User'
   ];
 
   it('prioritizes exact matches, then prefix, then substring', () => {
@@ -44,5 +47,25 @@ describe('searchPlayers', () => {
     const results = searchPlayers(mockPlayers, 'DAR');
     expect(results[0]).toBe('Dar');
     expect(results[1]).toBe('darkelitus');
+  });
+
+  it('handles special characters and brackets safely without breaking', () => {
+    const results = searchPlayers(mockPlayers, '[TEST]');
+    expect(results).toEqual(['[TEST]Player']);
+  });
+
+  it('matches player names containing numbers and spaces', () => {
+    const results = searchPlayers(mockPlayers, 'Player 123');
+    expect(results).toEqual(['Player 123']);
+  });
+
+  it('matches player names with underscores', () => {
+    const results = searchPlayers(mockPlayers, 'Special_User');
+    expect(results).toEqual(['Special_User']);
+  });
+
+  it('handles single character search query correctly', () => {
+    const results = searchPlayers(mockPlayers, 'z', 10);
+    expect(results).toEqual(['Zdar']);
   });
 });

@@ -285,10 +285,18 @@ export function GlobalStats() {
   const validMetaData = useMemo(() => {
     const raw = metaData.filter((d: any) => d.avgScore >= 975000);
     
+    const curX = globalScatterZoomX || defaultXDomain;
+    const curY = globalScatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
     const grid = new Map<string, any[]>();
     for (const item of raw) {
       const itemScore = item.avgScore || (item as any).score || 0;
-      const key = `${Math.round(item.constant * 20)}_${Math.round(itemScore / 2500)}`;
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(itemScore / keyStepY)}`;
       let list = grid.get(key);
       if (!list) {
         list = [];
@@ -299,8 +307,8 @@ export function GlobalStats() {
 
     return raw.map((item: any) => {
       const itemScore = item.avgScore || item.score || 0;
-      const key = `${Math.round(item.constant * 20)}_${Math.round(itemScore / 2500)}`;
-      const overlappingItems = grid.get(key) || [];
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(itemScore / keyStepY)}`;
+      const overlappingItems = grid.get(key) || [item];
       
       return {
         ...item,
@@ -308,7 +316,7 @@ export function GlobalStats() {
         overlapCount: overlappingItems.length
       };
     });
-  }, [metaData]);
+  }, [metaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
   const scatterMinMaxC = useMemo(() => {
     const constants = validMetaData.map((d: any) => d.constant);
@@ -343,9 +351,6 @@ export function GlobalStats() {
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
-    if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
-      return selectedDot.overlappingItems;
-    }
     
     const parentCluster = validMetaData.find((m: any) => {
       if (m.overlappingItems && m.overlappingItems.length > 0) {
@@ -365,14 +370,21 @@ export function GlobalStats() {
       return parentCluster.overlappingItems;
     }
 
+    const curX = globalScatterZoomX || defaultXDomain;
+    const curY = globalScatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
     const selScore = selectedDot.avgScore || selectedDot.score || 0;
-    const selKey = `${Math.round(selectedDot.constant * 20)}_${Math.round(selScore / 2500)}`;
+    const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
     return validMetaData.filter((d: any) => {
       const dScore = d.avgScore || d.score || 0;
-      const dKey = `${Math.round(d.constant * 20)}_${Math.round(dScore / 2500)}`;
+      const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
       return dKey === selKey;
     });
-  }, [selectedDot, validMetaData]);
+  }, [selectedDot, validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
   const currentGlobalDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingGlobalDots.length) return 0;

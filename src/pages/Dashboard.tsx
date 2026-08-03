@@ -304,9 +304,17 @@ export function Dashboard() {
   }, [scores]);
 
   const mappedScatterScores = useMemo(() => {
+    const curX = scatterZoomX || defaultXDomain;
+    const curY = scatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
     const grid = new Map<string, any[]>();
     for (const item of allMappedScatterScores) {
-      const key = `${Math.round(item.constant * 20)}_${Math.round(item.score / 2500)}`;
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(item.score / keyStepY)}`;
       let list = grid.get(key);
       if (!list) {
         list = [];
@@ -328,8 +336,8 @@ export function Dashboard() {
         chartId: s.chartId
       };
       
-      const key = `${Math.round(item.constant * 20)}_${Math.round(item.score / 2500)}`;
-      const overlappingItems = grid.get(key) || [];
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(item.score / keyStepY)}`;
+      const overlappingItems = grid.get(key) || [item];
       
       return {
         ...item,
@@ -337,7 +345,7 @@ export function Dashboard() {
         overlapCount: overlappingItems.length
       };
     });
-  }, [uniqueScores, allMappedScatterScores]);
+  }, [uniqueScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
   const visibleDashboardScatterData = useMemo(() => {
     if (!scatterZoomX && !scatterZoomY) {
@@ -365,10 +373,7 @@ export function Dashboard() {
 
   const overlappingDots = useMemo(() => {
     if (!selectedDot) return [];
-    if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
-      return selectedDot.overlappingItems;
-    }
-    
+
     const parentCluster = mappedScatterScores.find((m: any) => {
       if (m.overlappingItems && m.overlappingItems.length > 0) {
         return m.overlappingItems.some((other: any) =>
@@ -385,14 +390,21 @@ export function Dashboard() {
       return parentCluster.overlappingItems;
     }
 
+    const curX = scatterZoomX || defaultXDomain;
+    const curY = scatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
     const selScore = selectedDot.score || selectedDot.avgScore || 0;
-    const selKey = `${Math.round(selectedDot.constant * 20)}_${Math.round(selScore / 2500)}`;
+    const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
     return allMappedScatterScores.filter((d: any) => {
       const dScore = d.score || d.avgScore || 0;
-      const dKey = `${Math.round(d.constant * 20)}_${Math.round(dScore / 2500)}`;
+      const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
       return dKey === selKey;
     });
-  }, [selectedDot, mappedScatterScores, allMappedScatterScores]);
+  }, [selectedDot, mappedScatterScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;

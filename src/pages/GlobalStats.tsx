@@ -178,6 +178,7 @@ export function GlobalStats() {
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const [hoveredDot, setHoveredDot] = useState<any | null>(null);
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
+  const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   const isMobile = useIsMobile();
@@ -1082,17 +1083,24 @@ export function GlobalStats() {
                         }}
                         onMouseLeave={() => setHoveredDot(null)}
                         onClick={(node: any) => {
-                          if (node && (node.payload || node.title)) {
-                            setSelectedDot(node.payload || node);
-                          }
-                        }}
-                        onDoubleClick={(node: any) => {
                           const data = node?.payload || node;
-                          const sId = data?.songId || data?.song_id;
-                          if (data && sId) {
-                            const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
-                            navigate(`/analytics?songId=${sId}${diff}`);
+                          if (!data || (!data.title && !data.name)) return;
+
+                          const dotId = `${data.chartId || data.id || data.songId || data.song_id}_${data.difficulty}`;
+                          const now = Date.now();
+
+                          if (lastScatterDotClickRef.current.id === dotId && (now - lastScatterDotClickRef.current.time) < 400) {
+                            const sId = data.songId || data.song_id;
+                            if (sId) {
+                              const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+                              navigate(`/analytics?songId=${sId}${diff}`);
+                            }
+                            lastScatterDotClickRef.current = { id: '', time: 0 };
+                            return;
                           }
+
+                          lastScatterDotClickRef.current = { id: dotId, time: now };
+                          setSelectedDot(data);
                         }}
                       />
                     </ScatterChart>

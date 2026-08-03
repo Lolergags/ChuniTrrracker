@@ -424,9 +424,9 @@ router.get('/players/:username/scores', (req, res) => {
     const counts = db.prepare(`
       SELECT s.chart_id, COUNT(*) as playCount
       FROM scores s
-      WHERE s.player_id = ? AND s.chart_id IN (${placeholders})
+      WHERE s.chart_id IN (${placeholders})
       GROUP BY s.chart_id
-    `).all(player.id, ...chartIds) as { chart_id: number, playCount: number }[];
+    `).all(...chartIds) as { chart_id: number, playCount: number }[];
     
     const countMap = new Map<number, number>();
     for (const row of counts) {

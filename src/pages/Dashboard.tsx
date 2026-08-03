@@ -13,8 +13,7 @@ import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot, size, onNavigate, activePlayer } = props;
-  const lastClickRef = useRef<number>(0);
+  const { cx, cy, fill, payload, selectedDot, hoveredDot } = props;
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
 
@@ -40,39 +39,10 @@ const CustomScatterDot = React.memo((props: any) => {
 
   const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
-  const triggerNavigate = (e?: React.MouseEvent | React.PointerEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    const sId = payload.songId || payload.song_id;
-    if (sId && onNavigate) {
-      const diff = payload.difficulty ? `&diff=${payload.difficulty}` : '';
-      const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
-      onNavigate(`/analytics?songId=${sId}${diff}${player}`);
-    }
-  };
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    const now = Date.now();
-    if (now - lastClickRef.current < 400) {
-      triggerNavigate(e);
-      lastClickRef.current = 0;
-    } else {
-      lastClickRef.current = now;
-      if (props.onClick) {
-        props.onClick(props, e);
-      }
-    }
-  };
-
   if (isActive && overlapCount > 1) {
     const badgeOffset = Math.max(5, dotR * 0.8);
     return (
-      <g 
-        style={{ cursor: 'pointer' }}
-        onPointerDown={handlePointerDown}
-        onDoubleClick={triggerNavigate as any}
-      >
+      <g style={{ cursor: 'pointer' }}>
         <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
         <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
         <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
@@ -93,8 +63,6 @@ const CustomScatterDot = React.memo((props: any) => {
       stroke={isSelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
       strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
-      onPointerDown={handlePointerDown}
-      onDoubleClick={triggerNavigate as any}
     />
   );
 });
@@ -462,10 +430,8 @@ export function Dashboard() {
       {...props} 
       selectedDot={selectedDot} 
       hoveredDot={hoveredDot} 
-      onNavigate={navigate}
-      activePlayer={activePlayer}
     />
-  , [selectedDot, hoveredDot, navigate, activePlayer]);
+  , [selectedDot, hoveredDot]);
 
   useEffect(() => {
     const elem = scatterContainerRef.current;
@@ -1093,6 +1059,25 @@ export function Dashboard() {
                     onClick={(node: any) => {
                       const data = node?.payload || node;
                       if (!data || (!data.name && !data.title)) return;
+
+                      const dotId = `${data.chartId || data.songId || ''}_${data.difficulty || ''}`;
+                      const now = Date.now();
+                      const last = lastScatterDotClickRef.current;
+
+                      if (last.id === dotId && (now - last.time) < 500) {
+                        // Double-click: navigate to song leaderboard
+                        const sId = data.songId || data.song_id;
+                        if (sId) {
+                          const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+                          const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+                          navigate(`/analytics?songId=${sId}${diff}${player}`);
+                        }
+                        lastScatterDotClickRef.current = { id: '', time: 0 };
+                        return;
+                      }
+
+                      // First click: select the dot (keeps UI panel open)
+                      lastScatterDotClickRef.current = { id: dotId, time: now };
                       setSelectedDot(data);
                     }}
                   />

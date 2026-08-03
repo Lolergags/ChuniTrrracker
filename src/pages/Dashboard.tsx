@@ -347,6 +347,18 @@ export function Dashboard() {
     return idx >= 0 ? idx : 0;
   }, [selectedDot, overlappingDots]);
 
+  const smartYTicks = useMemo(() => 
+    getSmartYTicks(
+      scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], 
+      scatterZoomY ? scatterZoomY[1] : 1010000, 
+      defaultYDomain[0]
+    ), [scatterZoomY, defaultYDomain]
+  );
+
+  const renderScatterDot = useCallback((props: any) => 
+    <CustomScatterDot {...props} selectedDot={selectedDot} hoveredDot={hoveredDot} />
+  , [selectedDot, hoveredDot]);
+
   useEffect(() => {
     const elem = scatterContainerRef.current;
     if (!elem) return;
@@ -732,18 +744,6 @@ export function Dashboard() {
   if (isLoading || !stats) {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Loading player data...</div>;
   }
-
-  const smartYTicks = useMemo(() => 
-    getSmartYTicks(
-      scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], 
-      scatterZoomY ? scatterZoomY[1] : 1010000, 
-      defaultYDomain[0]
-    ), [scatterZoomY, defaultYDomain]
-  );
-
-  const renderScatterDot = useCallback((props: any) => 
-    <CustomScatterDot {...props} selectedDot={selectedDot} hoveredDot={hoveredDot} />
-  , [selectedDot, hoveredDot]);
 
   return (
     <div className="glass-panel">

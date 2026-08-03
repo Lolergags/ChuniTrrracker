@@ -32,7 +32,7 @@ const CustomTooltip = React.memo(({ active, payload }: any) => {
 });
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot } = props;
+  const { cx, cy, fill, payload, selectedDot, hoveredDot, size } = props;
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
 
   const isSelected = selectedDot && (
@@ -52,13 +52,17 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
+  const baseR = size ? Math.max(3.5, Math.min(11, Math.sqrt(size / Math.PI))) : 4.5;
+  const dotR = isSelected ? baseR + 3 : (isHovered ? baseR + 1.5 : baseR);
+
   if (isActive && overlapCount > 1) {
+    const badgeOffset = Math.max(5, dotR * 0.8);
     return (
       <g style={{ cursor: 'pointer' }}>
-        <circle cx={cx} cy={cy} r={isSelected ? 10 : 8.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
-        <circle cx={cx} cy={cy} r={isSelected ? 6.5 : 5} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
-        <circle cx={cx + 6} cy={cy - 6} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
-        <text x={cx + 6} y={cy - 3.5} textAnchor="middle" fill="#000" fontSize="7" fontWeight="bold" pointerEvents="none">
+        <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
+        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + badgeOffset} y={cy - badgeOffset + 2.5} textAnchor="middle" fill="#000" fontSize="7" fontWeight="bold" pointerEvents="none">
           {overlapCount > 9 ? '+' : overlapCount}
         </text>
       </g>
@@ -69,7 +73,7 @@ const CustomScatterDot = React.memo((props: any) => {
     <circle 
       cx={cx} 
       cy={cy} 
-      r={isSelected ? 7.5 : (isHovered ? 6 : 4.5)} 
+      r={dotR} 
       fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} 
       fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
       stroke={isSelected ? '#ff66ff' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 

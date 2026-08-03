@@ -245,7 +245,7 @@ export function GlobalStats() {
     
     const grid = new Map<string, any[]>();
     for (const item of raw) {
-      const itemScore = item.avgScore || item.score || 0;
+      const itemScore = item.avgScore || (item as any).score || 0;
       const key = `${Math.round(item.constant * 20)}_${Math.round(itemScore / 2500)}`;
       let list = grid.get(key);
       if (!list) {

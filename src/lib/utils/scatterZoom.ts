@@ -159,10 +159,10 @@ export function calculateDotRadius(
   }
   
   const effectiveCount = Math.min(10, Math.max(1, count));
-  const baseR = Number((3.5 + 2.0 * Math.sqrt(effectiveCount - 1)).toFixed(2));
+  const baseR = Number((5.5 + 2.5 * Math.sqrt(effectiveCount - 1)).toFixed(2));
   const dotR = isSelected 
-    ? Number((baseR + 3.8).toFixed(2)) 
-    : (isHovered ? Number((baseR + 2.0).toFixed(2)) : baseR);
+    ? Number((baseR + 4.2).toFixed(2)) 
+    : (isHovered ? Number((baseR + 2.5).toFixed(2)) : baseR);
 
   return { baseR, dotR };
 }

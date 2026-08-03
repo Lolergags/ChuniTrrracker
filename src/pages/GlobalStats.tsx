@@ -39,12 +39,12 @@ const CustomScatterDot = React.memo((props: any) => {
   const isSelected = selectedDot && (
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
     (selectedDot.id && payload.id === selectedDot.id) ||
-    ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) === (selectedDot.songId || selectedDot.song_id) && payload.difficulty === selectedDot.difficulty) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore)) ||
+    ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) && (selectedDot.songId || selectedDot.song_id) === (payload.songId || payload.song_id)) ||
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01) ||
     (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
       (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
       (other.id && selectedDot.id && other.id === selectedDot.id) ||
-      ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && other.difficulty === selectedDot.difficulty) ||
+      ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
       ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
     ))
   );
@@ -52,7 +52,7 @@ const CustomScatterDot = React.memo((props: any) => {
   const isHovered = hoveredDot && (
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
     (hoveredDot.id && payload.id === hoveredDot.id) ||
-    ((hoveredDot.songId || hoveredDot.song_id) && (payload.songId || payload.song_id) === (hoveredDot.songId || hoveredDot.song_id) && payload.difficulty === hoveredDot.difficulty) ||
+    ((hoveredDot.songId || hoveredDot.song_id) && (payload.songId || payload.song_id) && (hoveredDot.songId || hoveredDot.song_id) === (payload.songId || payload.song_id) && hoveredDot.difficulty === payload.difficulty) ||
     ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
   );
 
@@ -62,13 +62,13 @@ const CustomScatterDot = React.memo((props: any) => {
   const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
   if (isActive && overlapCount > 1) {
-    const badgeOffset = Math.max(5, dotR * 0.8);
+    const badgeOffset = Math.max(6, dotR * 0.75);
     return (
       <g style={{ cursor: 'pointer' }}>
-        <circle cx={cx} cy={cy} r={dotR + 3.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={dotR + 4.0} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
         <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
-        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
-        <text x={cx + badgeOffset} y={cy - badgeOffset + 2.5} textAnchor="middle" fill="#000" fontSize="7" fontWeight="bold" pointerEvents="none">
+        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={5.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + badgeOffset} y={cy - badgeOffset + 3} textAnchor="middle" fill="#000" fontSize="8" fontWeight="bold" pointerEvents="none">
           {overlapCount > 9 ? '+' : overlapCount}
         </text>
       </g>
@@ -478,6 +478,9 @@ export function GlobalStats() {
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!panRef.current.isDragging) return;
+      const moveDist = Math.hypot(e.clientX - panRef.current.startX, e.clientY - panRef.current.startY);
+      if (moveDist < 6) return;
+
       e.preventDefault();
       const { defX, defY } = getDomains();
 

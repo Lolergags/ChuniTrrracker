@@ -116,36 +116,36 @@ describe('scatterZoom utilities', () => {
   });
 
   describe('calculateDotRadius', () => {
-    it('should fallback to default base radius 3.5 for 1 play when size/count is missing', () => {
+    it('should fallback to default base radius 5.5 for 1 play when size/count is missing', () => {
       const { baseR, dotR } = calculateDotRadius();
-      expect(baseR).toBe(3.5);
-      expect(dotR).toBe(3.5);
+      expect(baseR).toBe(5.5);
+      expect(dotR).toBe(5.5);
     });
 
-    it('should calculate dynamic radius with strong size contrast bounded between 3.5 and 9.5', () => {
-      // 1 play -> 3.5px
+    it('should calculate dynamic radius with strong size contrast bounded between 5.5 and 13.0', () => {
+      // 1 play -> 5.5px
       const { baseR: count1 } = calculateDotRadius(1);
-      expect(count1).toBe(3.5);
+      expect(count1).toBe(5.5);
 
-      // 2 plays -> 5.5px
+      // 2 plays -> 8.0px
       const { baseR: count2 } = calculateDotRadius(2);
-      expect(count2).toBe(5.5);
+      expect(count2).toBe(8.0);
 
-      // 5 plays -> 7.5px
+      // 5 plays -> 10.5px
       const { baseR: count5 } = calculateDotRadius(5);
-      expect(count5).toBe(7.5);
+      expect(count5).toBe(10.5);
 
-      // 10+ plays -> clamped to 9.5px
+      // 10+ plays -> clamped to 13.0px
       const { baseR: count10 } = calculateDotRadius(10);
-      expect(count10).toBe(9.5);
+      expect(count10).toBe(13.0);
     });
 
     it('should expand dot radius when hovered or selected', () => {
       const { baseR, dotR: hoveredDotR } = calculateDotRadius(5, false, true);
       const { dotR: selectedDotR } = calculateDotRadius(5, true, false);
 
-      expect(hoveredDotR).toBe(Number((baseR + 2.0).toFixed(2)));
-      expect(selectedDotR).toBe(Number((baseR + 3.8).toFixed(2)));
+      expect(hoveredDotR).toBe(Number((baseR + 2.5).toFixed(2)));
+      expect(selectedDotR).toBe(Number((baseR + 4.2).toFixed(2)));
     });
   });
 });

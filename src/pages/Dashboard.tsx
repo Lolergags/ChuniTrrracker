@@ -349,12 +349,13 @@ export function Dashboard() {
       if (m.overlappingItems && m.overlappingItems.length > 0) {
         return m.overlappingItems.some((other: any) =>
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          (other.songId && selectedDot.songId && other.songId === selectedDot.songId && other.difficulty === selectedDot.difficulty) ||
+          (other.songId && selectedDot.songId && other.songId === selectedDot.songId) ||
           ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
         );
       }
       return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             (m.songId && selectedDot.songId && m.songId === selectedDot.songId && m.difficulty === selectedDot.difficulty);
+             (m.songId && selectedDot.songId && m.songId === selectedDot.songId) ||
+             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && Math.abs(m.constant - selectedDot.constant) < 0.01);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
@@ -1015,7 +1016,7 @@ export function Dashboard() {
                 >
                   <defs>
                     <clipPath id="custom-scatter-clip">
-                      <rect x={scatterClipX} y="-500" width="10000" height="875" />
+                      <rect x={scatterClipX} y="-500" width="10000" height="905" />
                     </clipPath>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

@@ -331,13 +331,14 @@ export function GlobalStats() {
         return m.overlappingItems.some((other: any) =>
           (other.id && selectedDot.id && other.id === selectedDot.id) ||
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && other.difficulty === selectedDot.difficulty) ||
+          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
           ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
         );
       }
       return (m.id && selectedDot.id && m.id === selectedDot.id) ||
              (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && m.difficulty === selectedDot.difficulty);
+             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
+             ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
@@ -1026,7 +1027,7 @@ export function GlobalStats() {
                     >
                       <defs>
                         <clipPath id="custom-scatter-clip">
-                          <rect x={globalScatterClipX} y="-500" width="10000" height="875" />
+                          <rect x={globalScatterClipX} y="-500" width="10000" height="905" />
                         </clipPath>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

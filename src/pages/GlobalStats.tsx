@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush } from 'recharts';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, User, Music, Activity } from 'lucide-react';
 import { api } from '../lib/api/client.js';
 import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, ApiPlayerOpDistribution } from '../lib/types/index.js';
 import { useGlobal } from '../lib/context/useGlobal.js';
@@ -728,6 +728,17 @@ export function GlobalStats() {
     }));
   }, [playerOpData]);
 
+  const totalFilteredScores = useMemo(() => {
+    return metaData.reduce((acc, d: any) => acc + (d.playCount || 0), 0);
+  }, [metaData]);
+
+  const difficultyLabel = useMemo(() => {
+    const d = filters.diff as string | string[];
+    if (!d || d === 'MAS_ULT') return 'Master & Ultima (MAS, ULT)';
+    if (d === 'ALL') return 'All Difficulties';
+    if (Array.isArray(d)) return d.join(', ');
+    return String(d);
+  }, [filters.diff]);
 
   const smartYTicks = useMemo(() => 
     getSmartYTicks(
@@ -751,12 +762,32 @@ export function GlobalStats() {
         gap: '1.25rem',
         marginBottom: '2rem'
       }}>
-        {/* Row 1: Title & Description */}
-        <div>
-          <h1 className="text-gradient" style={{ margin: 0 }}>Global Stats</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
-            Universal statistics aggregated across all players and songs on the server.
-          </p>
+        {/* Row 1: Title, Description & Filter Counters */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="text-gradient" style={{ margin: 0 }}>Global Stats</h1>
+            <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
+              Universal statistics aggregated across all players and songs on the server.
+            </p>
+          </div>
+
+          {/* Live Filter Counter Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <div className="badge" style={{ background: 'rgba(170, 59, 255, 0.12)', border: '1px solid var(--accent-primary)', color: 'var(--text-primary)', padding: '0.35rem 0.75rem', fontSize: '0.85rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <User size={14} style={{ color: 'var(--accent-primary)' }} />
+              <span>Players Filtered: <strong style={{ color: 'var(--accent-primary)' }}>{playerOpData.length.toLocaleString()}</strong></span>
+            </div>
+
+            <div className="badge" style={{ background: 'rgba(255, 215, 0, 0.12)', border: '1px solid var(--accent-gold)', color: 'var(--text-primary)', padding: '0.35rem 0.75rem', fontSize: '0.85rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Music size={14} style={{ color: 'var(--accent-gold)' }} />
+              <span>Charts Filtered: <strong style={{ color: 'var(--accent-gold)' }}>{metaData.length.toLocaleString()}</strong> ({difficultyLabel})</span>
+            </div>
+
+            <div className="badge" style={{ background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)', color: 'var(--text-secondary)', padding: '0.35rem 0.75rem', fontSize: '0.85rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Activity size={14} />
+              <span>Scores Logged: <strong style={{ color: 'var(--text-primary)' }}>{totalFilteredScores.toLocaleString()}</strong></span>
+            </div>
+          </div>
         </div>
 
         {/* Row 2: Global Filters Bar */}
@@ -917,7 +948,7 @@ export function GlobalStats() {
               <div>
                 <h2 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>Chart Level Constant vs Average Score Scatter</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  Drag slider edges to resize, drag center to pan. Scroll mouse wheel to zoom in/out.
+                  Plotting <strong style={{ color: 'var(--accent-gold)' }}>{validMetaData.length.toLocaleString()}</strong> charts ({difficultyLabel}) across <strong style={{ color: 'var(--accent-primary)' }}>{playerOpData.length.toLocaleString()}</strong> players matching active filters. Drag slider edges to resize, drag center to pan. Scroll mouse wheel to zoom.
                 </p>
               </div>
               {(globalScatterZoomX || globalScatterZoomY) && (

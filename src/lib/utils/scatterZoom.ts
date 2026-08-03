@@ -158,8 +158,12 @@ export function calculateDotRadius(
     count = playCountOrSize;
   }
   
-  const baseR = Math.max(3.5, Math.min(13, 3.0 + 1.8 * Math.sqrt(Math.max(1, count))));
-  const dotR = isSelected ? Number((baseR + 3.5).toFixed(2)) : (isHovered ? Number((baseR + 1.8).toFixed(2)) : Number(baseR.toFixed(2)));
-  return { baseR: Number(baseR.toFixed(2)), dotR };
+  const effectiveCount = Math.min(10, Math.max(1, count));
+  const baseR = Number((3.5 + 2.0 * Math.sqrt(effectiveCount - 1)).toFixed(2));
+  const dotR = isSelected 
+    ? Number((baseR + 3.8).toFixed(2)) 
+    : (isHovered ? Number((baseR + 2.0).toFixed(2)) : baseR);
+
+  return { baseR, dotR };
 }
 

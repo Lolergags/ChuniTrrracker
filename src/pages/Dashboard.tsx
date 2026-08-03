@@ -19,7 +19,12 @@ const CustomScatterDot = React.memo((props: any) => {
   const isSelected = selectedDot && (
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
     (selectedDot.songId && payload.songId === selectedDot.songId && payload.difficulty === selectedDot.difficulty) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore)) ||
+    (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
+      (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+      (other.songId && selectedDot.songId && other.songId === selectedDot.songId && other.difficulty === selectedDot.difficulty) ||
+      ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+    ))
   );
 
   const isHovered = hoveredDot && (
@@ -334,25 +339,31 @@ export function Dashboard() {
     if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
       return selectedDot.overlappingItems;
     }
-    const selScore = selectedDot.score || selectedDot.avgScore || 0;
-    const parentInMapped = mappedScatterScores.find((m: any) => 
-      (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-      (m.songId && selectedDot.songId && m.songId === selectedDot.songId && m.difficulty === selectedDot.difficulty) ||
-      (m.name === selectedDot.name && Math.abs(m.constant - selectedDot.constant) < 0.01 && (m.score || m.avgScore) === selScore)
-    );
+    
+    const parentCluster = mappedScatterScores.find((m: any) => {
+      if (m.overlappingItems && m.overlappingItems.length > 0) {
+        return m.overlappingItems.some((other: any) =>
+          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+          (other.songId && selectedDot.songId && other.songId === selectedDot.songId && other.difficulty === selectedDot.difficulty) ||
+          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+        );
+      }
+      return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
+             (m.songId && selectedDot.songId && m.songId === selectedDot.songId && m.difficulty === selectedDot.difficulty);
+    });
 
-    if (parentInMapped && parentInMapped.overlappingItems && parentInMapped.overlappingItems.length > 0) {
-      return parentInMapped.overlappingItems;
+    if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
+      return parentCluster.overlappingItems;
     }
 
-    return mappedScatterScores.filter((d: any) => {
+    const selScore = selectedDot.score || selectedDot.avgScore || 0;
+    const selKey = `${Math.round(selectedDot.constant * 20)}_${Math.round(selScore / 2500)}`;
+    return allMappedScatterScores.filter((d: any) => {
       const dScore = d.score || d.avgScore || 0;
-      return (
-        Math.abs(d.constant - selectedDot.constant) <= 0.06 &&
-        Math.abs(dScore - selScore) <= 3000
-      );
+      const dKey = `${Math.round(d.constant * 20)}_${Math.round(dScore / 2500)}`;
+      return dKey === selKey;
     });
-  }, [selectedDot, mappedScatterScores]);
+  }, [selectedDot, mappedScatterScores, allMappedScatterScores]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;

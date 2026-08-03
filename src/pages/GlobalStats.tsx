@@ -39,7 +39,13 @@ const CustomScatterDot = React.memo((props: any) => {
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
     (selectedDot.id && payload.id === selectedDot.id) ||
     ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) === (selectedDot.songId || selectedDot.song_id) && payload.difficulty === selectedDot.difficulty) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore)) ||
+    (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
+      (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+      (other.id && selectedDot.id && other.id === selectedDot.id) ||
+      ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && other.difficulty === selectedDot.difficulty) ||
+      ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+    ))
   );
 
   const isHovered = hoveredDot && (
@@ -307,24 +313,31 @@ export function GlobalStats() {
     if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
       return selectedDot.overlappingItems;
     }
-    const selScore = selectedDot.avgScore || selectedDot.score || 0;
-    const parentInValid = validMetaData.find((m: any) => 
-      (m.id && selectedDot.id && m.id === selectedDot.id) ||
-      (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-      ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && m.difficulty === selectedDot.difficulty) ||
-      ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01 && Math.abs((m.avgScore || m.score || 0) - selScore) < 5)
-    );
+    
+    const parentCluster = validMetaData.find((m: any) => {
+      if (m.overlappingItems && m.overlappingItems.length > 0) {
+        return m.overlappingItems.some((other: any) =>
+          (other.id && selectedDot.id && other.id === selectedDot.id) ||
+          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && other.difficulty === selectedDot.difficulty) ||
+          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+        );
+      }
+      return (m.id && selectedDot.id && m.id === selectedDot.id) ||
+             (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
+             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && m.difficulty === selectedDot.difficulty);
+    });
 
-    if (parentInValid && parentInValid.overlappingItems && parentInValid.overlappingItems.length > 0) {
-      return parentInValid.overlappingItems;
+    if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
+      return parentCluster.overlappingItems;
     }
 
+    const selScore = selectedDot.avgScore || selectedDot.score || 0;
+    const selKey = `${Math.round(selectedDot.constant * 20)}_${Math.round(selScore / 2500)}`;
     return validMetaData.filter((d: any) => {
       const dScore = d.avgScore || d.score || 0;
-      return (
-        Math.abs(d.constant - selectedDot.constant) <= 0.06 &&
-        Math.abs(dScore - selScore) <= 3000
-      );
+      const dKey = `${Math.round(d.constant * 20)}_${Math.round(dScore / 2500)}`;
+      return dKey === selKey;
     });
   }, [selectedDot, validMetaData]);
 

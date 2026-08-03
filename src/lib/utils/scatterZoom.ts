@@ -148,9 +148,18 @@ export function sanitizeRangeInputs(
   ];
 }
 
-export function calculateDotRadius(size?: number, isSelected?: boolean, isHovered?: boolean): { baseR: number; dotR: number } {
-  const baseR = size ? Math.max(3.5, Math.min(11, Math.sqrt(size / Math.PI))) : 4.5;
-  const dotR = isSelected ? baseR + 3 : (isHovered ? baseR + 1.5 : baseR);
-  return { baseR, dotR };
+export function calculateDotRadius(
+  playCountOrSize?: number, 
+  isSelected?: boolean, 
+  isHovered?: boolean
+): { baseR: number; dotR: number } {
+  let count = 1;
+  if (typeof playCountOrSize === 'number' && !isNaN(playCountOrSize) && playCountOrSize > 0) {
+    count = playCountOrSize;
+  }
+  
+  const baseR = Math.max(3.5, Math.min(13, 3.0 + 1.8 * Math.sqrt(Math.max(1, count))));
+  const dotR = isSelected ? Number((baseR + 3.5).toFixed(2)) : (isHovered ? Number((baseR + 1.8).toFixed(2)) : Number(baseR.toFixed(2)));
+  return { baseR: Number(baseR.toFixed(2)), dotR };
 }
 

@@ -52,7 +52,7 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const { dotR } = calculateDotRadius(size, isSelected, isHovered);
+  const { dotR } = calculateDotRadius(payload.playCount || payload.plays || size, isSelected, isHovered);
 
   if (isActive && overlapCount > 1) {
     const badgeOffset = Math.max(5, dotR * 0.8);
@@ -308,11 +308,22 @@ export function GlobalStats() {
       return selectedDot.overlappingItems;
     }
     const selScore = selectedDot.avgScore || selectedDot.score || 0;
+    const parentInValid = validMetaData.find((m: any) => 
+      (m.id && selectedDot.id && m.id === selectedDot.id) ||
+      (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
+      ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && m.difficulty === selectedDot.difficulty) ||
+      ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01 && Math.abs((m.avgScore || m.score || 0) - selScore) < 5)
+    );
+
+    if (parentInValid && parentInValid.overlappingItems && parentInValid.overlappingItems.length > 0) {
+      return parentInValid.overlappingItems;
+    }
+
     return validMetaData.filter((d: any) => {
       const dScore = d.avgScore || d.score || 0;
       return (
-        Math.abs(d.constant - selectedDot.constant) < 0.05 &&
-        Math.abs(dScore - selScore) < 2500
+        Math.abs(d.constant - selectedDot.constant) <= 0.06 &&
+        Math.abs(dScore - selScore) <= 3000
       );
     });
   }, [selectedDot, validMetaData]);
@@ -335,6 +346,27 @@ export function GlobalStats() {
 
     return idx >= 0 ? idx : 0;
   }, [selectedDot, overlappingGlobalDots]);
+
+  useEffect(() => {
+    if (!selectedDot || overlappingGlobalDots.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;
+        setSelectedDot(overlappingGlobalDots[nextIndex]);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (currentGlobalDotIndex - 1 + overlappingGlobalDots.length) % overlappingGlobalDots.length;
+        setSelectedDot(overlappingGlobalDots[prevIndex]);
+      } else if (e.key === 'Escape') {
+        setSelectedDot(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDot, overlappingGlobalDots, currentGlobalDotIndex]);
 
   useEffect(() => {
     const elem = globalScatterContainerRef.current;

@@ -31,7 +31,7 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const { dotR } = calculateDotRadius(size, isSelected, isHovered);
+  const { dotR } = calculateDotRadius(payload.playCount || size, isSelected, isHovered);
 
   if (isActive && overlapCount > 1) {
     const badgeOffset = Math.max(5, dotR * 0.8);
@@ -334,21 +334,65 @@ export function Dashboard() {
     if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
       return selectedDot.overlappingItems;
     }
-    return allMappedScatterScores.filter((d: any) =>
-      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
-      Math.abs(d.score - selectedDot.score) < 2500
+    const selScore = selectedDot.score || selectedDot.avgScore || 0;
+    const parentInMapped = mappedScatterScores.find((m: any) => 
+      (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
+      (m.songId && selectedDot.songId && m.songId === selectedDot.songId && m.difficulty === selectedDot.difficulty) ||
+      (m.name === selectedDot.name && Math.abs(m.constant - selectedDot.constant) < 0.01 && (m.score || m.avgScore) === selScore)
     );
-  }, [selectedDot, allMappedScatterScores]);
+
+    if (parentInMapped && parentInMapped.overlappingItems && parentInMapped.overlappingItems.length > 0) {
+      return parentInMapped.overlappingItems;
+    }
+
+    return mappedScatterScores.filter((d: any) => {
+      const dScore = d.score || d.avgScore || 0;
+      return (
+        Math.abs(d.constant - selectedDot.constant) <= 0.06 &&
+        Math.abs(dScore - selScore) <= 3000
+      );
+    });
+  }, [selectedDot, mappedScatterScores]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;
-    const idx = overlappingDots.findIndex((d: any) => 
-      (d.songId && d.songId === selectedDot.songId && d.difficulty && d.difficulty === selectedDot.difficulty) ||
-      (d.chartId && selectedDot.chartId && d.chartId === selectedDot.chartId) ||
-      (d.name === selectedDot.name && Math.abs(d.constant - selectedDot.constant) < 0.01 && d.score === selectedDot.score)
-    );
+    const selSongId = selectedDot.songId || selectedDot.song_id;
+    const selChartId = selectedDot.chartId || selectedDot.id;
+    const selScore = selectedDot.score || selectedDot.avgScore || 0;
+
+    const idx = overlappingDots.findIndex((d: any) => {
+      const dSongId = d.songId || d.song_id;
+      const dChartId = d.chartId || d.id;
+      const dScore = d.score || d.avgScore || 0;
+
+      if (dChartId && selChartId && dChartId === selChartId) return true;
+      if (dSongId && selSongId && dSongId === selSongId && d.difficulty && selectedDot.difficulty && d.difficulty === selectedDot.difficulty) return true;
+      return (d.name || d.title) === (selectedDot.name || selectedDot.title) && Math.abs(d.constant - selectedDot.constant) < 0.01 && Math.abs(dScore - selScore) < 5;
+    });
+
     return idx >= 0 ? idx : 0;
   }, [selectedDot, overlappingDots]);
+
+  useEffect(() => {
+    if (!selectedDot || overlappingDots.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (currentDotIndex + 1) % overlappingDots.length;
+        setSelectedDot(overlappingDots[nextIndex]);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (currentDotIndex - 1 + overlappingDots.length) % overlappingDots.length;
+        setSelectedDot(overlappingDots[prevIndex]);
+      } else if (e.key === 'Escape') {
+        setSelectedDot(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDot, overlappingDots, currentDotIndex]);
 
   const smartYTicks = useMemo(() => 
     getSmartYTicks(

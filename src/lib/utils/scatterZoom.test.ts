@@ -116,32 +116,36 @@ describe('scatterZoom utilities', () => {
   });
 
   describe('calculateDotRadius', () => {
-    it('should fallback to default base radius 4.5 when size is missing', () => {
+    it('should fallback to default base radius 4.8 for 1 play when size/count is missing', () => {
       const { baseR, dotR } = calculateDotRadius();
-      expect(baseR).toBe(4.5);
-      expect(dotR).toBe(4.5);
+      expect(baseR).toBe(4.8);
+      expect(dotR).toBe(4.8);
     });
 
-    it('should calculate dynamic radius from size bounded between 3.5 and 11', () => {
-      // Very small size -> clamped to 3.5
-      const { baseR: minBase } = calculateDotRadius(5);
-      expect(minBase).toBe(3.5);
+    it('should calculate dynamic radius with strong size contrast bounded between 3.5 and 13', () => {
+      // 1 play -> 4.8px
+      const { baseR: count1 } = calculateDotRadius(1);
+      expect(count1).toBe(4.8);
 
-      // Very large size -> clamped to 11
-      const { baseR: maxBase } = calculateDotRadius(5000);
-      expect(maxBase).toBe(11);
+      // 4 plays -> 6.6px
+      const { baseR: count4 } = calculateDotRadius(4);
+      expect(count4).toBe(6.6);
 
-      // Medium size (~100 area -> sqrt(100/pi) ≈ 5.64)
-      const { baseR: midBase } = calculateDotRadius(100);
-      expect(midBase).toBeCloseTo(5.64, 1);
+      // 16 plays -> 10.2px
+      const { baseR: count16 } = calculateDotRadius(16);
+      expect(count16).toBe(10.2);
+
+      // 100 plays -> clamped to 13px
+      const { baseR: count100 } = calculateDotRadius(100);
+      expect(count100).toBe(13);
     });
 
     it('should expand dot radius when hovered or selected', () => {
-      const { baseR, dotR: hoveredDotR } = calculateDotRadius(100, false, true);
-      const { dotR: selectedDotR } = calculateDotRadius(100, true, false);
+      const { baseR, dotR: hoveredDotR } = calculateDotRadius(4, false, true);
+      const { dotR: selectedDotR } = calculateDotRadius(4, true, false);
 
-      expect(hoveredDotR).toBe(baseR + 1.5);
-      expect(selectedDotR).toBe(baseR + 3);
+      expect(hoveredDotR).toBe(Number((baseR + 1.8).toFixed(2)));
+      expect(selectedDotR).toBe(Number((baseR + 3.5).toFixed(2)));
     });
   });
 });

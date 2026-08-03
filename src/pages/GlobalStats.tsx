@@ -7,7 +7,7 @@ import type { ApiHeatmapData, ApiChartMeta, ApiLampDistribution, ApiOpYield, Api
 import { useGlobal } from '../lib/context/useGlobal.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { LampTooltip } from '../components/ChartTooltips.js';
-import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, calculateDotRadius } from '../lib/utils/scatterZoom.js';
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
@@ -52,8 +52,7 @@ const CustomScatterDot = React.memo((props: any) => {
   const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const baseR = size ? Math.max(3.5, Math.min(11, Math.sqrt(size / Math.PI))) : 4.5;
-  const dotR = isSelected ? baseR + 3 : (isHovered ? baseR + 1.5 : baseR);
+  const { dotR } = calculateDotRadius(size, isSelected, isHovered);
 
   if (isActive && overlapCount > 1) {
     const badgeOffset = Math.max(5, dotR * 0.8);

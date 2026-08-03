@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, sanitizeRangeInputs } from './scatterZoom';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, sanitizeRangeInputs, calculateDotRadius } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -112,6 +112,36 @@ describe('scatterZoom utilities', () => {
       const [minX, maxX] = sanitizeRangeInputs('abc', 'xyz', 1.0, 15.4, 'horizontal', 5.0, 10.0);
       expect(minX).toBe(5.0);
       expect(maxX).toBe(10.0);
+    });
+  });
+
+  describe('calculateDotRadius', () => {
+    it('should fallback to default base radius 4.5 when size is missing', () => {
+      const { baseR, dotR } = calculateDotRadius();
+      expect(baseR).toBe(4.5);
+      expect(dotR).toBe(4.5);
+    });
+
+    it('should calculate dynamic radius from size bounded between 3.5 and 11', () => {
+      // Very small size -> clamped to 3.5
+      const { baseR: minBase } = calculateDotRadius(5);
+      expect(minBase).toBe(3.5);
+
+      // Very large size -> clamped to 11
+      const { baseR: maxBase } = calculateDotRadius(5000);
+      expect(maxBase).toBe(11);
+
+      // Medium size (~100 area -> sqrt(100/pi) ≈ 5.64)
+      const { baseR: midBase } = calculateDotRadius(100);
+      expect(midBase).toBeCloseTo(5.64, 1);
+    });
+
+    it('should expand dot radius when hovered or selected', () => {
+      const { baseR, dotR: hoveredDotR } = calculateDotRadius(100, false, true);
+      const { dotR: selectedDotR } = calculateDotRadius(100, true, false);
+
+      expect(hoveredDotR).toBe(baseR + 1.5);
+      expect(selectedDotR).toBe(baseR + 3);
     });
   });
 });

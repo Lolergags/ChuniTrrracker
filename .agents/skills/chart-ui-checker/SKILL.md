@@ -28,6 +28,12 @@ Use this skill when editing frontend charting components (`Dashboard.tsx`, `Glob
 * Do NOT stack native `<input type="range">` elements with `pointer-events: none`.
 * Always use single-container custom components (`ScatterScrollbar.tsx`) with `onPointerDown`/`onPointerMove` DOM handlers.
 
-### 4. Overlapping Scatter Dot Markers
-* Ensure `CustomScatterDot` only renders gold halo rings and overlap count badges when `isHovered || isSelected` (`isActive && overlapCount > 1`).
-* Unhovered and unselected dots must render as minimal `4.5px` semi-transparent circles to maintain clean scatter plots.
+### 4. Dynamic Scatter Dot Sizing & Overlap Badging
+* **Dynamic Radius Calculation**: Use `calculateDotRadius(size, isSelected, isHovered)` from `scatterZoom.ts` in `CustomScatterDot` to scale dot radius dynamically from ZAxis area (`props.size`), clamped between $3.5\text{px}$ and $11\text{px}$:
+  ```ts
+  const { dotR } = calculateDotRadius(size, isSelected, isHovered);
+  ```
+* **Active Overlap Badging**: Render gold halo rings and overlap count badges only when `isHovered || isSelected` (`isActive && overlapCount > 1`). Offset overlap badges dynamically relative to `dotR`.
+
+### 5. Rules of Hooks Invariant
+* **Top-Level Hook Placement**: ALL hooks (`useMemo`, `useCallback`, `useEffect`) inside page components (`Dashboard.tsx`, `GlobalStats.tsx`) MUST be declared at the top level of the function component before ANY conditional logic or early `return` statements (`if (isLoading)`, `if (!activePlayer)`). Failing to do so throws React Error #310.

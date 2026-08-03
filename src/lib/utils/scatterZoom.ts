@@ -148,3 +148,9 @@ export function sanitizeRangeInputs(
   ];
 }
 
+export function calculateDotRadius(size?: number, isSelected?: boolean, isHovered?: boolean): { baseR: number; dotR: number } {
+  const baseR = size ? Math.max(3.5, Math.min(11, Math.sqrt(size / Math.PI))) : 4.5;
+  const dotR = isSelected ? baseR + 3 : (isHovered ? baseR + 1.5 : baseR);
+  return { baseR, dotR };
+}
+

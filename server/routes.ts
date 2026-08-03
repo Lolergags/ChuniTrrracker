@@ -66,6 +66,10 @@ router.post('/players/import', async (req, res) => {
 
 // 1. Get Players
 router.get('/players', (req, res) => {
+  const cacheKey = 'players_list';
+  const cached = getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
     const players = db.prepare(`
       SELECT p.id, p.username, p.kamaitachi_id, p.kamaitachi_rating, p.last_synced_at, COUNT(s.id) as score_count
@@ -74,6 +78,7 @@ router.get('/players', (req, res) => {
       GROUP BY p.id
       ORDER BY p.username ASC
     `).all();
+    setCache(cacheKey, players);
     res.json(players);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -178,10 +183,10 @@ router.get('/leaderboard', (req, res) => {
     const batchPossessionQuery = `
       SELECT 
         s.player_id,
-        SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss,
-        SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss,
-        SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as sPlus,
-        SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s
+        COUNT(*) FILTER (WHERE s.score >= 1007500) as sss,
+        COUNT(*) FILTER (WHERE s.score >= 1000000) as ss,
+        COUNT(*) FILTER (WHERE s.score >= 990000) as sPlus,
+        COUNT(*) FILTER (WHERE s.score >= 975000) as s
       FROM scores s
       JOIN charts c ON s.chart_id = c.id
       JOIN songs ON c.song_id = songs.id
@@ -301,10 +306,10 @@ router.get('/players/:username', (req, res) => {
     SELECT 
       COUNT(s.id) as scoreCount,
       AVG(s.score) as averageScore,
-      SUM(CASE WHEN s.lamp = 'AJC' THEN 1 ELSE 0 END) as ajcCount,
-      SUM(CASE WHEN s.lamp = 'AJ' THEN 1 ELSE 0 END) as ajCount,
-      SUM(CASE WHEN s.lamp = 'FC' THEN 1 ELSE 0 END) as fcCount,
-      SUM(CASE WHEN s.clear_lamp != 'FAILED' THEN 1 ELSE 0 END) as clearCount
+      COUNT(*) FILTER (WHERE s.lamp = 'AJC') as ajcCount,
+      COUNT(*) FILTER (WHERE s.lamp = 'AJ') as ajCount,
+      COUNT(*) FILTER (WHERE s.lamp = 'FC') as fcCount,
+      COUNT(*) FILTER (WHERE s.clear_lamp != 'FAILED') as clearCount
     FROM scores s
     JOIN charts c ON s.chart_id = c.id
     JOIN songs ON c.song_id = songs.id
@@ -386,8 +391,11 @@ router.get('/players/:username/scores', (req, res) => {
   const cached = getCache(cacheKey);
   if (cached) return res.json(cached);
   
+  const player = db.prepare(`SELECT id FROM players WHERE username = ? OR kamaitachi_id = ?`).get(username, username) as { id: number } | undefined;
+  if (!player) return res.json([]);
+
   const { conditions, bindings } = getChartFilterConditions(req.query, 'so', 'c');
-  
+
   const scores = db.prepare(`
     SELECT 
       so.id as songId,
@@ -403,31 +411,30 @@ router.get('/players/:username/scores', (req, res) => {
       ROUND((CAST(s.op AS REAL) / (((c.constant * 5000 + 15000) / 5) * 5)) * 100, 2) as opPercent,
       s.time_achieved as timeAchieved
     FROM scores s
-    JOIN players p ON s.player_id = p.id
     JOIN charts c ON s.chart_id = c.id
     JOIN songs so ON c.song_id = so.id
-    WHERE p.username = ? AND ${conditions.join(' AND ')}
+    WHERE s.player_id = ? AND ${conditions.join(' AND ')}
     ORDER BY s.op DESC
     LIMIT ?
-  `).all(username, ...bindings, limit) as any[];
+  `).all(player.id, ...bindings, limit) as any[];
 
   if (scores.length > 0) {
     const chartIds = [...new Set(scores.map(s => s.chartId))];
     const placeholders = chartIds.map(() => '?').join(',');
     const counts = db.prepare(`
-      SELECT chart_id, COUNT(*) as playCount
-      FROM scores
-      WHERE chart_id IN (${placeholders})
-      GROUP BY chart_id
-    `).all(...chartIds) as { chart_id: number, playCount: number }[];
+      SELECT s.chart_id, COUNT(*) as playCount
+      FROM scores s
+      WHERE s.player_id = ? AND s.chart_id IN (${placeholders})
+      GROUP BY s.chart_id
+    `).all(player.id, ...chartIds) as { chart_id: number, playCount: number }[];
     
-    const countMap = new Map();
+    const countMap = new Map<number, number>();
     for (const row of counts) {
       countMap.set(row.chart_id, row.playCount);
     }
     
     for (const score of scores) {
-      score.playCount = countMap.get(score.chartId) || 0;
+      score.playCount = countMap.get(score.chartId) || 1;
     }
   }
 
@@ -662,11 +669,11 @@ router.get('/performance/lamps', (req, res) => {
   const data = db.prepare(`
     SELECT 
       ${groupByCol} as constant,
-      SUM(CASE WHEN s.lamp = 'AJC' THEN 1 ELSE 0 END) as ajc,
-      SUM(CASE WHEN s.lamp = 'AJ' THEN 1 ELSE 0 END) as aj,
-      SUM(CASE WHEN s.lamp = 'FC' THEN 1 ELSE 0 END) as fc,
-      SUM(CASE WHEN s.lamp = 'CLEAR' THEN 1 ELSE 0 END) as clear,
-      SUM(CASE WHEN s.lamp = 'FAILED' THEN 1 ELSE 0 END) as failed,
+      COUNT(*) FILTER (WHERE s.lamp = 'AJC') as ajc,
+      COUNT(*) FILTER (WHERE s.lamp = 'AJ') as aj,
+      COUNT(*) FILTER (WHERE s.lamp = 'FC') as fc,
+      COUNT(*) FILTER (WHERE s.lamp = 'CLEAR') as clear,
+      COUNT(*) FILTER (WHERE s.lamp = 'FAILED') as failed,
       COUNT(*) as total
     FROM scores s
     ${playerJoin}

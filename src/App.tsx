@@ -125,6 +125,11 @@ const AppContent = () => {
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
               placeholder="Search Players..."
+              data-1p-ignore="true"
+              data-bwignore="true"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
             />
             {showDropdown && deferredSearchInput.trim().length > 0 && (
               <ul style={{
@@ -138,8 +143,8 @@ const AppContent = () => {
                 borderRadius: 'var(--radius-md)',
                 listStyle: 'none',
                 padding: '0.5rem 0',
-                zIndex: 50,
-                maxHeight: '200px',
+                zIndex: 1000,
+                maxHeight: '250px',
                 overflowY: 'auto',
                 boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
               }}>

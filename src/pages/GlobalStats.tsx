@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush } from 'recharts';
 import { RotateCcw } from 'lucide-react';
 import { api } from '../lib/api/client.js';
@@ -21,13 +22,113 @@ const CustomTooltip = React.memo(({ active, payload }: any) => {
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant.toFixed(1)}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
+        <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
+          Double-click dot to view leaderboard
+        </div>
       </div>
     );
   }
   return null;
 });
 
+const CustomScatterDot = React.memo((props: any) => {
+  const { cx, cy, fill, payload, selectedDot, hoveredDot } = props;
+  if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const isSelected = selectedDot && (
+    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
+    (selectedDot.id && payload.id === selectedDot.id) ||
+    ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) === (selectedDot.songId || selectedDot.song_id) && payload.difficulty === selectedDot.difficulty) ||
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
+  );
+
+  const isHovered = hoveredDot && (
+    (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
+    (hoveredDot.id && payload.id === hoveredDot.id) ||
+    ((hoveredDot.songId || hoveredDot.song_id) && (payload.songId || payload.song_id) === (hoveredDot.songId || hoveredDot.song_id) && payload.difficulty === hoveredDot.difficulty) ||
+    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
+  );
+
+  const isActive = isSelected || isHovered;
+  const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+
+  if (isActive && overlapCount > 1) {
+    return (
+      <g style={{ cursor: 'pointer' }}>
+        <circle cx={cx} cy={cy} r={isSelected ? 10 : 8.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={isSelected ? 6.5 : 5} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
+        <circle cx={cx + 6} cy={cy - 6} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + 6} y={cy - 3.5} textAnchor="middle" fill="#000" fontSize="7" fontWeight="bold" pointerEvents="none">
+          {overlapCount > 9 ? '+' : overlapCount}
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={isSelected ? 7.5 : (isHovered ? 6 : 4.5)} 
+      fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} 
+      fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
+      stroke={isSelected ? '#ff66ff' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
+      strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
+      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+    />
+  );
+});
+
+const GradeHeatmap = React.memo(({ constants, grid, getConstantLabel }: {
+  constants: number[];
+  grid: Record<string, Record<number, { percent: number; count: number }>>;
+  getConstantLabel: (c: number) => string;
+}) => {
+  return (
+    <div style={{ display: 'inline-grid', gridTemplateColumns: `60px repeat(${constants.length}, 40px)`, gap: '2px', paddingBottom: '1rem' }}>
+      {GRADES.map(grade => (
+        <React.Fragment key={grade}>
+          <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            {grade}
+          </div>
+          {constants.map(c => {
+            const cell = grid[grade][c];
+            const percent = cell?.percent || 0;
+            const bg = `rgba(170, 59, 255, ${percent * 1.5})`;
+            return (
+              <div 
+                key={c} 
+                style={{ 
+                  backgroundColor: bg, 
+                  color: percent > 0.3 ? '#fff' : 'var(--text-secondary)',
+                  fontSize: '0.75rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  borderRadius: '2px',
+                  aspectRatio: '1',
+                  fontWeight: percent > 0.3 ? 'bold' : 'normal'
+                }}
+                title={`${grade} @ Level ${getConstantLabel(c)}: ${(percent * 100).toFixed(1)}% (${cell?.count || 0} scores)`}
+              >
+                {percent > 0 ? (percent * 100).toFixed(0) : ''}
+              </div>
+            );
+          })}
+        </React.Fragment>
+      ))}
+      <div></div>
+      {constants.map(c => (
+        <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          {getConstantLabel(c)}
+        </div>
+      ))}
+    </div>
+  );
+});
+
 export function GlobalStats() {
+  const navigate = useNavigate();
   const { filters } = useGlobal();
   const [heatmapData, setHeatmapData] = useState<ApiHeatmapData[]>([]);
   const [metaData, setMetaData] = useState<ApiChartMeta[]>([]);
@@ -39,6 +140,7 @@ export function GlobalStats() {
   const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
+  const [hoveredDot, setHoveredDot] = useState<any | null>(null);
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
@@ -73,7 +175,7 @@ export function GlobalStats() {
         console.error(err);
         setIsLoadingGlobal(false);
       });
-    }, 300);
+    }, 150);
     return () => clearTimeout(timer);
   }, [filters]);
 
@@ -112,21 +214,23 @@ export function GlobalStats() {
   globalScatterZoomYRef.current = globalScatterZoomY;
 
   const defaultXDomain = useMemo<[number, number]>(() => {
-    const constants = metaData.map((d: any) => d.constant);
-    if (!constants.length) return [1.0, 16.0];
-    const minConst = Math.min(...constants);
-    const maxConst = Math.max(...constants);
+    if (!metaData.length) return [1.0, 15.4];
+    const valid = metaData.filter((d: any) => d.avgScore >= 975000);
+    if (!valid.length) return [1.0, 15.4];
+    const constants = valid.map((d: any) => d.constant);
     return [
-      Math.max(1.0, Number((minConst - 0.5).toFixed(1))),
-      Math.min(16.0, Number((maxConst + 0.6).toFixed(1)))
+      Math.max(1.0, Math.min(...constants) - 0.2),
+      Math.min(15.4, Math.max(...constants) + 0.2)
     ];
   }, [metaData]);
 
   const defaultYDomain = useMemo<[number, number]>(() => {
-    const scores = metaData.map((d: any) => d.avgScore);
-    if (!scores.length) return [975000, 1010000];
-    const lowest = Math.min(...scores);
-    const defYMin = Math.max(975000, Math.floor(lowest / 5000) * 5000);
+    if (!metaData.length) return [975000, 1010000];
+    const valid = metaData.filter((d: any) => d.avgScore >= 975000);
+    if (!valid.length) return [975000, 1010000];
+    const scoresList = valid.map((d: any) => d.avgScore);
+    const minS = Math.min(...scoresList);
+    const defYMin = Math.max(0, Math.floor((minS - 5000) / 5000) * 5000);
     return [defYMin, 1010000];
   }, [metaData]);
 
@@ -137,7 +241,31 @@ export function GlobalStats() {
   defaultYRef.current = defaultYDomain;
 
   const validMetaData = useMemo(() => {
-    return metaData.filter((d: any) => d.avgScore >= 975000);
+    const raw = metaData.filter((d: any) => d.avgScore >= 975000);
+    
+    const grid = new Map<string, any[]>();
+    for (const item of raw) {
+      const itemScore = item.avgScore || item.score || 0;
+      const key = `${Math.round(item.constant * 20)}_${Math.round(itemScore / 2500)}`;
+      let list = grid.get(key);
+      if (!list) {
+        list = [];
+        grid.set(key, list);
+      }
+      list.push(item);
+    }
+
+    return raw.map((item: any) => {
+      const itemScore = item.avgScore || item.score || 0;
+      const key = `${Math.round(item.constant * 20)}_${Math.round(itemScore / 2500)}`;
+      const overlappingItems = grid.get(key) || [];
+      
+      return {
+        ...item,
+        overlappingItems,
+        overlapCount: overlappingItems.length
+      };
+    });
   }, [metaData]);
 
   const scatterMinMaxC = useMemo(() => {
@@ -173,12 +301,15 @@ export function GlobalStats() {
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
+    if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
+      return selectedDot.overlappingItems;
+    }
     const selScore = selectedDot.avgScore || selectedDot.score || 0;
     return validMetaData.filter((d: any) => {
       const dScore = d.avgScore || d.score || 0;
       return (
-        Math.abs(d.constant - selectedDot.constant) <= 0.5 &&
-        Math.abs(dScore - selScore) <= 5000
+        Math.abs(d.constant - selectedDot.constant) < 0.05 &&
+        Math.abs(dScore - selScore) < 2500
       );
     });
   }, [selectedDot, validMetaData]);
@@ -482,9 +613,9 @@ export function GlobalStats() {
     };
   }, [isLoadingGlobal, metaData]);
 
-  const getConstantLabel = (constant: number) => {
+  const getConstantLabel = useCallback((constant: number) => {
     return constant.toFixed(1);
-  };
+  }, []);
 
   // Process Heatmap Data
   const { constants, grid } = useMemo(() => {
@@ -563,6 +694,18 @@ export function GlobalStats() {
   }, [playerOpData]);
 
 
+  const smartYTicks = useMemo(() => 
+    getSmartYTicks(
+      globalScatterZoomY ? globalScatterZoomY[0] : defaultYDomain[0], 
+      globalScatterZoomY ? globalScatterZoomY[1] : 1010000, 
+      defaultYDomain[0]
+    ), [globalScatterZoomY, defaultYDomain]
+  );
+
+  const renderScatterDot = useCallback((props: any) => 
+    <CustomScatterDot {...props} selectedDot={selectedDot} hoveredDot={hoveredDot} />
+  , [selectedDot, hoveredDot]);
+
   return (
     <div className="container animate-fade-in" style={{ padding: '2rem 0' }}>
       
@@ -614,49 +757,7 @@ export function GlobalStats() {
               Shows the normalized percentage of scores for each Chart Constant that fall into a specific Grade. (Brighter = Higher %)
             </p>
             
-            <div style={{ display: 'inline-grid', gridTemplateColumns: `60px repeat(${constants.length}, 40px)`, gap: '2px', paddingBottom: '1rem' }}>
-              {/* Data rows */}
-              {GRADES.map(grade => (
-                <React.Fragment key={grade}>
-                  <div style={{ padding: '4px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                    {grade}
-                  </div>
-                  {constants.map(c => {
-                    const cell = grid[grade][c];
-                    const percent = cell?.percent || 0;
-                    // Background opacity scales with percentage. 
-                    const bg = `rgba(170, 59, 255, ${percent * 1.5})`; // x1.5 to make colors pop more
-                    return (
-                      <div 
-                        key={c} 
-                        style={{ 
-                          backgroundColor: bg, 
-                          color: percent > 0.3 ? '#fff' : 'var(--text-secondary)',
-                          fontSize: '0.75rem', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          borderRadius: '2px',
-                          aspectRatio: '1',
-                          fontWeight: percent > 0.3 ? 'bold' : 'normal'
-                        }}
-                        title={`${grade} @ Level ${getConstantLabel(c)}: ${(percent * 100).toFixed(1)}% (${cell?.count || 0} scores)`}
-                      >
-                        {percent > 0 ? (percent * 100).toFixed(0) : ''}
-                      </div>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
-
-              {/* Column Labels */}
-              <div></div>
-              {constants.map(c => (
-                <div key={c} style={{ padding: '4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {getConstantLabel(c)}
-                </div>
-              ))}
-            </div>
+            <GradeHeatmap constants={constants} grid={grid} getConstantLabel={getConstantLabel} />
           </div>
 
           {/* Survival Rate */}
@@ -838,7 +939,7 @@ export function GlobalStats() {
                         name="Avg Score" 
                         allowDataOverflow={true}
                         domain={globalScatterZoomY || defaultYDomain}
-                        ticks={getSmartYTicks(globalScatterZoomY ? globalScatterZoomY[0] : defaultYDomain[0], globalScatterZoomY ? globalScatterZoomY[1] : 1010000, defaultYDomain[0])}
+                        ticks={smartYTicks}
                         stroke="var(--text-secondary)" 
                         tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                         tickFormatter={(val) => {
@@ -856,9 +957,24 @@ export function GlobalStats() {
                         isAnimationActive={false}
                         fill="#ff66ff" 
                         fillOpacity={0.6} 
+                        shape={renderScatterDot}
+                        onMouseEnter={(node: any) => {
+                          if (node && (node.payload || node.title)) {
+                            setHoveredDot(node.payload || node);
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredDot(null)}
                         onClick={(node: any) => {
                           if (node && (node.payload || node.title)) {
                             setSelectedDot(node.payload || node);
+                          }
+                        }}
+                        onDoubleClick={(node: any) => {
+                          const data = node?.payload || node;
+                          const sId = data?.songId || data?.song_id;
+                          if (data && sId) {
+                            const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+                            navigate(`/analytics?songId=${sId}${diff}`);
                           }
                         }}
                       />
@@ -888,65 +1004,163 @@ export function GlobalStats() {
                 border: '1px solid var(--accent-primary)',
                 borderRadius: 'var(--radius-md)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '0.75rem'
+                flexDirection: 'column',
+                gap: '0.6rem'
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                    {selectedDot.title || selectedDot.name}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span>{selectedDot.title || selectedDot.name}</span>
+                      {selectedDot.difficulty && (
+                        <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
+                          {selectedDot.difficulty}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.round(selectedDot.avgScore || selectedDot.score || 0).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                    Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.round(selectedDot.avgScore || selectedDot.score || 0).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {overlappingGlobalDots.length > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {overlappingGlobalDots.length > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-gold)' }}>
+                        <button
+                          onClick={() => {
+                            const prevIndex = (currentGlobalDotIndex - 1 + overlappingGlobalDots.length) % overlappingGlobalDots.length;
+                            setSelectedDot(overlappingGlobalDots[prevIndex]);
+                          }}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            color: '#fff',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '0.2rem 0.5rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                          title="Previous overlapping chart"
+                        >
+                          ◄ Prev
+                        </button>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', padding: '0 0.25rem' }}>
+                          {currentGlobalDotIndex + 1} / {overlappingGlobalDots.length} Overlapping
+                        </span>
+                        <button
+                          onClick={() => {
+                            const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;
+                            setSelectedDot(overlappingGlobalDots[nextIndex]);
+                          }}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            color: '#fff',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '0.2rem 0.5rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                          title="Next overlapping chart"
+                        >
+                          Next ►
+                        </button>
+                      </div>
+                    )}
+                    {(selectedDot.songId || selectedDot.song_id) && selectedDot.difficulty && (
+                      <button
+                        onClick={() => {
+                          const sId = selectedDot.songId || selectedDot.song_id;
+                          navigate(`/analytics?songId=${sId}&diff=${selectedDot.difficulty}`);
+                        }}
+                        style={{
+                          background: 'var(--accent-primary)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        View Leaderboard ➔
+                      </button>
+                    )}
                     <button
-                      onClick={() => {
-                        const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;
-                        setSelectedDot(overlappingGlobalDots[nextIndex]);
-                      }}
+                      onClick={() => setSelectedDot(null)}
                       style={{
                         background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#fff',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '0.35rem 0.65rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem'
                       }}
-                      title="Click to cycle between overlapping chart dots"
                     >
-                      Cycle Overlapping ({currentGlobalDotIndex + 1}/{overlappingGlobalDots.length}) ➔
+                      ✕
                     </button>
-                  )}
-                  {selectedDot.difficulty && (
-                    <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
-                      {selectedDot.difficulty}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => setSelectedDot(null)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: 'none',
-                      color: 'var(--text-secondary)',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    ✕
-                  </button>
+                  </div>
                 </div>
+
+                {/* Overlapping Charts Selection Pills */}
+                {overlappingGlobalDots.length > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    flexWrap: 'wrap',
+                    paddingTop: '0.4rem',
+                    borderTop: '1px dashed rgba(255, 255, 255, 0.12)'
+                  }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 600 }}>Select Overlapping Chart:</span>
+                    {overlappingGlobalDots.map((item: any, idx: number) => {
+                      const isCurrent = idx === currentGlobalDotIndex;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedDot(item)}
+                          style={{
+                            background: isCurrent ? 'var(--accent-gold)' : 'rgba(255, 255, 255, 0.08)',
+                            color: isCurrent ? '#000' : 'var(--text-primary)',
+                            border: isCurrent ? '1px solid var(--accent-gold)' : '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: 'var(--radius-full)',
+                            padding: '0.2rem 0.6rem',
+                            fontSize: '0.78rem',
+                            fontWeight: isCurrent ? 700 : 400,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {item.difficulty && (
+                            <span className={`badge badge-${item.difficulty.toLowerCase()}`} style={{ padding: '0.1rem 0.35rem', fontSize: '0.7rem' }}>
+                              {item.difficulty}
+                            </span>
+                          )}
+                          <span>{item.title || item.name}</span>
+                          <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({Math.round(item.avgScore || item.score || 0)?.toLocaleString()})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

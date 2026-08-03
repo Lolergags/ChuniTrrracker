@@ -292,6 +292,11 @@ export async function syncPlayer(username: string, apiKey?: string) {
     localSongTitleMap.set(s.title.toLowerCase().trim(), s.id);
   }
 
+  // Pre-fetch all local song IDs into a Set for O(1) existence checks (avoids N+1 queries)
+  const allLocalSongIds = new Set(
+    (db.prepare('SELECT id FROM songs').all() as { id: number }[]).map(s => s.id)
+  );
+
   const insertScore = db.prepare(`
     INSERT INTO scores (player_id, chart_id, score, lamp, clear_lamp, op, time_achieved)
     VALUES (@player_id, @chart_id, @score, @lamp, @clear_lamp, @op, @time_achieved)
@@ -336,9 +341,8 @@ export async function syncPlayer(username: string, apiKey?: string) {
 
     const songId = localSongId;
     
-    // Check if the song is active in our local database
-    const localSong = db.prepare('SELECT id FROM songs WHERE id = ?').get(songId);
-    if (!localSong) {
+    // Check if the song is active in our local database (O(1) Set lookup)
+    if (!allLocalSongIds.has(songId)) {
       console.log(`Skipping unknown chart for song ID: ${songId}`);
       continue;
     }

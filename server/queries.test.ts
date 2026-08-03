@@ -237,5 +237,107 @@ describe('Chart Query Logic & Ghost Chart Exclusions', () => {
     expect(rawData[0].username).toBe('Alice');
     expect(rawData[0].opPercent).toBeGreaterThan(0);
   });
+
+  it('should return individual player play count rather than global play count for player scores', () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, username TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, player_id INTEGER, chart_id INTEGER, score INTEGER, lamp TEXT, op INTEGER);
+    `);
+
+    db.prepare("INSERT INTO players (id, username) VALUES (1, 'Alice'), (2, 'Bob')").run();
+    
+    // Alice played chart 10 twice
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (1, 10, 1007500, 'FC', 9000)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (1, 10, 1005000, 'CLEAR', 8500)").run();
+
+    // Bob played chart 10 3 times (global total: 5 scores for chart 10)
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (2, 10, 1000000, 'CLEAR', 8000)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (2, 10, 1001000, 'CLEAR', 8100)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (2, 10, 1002000, 'CLEAR', 8200)").run();
+
+    // Query Alice's play count for chart 10 using resolved player.id
+    const targetUsername = 'Alice';
+    const player = db.prepare('SELECT id FROM players WHERE username = ?').get(targetUsername) as { id: number };
+    const chartIds = [10];
+    const placeholders = chartIds.map(() => '?').join(',');
+
+    const counts = db.prepare(`
+      SELECT s.chart_id, COUNT(*) as playCount
+      FROM scores s
+      WHERE s.player_id = ? AND s.chart_id IN (${placeholders})
+      GROUP BY s.chart_id
+    `).all(player.id, ...chartIds) as { chart_id: number; playCount: number }[];
+
+    const countMap = new Map<number, number>();
+    for (const row of counts) {
+      countMap.set(row.chart_id, row.playCount);
+    }
+
+    const alicePlayCount = countMap.get(10) || 1;
+    
+    // Must strictly equal Alice's 2 attempts, NOT the global total of 5!
+    expect(alicePlayCount).toBe(2);
+  });
+
+  it('should preserve player score history and play counts when a player changes their username', () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, username TEXT NOT NULL, kamaitachi_id INTEGER);
+      CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, player_id INTEGER, chart_id INTEGER, score INTEGER, lamp TEXT, op INTEGER);
+    `);
+
+    // 1. Seed player with original username
+    db.prepare("INSERT INTO players (id, username, kamaitachi_id) VALUES (10, 'ChuniMaster99', 10001)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (10, 5, 1007800, 'AJ', 10000)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (10, 5, 1005000, 'FC', 9500)").run();
+
+    // 2. Simulate player changing username in Kamaitachi / DB
+    db.prepare("UPDATE players SET username = 'ChuniLegend2026' WHERE id = 10").run();
+
+    // 3. Resolve player by new username
+    const resolvedPlayer = db.prepare('SELECT id FROM players WHERE username = ? OR kamaitachi_id = ?').get('ChuniLegend2026', 'ChuniLegend2026') as { id: number };
+    expect(resolvedPlayer).toBeDefined();
+    expect(resolvedPlayer.id).toBe(10);
+
+    // 4. Query scores strictly by s.player_id = player.id
+    const playerScores = db.prepare(`
+      SELECT s.chart_id, s.score, s.op
+      FROM scores s
+      WHERE s.player_id = ?
+      ORDER BY s.op DESC
+    `).all(resolvedPlayer.id) as any[];
+
+    expect(playerScores.length).toBe(2);
+    expect(playerScores[0].score).toBe(1007800);
+
+    // 5. Query per-chart play count by player.id
+    const playCountRow = db.prepare(`
+      SELECT COUNT(*) as playCount
+      FROM scores s
+      WHERE s.player_id = ? AND s.chart_id = 5
+    `).get(resolvedPlayer.id) as { playCount: number };
+
+    expect(playCountRow.playCount).toBe(2);
+  });
+
+  it('should correctly resolve player by kamaitachi_id fallback when looking up player', () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, username TEXT NOT NULL, kamaitachi_id INTEGER);
+      CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, player_id INTEGER, chart_id INTEGER, score INTEGER, lamp TEXT, op INTEGER);
+    `);
+
+    db.prepare("INSERT INTO players (id, username, kamaitachi_id) VALUES (42, 'TachiUser', 998877)").run();
+    db.prepare("INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (42, 1, 1009000, 'AJC', 10000)").run();
+
+    // Lookup using kamaitachi_id as string
+    const lookupParam = '998877';
+    const player = db.prepare('SELECT id FROM players WHERE username = ? OR kamaitachi_id = ?').get(lookupParam, lookupParam) as { id: number };
+
+    expect(player).toBeDefined();
+    expect(player.id).toBe(42);
+
+    const scores = db.prepare('SELECT * FROM scores WHERE player_id = ?').all(player.id);
+    expect(scores.length).toBe(1);
+    expect(scores[0].score).toBe(1009000);
+  });
 });
 

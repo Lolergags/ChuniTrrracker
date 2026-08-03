@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useDeferredValue, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { Search, ChevronRight, RotateCcw, UserX } from 'lucide-react';
@@ -12,6 +12,52 @@ import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/ut
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
+const CustomScatterDot = React.memo((props: any) => {
+  const { cx, cy, fill, payload, selectedDot, hoveredDot } = props;
+  if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const isSelected = selectedDot && (
+    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
+    (selectedDot.songId && payload.songId === selectedDot.songId && payload.difficulty === selectedDot.difficulty) ||
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
+  );
+
+  const isHovered = hoveredDot && (
+    (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
+    (hoveredDot.songId && payload.songId === hoveredDot.songId && payload.difficulty === hoveredDot.difficulty) ||
+    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
+  );
+
+  const isActive = isSelected || isHovered;
+  const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+
+  if (isActive && overlapCount > 1) {
+    return (
+      <g style={{ cursor: 'pointer' }}>
+        <circle cx={cx} cy={cy} r={isSelected ? 10 : 8.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={isSelected ? 6.5 : 5} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
+        <circle cx={cx + 6} cy={cy - 6} r={4.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + 6} y={cy - 3.5} textAnchor="middle" fill="#000" fontSize="7" fontWeight="bold" pointerEvents="none">
+          {overlapCount > 9 ? '+' : overlapCount}
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={isSelected ? 7.5 : (isHovered ? 6 : 4.5)} 
+      fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} 
+      fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
+      stroke={isSelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
+      strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
+      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+    />
+  );
+});
+
 export function Dashboard() {
   const navigate = useNavigate();
   const { activePlayer, setActivePlayer, playersList, filters } = useGlobal();
@@ -19,6 +65,7 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [playerInput, setPlayerInput] = useState(activePlayer || '');
+  const [hoveredDot, setHoveredDot] = useState<any | null>(null);
 
   useEffect(() => {
     setPlayerInput(activePlayer || '');
@@ -205,8 +252,8 @@ export function Dashboard() {
   const defaultYRef = useRef<[number, number]>(defaultYDomain);
   defaultYRef.current = defaultYDomain;
 
-  const mappedScatterScores = useMemo(() => {
-    return uniqueScores.map(s => ({
+  const allMappedScatterScores = useMemo(() => {
+    return scores.filter(s => s.score >= 975000).map(s => ({
       name: s.songTitle,
       score: s.score,
       constant: s.constant,
@@ -214,9 +261,46 @@ export function Dashboard() {
       playCount: s.playCount || 1,
       lamp: s.lamp,
       songId: s.songId,
-      difficulty: s.difficulty
+      difficulty: s.difficulty,
+      chartId: s.chartId
     }));
-  }, [uniqueScores]);
+  }, [scores]);
+
+  const mappedScatterScores = useMemo(() => {
+    const grid = new Map<string, any[]>();
+    for (const item of allMappedScatterScores) {
+      const key = `${Math.round(item.constant * 20)}_${Math.round(item.score / 2500)}`;
+      let list = grid.get(key);
+      if (!list) {
+        list = [];
+        grid.set(key, list);
+      }
+      list.push(item);
+    }
+
+    return uniqueScores.map(s => {
+      const item = {
+        name: s.songTitle,
+        score: s.score,
+        constant: s.constant,
+        opDisplay: Number((s.op / 10000).toFixed(2)),
+        playCount: s.playCount || 1,
+        lamp: s.lamp,
+        songId: s.songId,
+        difficulty: s.difficulty,
+        chartId: s.chartId
+      };
+      
+      const key = `${Math.round(item.constant * 20)}_${Math.round(item.score / 2500)}`;
+      const overlappingItems = grid.get(key) || [];
+      
+      return {
+        ...item,
+        overlappingItems,
+        overlapCount: overlappingItems.length
+      };
+    });
+  }, [uniqueScores, allMappedScatterScores]);
 
   const visibleDashboardScatterData = useMemo(() => {
     if (!scatterZoomX && !scatterZoomY) {
@@ -242,25 +326,14 @@ export function Dashboard() {
     );
   }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
-  const allMappedScatterScores = useMemo(() => {
-    return scores.filter(s => s.score >= 975000).map(s => ({
-      name: s.songTitle,
-      score: s.score,
-      constant: s.constant,
-      opDisplay: Number((s.op / 10000).toFixed(2)),
-      playCount: s.playCount || 1,
-      lamp: s.lamp,
-      songId: s.songId,
-      difficulty: s.difficulty,
-      chartId: s.chartId
-    }));
-  }, [scores]);
-
   const overlappingDots = useMemo(() => {
     if (!selectedDot) return [];
+    if (selectedDot.overlappingItems && selectedDot.overlappingItems.length > 0) {
+      return selectedDot.overlappingItems;
+    }
     return allMappedScatterScores.filter((d: any) =>
-      Math.abs(d.constant - selectedDot.constant) <= 0.5 &&
-      Math.abs(d.score - selectedDot.score) <= 5000
+      Math.abs(d.constant - selectedDot.constant) < 0.05 &&
+      Math.abs(d.score - selectedDot.score) < 2500
     );
   }, [selectedDot, allMappedScatterScores]);
 
@@ -660,6 +733,18 @@ export function Dashboard() {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Loading player data...</div>;
   }
 
+  const smartYTicks = useMemo(() => 
+    getSmartYTicks(
+      scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], 
+      scatterZoomY ? scatterZoomY[1] : 1010000, 
+      defaultYDomain[0]
+    ), [scatterZoomY, defaultYDomain]
+  );
+
+  const renderScatterDot = useCallback((props: any) => 
+    <CustomScatterDot {...props} selectedDot={selectedDot} hoveredDot={hoveredDot} />
+  , [selectedDot, hoveredDot]);
+
   return (
     <div className="glass-panel">
       {/* Dashboard Control Header */}
@@ -872,7 +957,7 @@ export function Dashboard() {
                     name="Score" 
                     allowDataOverflow={true}
                     domain={scatterZoomY || defaultYDomain} 
-                    ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
+                    ticks={smartYTicks}
                     stroke="var(--text-secondary)"
                     tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                     tickFormatter={(val) => {
@@ -890,11 +975,27 @@ export function Dashboard() {
                     isAnimationActive={false}
                     fill="var(--accent-primary)" 
                     fillOpacity={0.6}
+                    shape={renderScatterDot}
+                    onMouseEnter={(node: any) => {
+                      if (node && (node.payload || node.name)) {
+                        setHoveredDot(node.payload || node);
+                      }
+                    }}
+                    onMouseLeave={() => setHoveredDot(null)}
                     onClick={(node: any) => {
                       if (node && (node.payload || node.name)) {
                         setSelectedDot(node.payload || node);
                       }
                     }} 
+                    onDoubleClick={(node: any) => {
+                      const data = node?.payload || node;
+                      if (data && (data.songId || data.song_id)) {
+                        const sId = data.songId || data.song_id;
+                        const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+                        const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+                        navigate(`/analytics?songId=${sId}${diff}${player}`);
+                      }
+                    }}
                   />
                 </ScatterChart>
               </ResponsiveContainer>
@@ -922,85 +1023,165 @@ export function Dashboard() {
             border: '1px solid var(--accent-primary)',
             borderRadius: 'var(--radius-md)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.75rem'
+            flexDirection: 'column',
+            gap: '0.6rem'
           }}>
-            <div>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                {selectedDot.name || selectedDot.title}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{selectedDot.name || selectedDot.title}</span>
+                  {selectedDot.difficulty && (
+                    <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
+                      {selectedDot.difficulty}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Score: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.score?.toLocaleString()}</strong> {selectedDot.opDisplay ? `| OP: ${selectedDot.opDisplay}` : ''}
+                </div>
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Score: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.score?.toLocaleString()}</strong> {selectedDot.opDisplay ? `| OP: ${selectedDot.opDisplay}` : ''}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {overlappingDots.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {overlappingDots.length > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-gold)' }}>
+                    <button
+                      onClick={() => {
+                        const prevIndex = (currentDotIndex - 1 + overlappingDots.length) % overlappingDots.length;
+                        setSelectedDot(overlappingDots[prevIndex]);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="Previous overlapping chart"
+                    >
+                      ◄ Prev
+                    </button>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', padding: '0 0.25rem' }}>
+                      {currentDotIndex + 1} / {overlappingDots.length} Overlapping
+                    </span>
+                    <button
+                      onClick={() => {
+                        const nextIndex = (currentDotIndex + 1) % overlappingDots.length;
+                        setSelectedDot(overlappingDots[nextIndex]);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="Next overlapping chart"
+                    >
+                      Next ►
+                    </button>
+                  </div>
+                )}
+                {selectedDot.lamp && (
+                  <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
+                    {selectedDot.lamp}
+                  </span>
+                )}
+                {selectedDot.songId && selectedDot.difficulty && (
+                  <button
+                    onClick={() => navigate(`/analytics?songId=${selectedDot.songId}&diff=${selectedDot.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
+                    style={{
+                      background: 'var(--accent-primary)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    View Leaderboard ➔
+                  </button>
+                )}
                 <button
-                  onClick={() => {
-                    const nextIndex = (currentDotIndex + 1) % overlappingDots.length;
-                    setSelectedDot(overlappingDots[nextIndex]);
-                  }}
+                  onClick={() => setSelectedDot(null)}
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: '#fff',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.35rem 0.65rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                  title="Click to cycle between overlapping chart dots"
-                >
-                  Cycle Overlapping ({currentDotIndex + 1}/{overlappingDots.length}) ➔
-                </button>
-              )}
-              {selectedDot.lamp && (
-                <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
-                  {selectedDot.lamp}
-                </span>
-              )}
-              {selectedDot.songId && selectedDot.difficulty && (
-                <button
-                  onClick={() => navigate(`/analytics?songId=${selectedDot.songId}&diff=${selectedDot.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
-                  style={{
-                    background: 'var(--accent-primary)',
-                    color: '#fff',
                     border: 'none',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.3rem'
+                    justifyContent: 'center',
+                    fontSize: '0.8rem'
                   }}
                 >
-                  View Leaderboard ➔
+                  ✕
                 </button>
-              )}
-              <button
-                onClick={() => setSelectedDot(null)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem'
-                }}
-              >
-                ✕
-              </button>
+              </div>
             </div>
+
+            {/* Overlapping Charts Selection Pills */}
+            {overlappingDots.length > 1 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+                paddingTop: '0.4rem',
+                borderTop: '1px dashed rgba(255, 255, 255, 0.12)'
+              }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 600 }}>Select Overlapping Chart:</span>
+                {overlappingDots.map((item: any, idx: number) => {
+                  const isCurrent = idx === currentDotIndex;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedDot(item)}
+                      style={{
+                        background: isCurrent ? 'var(--accent-gold)' : 'rgba(255, 255, 255, 0.08)',
+                        color: isCurrent ? '#000' : 'var(--text-primary)',
+                        border: isCurrent ? '1px solid var(--accent-gold)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: 'var(--radius-full)',
+                        padding: '0.2rem 0.6rem',
+                        fontSize: '0.78rem',
+                        fontWeight: isCurrent ? 700 : 400,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {item.difficulty && (
+                        <span className={`badge badge-${item.difficulty.toLowerCase()}`} style={{ padding: '0.1rem 0.35rem', fontSize: '0.7rem' }}>
+                          {item.difficulty}
+                        </span>
+                      )}
+                      <span>{item.name || item.title}</span>
+                      <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({(item.score || item.avgScore)?.toLocaleString()})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

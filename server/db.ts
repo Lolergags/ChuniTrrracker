@@ -13,8 +13,12 @@ if (!fs.existsSync(dbDir)) {
 
 const db = new Database(DB_PATH);
 
-// Enable WAL mode for better concurrent read performance
+// Enable high-performance WAL mode and RAM caching settings
 db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('temp_store = MEMORY');
+db.pragma('cache_size = -64000');
+db.pragma('mmap_size = 268435456');
 db.pragma('foreign_keys = ON');
 
 db.exec(`

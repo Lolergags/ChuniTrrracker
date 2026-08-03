@@ -967,6 +967,7 @@ export function GlobalStats() {
                         stroke="var(--text-secondary)"
                         tick={{ fontSize: isMobile ? 11 : 13, dy: 6, fill: 'var(--text-secondary)' }}
                         domain={globalScatterZoomX || defaultXDomain}
+                        tickFormatter={(val) => typeof val === 'number' ? val.toFixed(1) : val}
                       />
                       <YAxis 
                         type="number" 

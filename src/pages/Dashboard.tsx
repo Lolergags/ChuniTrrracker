@@ -39,19 +39,19 @@ const CustomScatterDot = React.memo((props: any) => {
     }, 220);
   };
 
-  const isDirectlySelected = Boolean(selectedDot && (
+  const isDirectMatch = Boolean(selectedDot && (
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
     (selectedDot.songId && payload.songId === selectedDot.songId && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
     ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
   ));
 
-  const isSelected = isDirectlySelected || Boolean(selectedDot && (
-    payload.overlappingItems && payload.overlappingItems.some((other: any) =>
-      (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-      (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-      ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && (other.score || other.avgScore) === (selectedDot.score || selectedDot.avgScore))
-    )
+  const isClusterMatch = Boolean(selectedDot && payload.overlappingItems && payload.overlappingItems.some((other: any) =>
+    (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+    (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+    ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && (other.score || other.avgScore) === (selectedDot.score || selectedDot.avgScore))
   ));
+
+  const isHighlighted = isDirectMatch || isClusterMatch;
 
   const isHovered = hoveredDot && (
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
@@ -61,9 +61,9 @@ const CustomScatterDot = React.memo((props: any) => {
 
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
-  const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
+  const { dotR } = calculateDotRadius(overlapCount, isHighlighted, isHovered);
 
-  if (isDirectlySelected && overlapCount > 1) {
+  if (isHighlighted && overlapCount > 1) {
     const badgeOffset = Math.max(7, dotR * 0.75);
     return (
       <g style={{ cursor: 'pointer' }} onClick={handleClick}>
@@ -82,10 +82,10 @@ const CustomScatterDot = React.memo((props: any) => {
       cx={cx} 
       cy={cy} 
       r={dotR} 
-      fill={isDirectlySelected ? '#ffffff' : (fill || 'var(--accent-primary)')} 
-      fillOpacity={isDirectlySelected ? 1 : (isHovered ? 0.9 : 0.65)} 
-      stroke={isDirectlySelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
-      strokeWidth={isDirectlySelected ? 2.5 : (isHovered ? 1.5 : 0)} 
+      fill={isHighlighted ? '#ffffff' : (fill || 'var(--accent-primary)')} 
+      fillOpacity={isHighlighted ? 1 : (isHovered ? 0.9 : 0.65)} 
+      stroke={isHighlighted ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
+      strokeWidth={isHighlighted ? 2.5 : (isHovered ? 1.5 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
       onClick={handleClick}
     />

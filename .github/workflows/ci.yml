@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/*', 'fix/*', 'refactor/*', 'workflow/*' ]
   pull_request:
     branches: [ main ]
 
@@ -23,3 +23,7 @@ jobs:
         
       - name: Run Tests & Linter
         run: npm run test:all
+
+      - name: Verify Docker Build
+        run: docker build . --tag chunitrrracker:ci-test
+

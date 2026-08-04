@@ -8,8 +8,10 @@
     "dev:server": "tsx watch --env-file=.env server/index.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "oxlint",
     "test": "vitest run",
+    "test:watch": "vitest",
     "test:all": "tsc -b && oxlint && vitest run",
     "preview": "vite preview"
   },

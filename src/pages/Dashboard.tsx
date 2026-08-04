@@ -1125,6 +1125,11 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart 
                   margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
+                  onClick={() => {
+                    if (!isPanDragging) {
+                      setSelectedDot(null);
+                    }
+                  }}
                 >
                   <defs>
                     <clipPath id="custom-scatter-clip">
@@ -1158,7 +1163,7 @@ export function Dashboard() {
                     width={scatterYWidth}
                   />
                   <ZAxis type="number" dataKey="overlapCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Overlap Count" />
-                  <Tooltip content={<ScatterTooltip selectedDot={selectedDot} />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Tooltip content={selectedDot ? () => null : <ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                   <Scatter 
                     name="Scores" 
                     data={visibleDashboardScatterData} 

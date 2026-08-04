@@ -42,12 +42,12 @@ const CustomScatterDot = React.memo((props: any) => {
 
   const isSelected = selectedDot && (
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
-    (selectedDot.songId && payload.songId === selectedDot.songId) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01) ||
+    (selectedDot.songId && payload.songId === selectedDot.songId && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore)) ||
     (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
       (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-      (other.songId && selectedDot.songId && other.songId === selectedDot.songId) ||
-      ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+      (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+      ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && (other.score || other.avgScore) === (selectedDot.score || selectedDot.avgScore))
     ))
   );
 

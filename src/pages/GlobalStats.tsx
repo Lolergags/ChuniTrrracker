@@ -1454,19 +1454,19 @@ export function GlobalStats() {
                   </ResponsiveContainer>
 
                   {selectedDot && selectedCoords && (() => {
-                    const popW = 290;
-                    const popH = 180;
                     const containerW = globalScatterContainerRef.current?.clientWidth || 600;
+                    const popW = Math.min(290, containerW - 20);
+                    const popH = 180;
 
-                    let leftPos = selectedCoords.x + 15;
+                    let leftPos = selectedCoords.x + 24;
                     if (leftPos + popW > containerW - 10) {
-                      leftPos = selectedCoords.x - popW - 15;
+                      leftPos = selectedCoords.x - popW - 24;
                     }
-                    const clampedLeft = Math.max(10, leftPos);
+                    const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
 
-                    let topPos = selectedCoords.y - 10;
+                    let topPos = selectedCoords.y - 20;
                     if (topPos + popH > 420) {
-                      topPos = selectedCoords.y - popH - 10;
+                      topPos = 420 - popH - 10;
                     }
                     const clampedTop = Math.max(10, topPos);
 

@@ -1229,15 +1229,21 @@ export function Dashboard() {
               </ResponsiveContainer>
 
               {selectedDot && selectedCoords && (() => {
-                const popW = 280;
+                const popW = 290;
                 const popH = 180;
                 const containerW = scatterContainerRef.current?.clientWidth || 600;
-                const leftPos = (selectedCoords.x + 22 + popW <= containerW - 10)
-                  ? selectedCoords.x + 22
-                  : selectedCoords.x - popW - 22;
-                const clampedLeft = Math.min(Math.max(leftPos, 10), containerW - popW - 10);
-                const topPos = selectedCoords.y - (popH / 2);
-                const clampedTop = Math.min(Math.max(topPos, 10), 430 - popH - 10);
+
+                let leftPos = selectedCoords.x + 15;
+                if (leftPos + popW > containerW - 10) {
+                  leftPos = selectedCoords.x - popW - 15;
+                }
+                const clampedLeft = Math.max(10, leftPos);
+
+                let topPos = selectedCoords.y - 10;
+                if (topPos + popH > 420) {
+                  topPos = selectedCoords.y - popH - 10;
+                }
+                const clampedTop = Math.max(10, topPos);
 
                 return (
                   <div 

@@ -427,7 +427,7 @@ export function GlobalStats() {
     const directMatch = visibleScatterData.find((item: any) =>
       (selectedDot.id && item.id === selectedDot.id) ||
       (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === selectedDot.difficulty)) ||
+      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
       ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
     );
     if (directMatch) return directMatch;
@@ -1246,7 +1246,7 @@ export function GlobalStats() {
                       style={{
                         position: 'absolute',
                         left: Math.min(Math.max(selectedCoords.x - 140, 10), (globalScatterContainerRef.current?.clientWidth || 600) - 310),
-                        top: selectedCoords.y < 210 ? selectedCoords.y + 20 : selectedCoords.y - 215,
+                        top: selectedCoords.y < 230 ? selectedCoords.y + 30 : selectedCoords.y - 230,
                         zIndex: 100,
                         pointerEvents: 'auto'
                       }}

@@ -429,7 +429,7 @@ export function Dashboard() {
 
     const directMatch = visibleDashboardScatterData.find((item: any) =>
       (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === selectedDot.difficulty)) ||
+      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
       ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs(item.score - selectedDot.score) < 1)
     );
     if (directMatch) return directMatch;
@@ -1220,7 +1220,7 @@ export function Dashboard() {
                   style={{
                     position: 'absolute',
                     left: Math.min(Math.max(selectedCoords.x - 140, 10), (scatterContainerRef.current?.clientWidth || 600) - 310),
-                    top: selectedCoords.y < 210 ? selectedCoords.y + 20 : selectedCoords.y - 215,
+                    top: selectedCoords.y < 230 ? selectedCoords.y + 30 : selectedCoords.y - 230,
                     zIndex: 100,
                     pointerEvents: 'auto'
                   }}

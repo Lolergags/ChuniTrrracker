@@ -64,8 +64,14 @@ const CustomScatterDot = React.memo((props: any) => {
 });
 
 const CustomSelectedScatterDot = React.memo((props: any) => {
-  const { cx, cy, payload, selectedDot, onSelectDot, onNavigateSong } = props;
+  const { cx, cy, payload, selectedDot, onSelectDot, onNavigateSong, onUpdateCoords } = props;
   const clickTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (cx != null && cy != null && !isNaN(cx) && !isNaN(cy) && onUpdateCoords) {
+      onUpdateCoords({ x: cx, y: cy });
+    }
+  }, [cx, cy, onUpdateCoords]);
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
 
@@ -139,8 +145,15 @@ export function Dashboard() {
   const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{ x: number; y: number } | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+
+  useEffect(() => {
+    if (!selectedDot) {
+      setSelectedCoords(null);
+    }
+  }, [selectedDot]);
 
   const isMobile = useIsMobile();
 
@@ -423,30 +436,31 @@ export function Dashboard() {
       if (m.overlappingItems && m.overlappingItems.length > 0) {
         return m.overlappingItems.some((other: any) =>
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs(other.score - selectedDot.score) < 1)
+          (other.id && selectedDot.id && other.id === selectedDot.id) ||
+          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && 
+           (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && 
+           other.difficulty === selectedDot.difficulty) ||
+          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && 
+           Math.abs(other.constant - selectedDot.constant) < 0.01 && 
+           Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
         );
       }
       return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             (m.songId && selectedDot.songId && m.songId === selectedDot.songId && (!m.difficulty || !selectedDot.difficulty || m.difficulty === selectedDot.difficulty)) ||
-             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && Math.abs(m.constant - selectedDot.constant) < 0.01 && Math.abs(m.score - selectedDot.score) < 1);
+             (m.id && selectedDot.id && m.id === selectedDot.id) ||
+             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && 
+              (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && 
+              m.difficulty === selectedDot.difficulty) ||
+             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && 
+              Math.abs(m.constant - selectedDot.constant) < 0.01 && 
+              Math.abs((m.score || m.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
       return parentCluster.overlappingItems;
     }
 
-    const keyStepX = 0.15;
-    const keyStepY = 1500;
-
-    const selScore = selectedDot.score || selectedDot.avgScore || 0;
-    const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
-    return allMappedScatterScores.filter((d: any) => {
-      const dScore = d.score || d.avgScore || 0;
-      const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
-      return dKey === selKey;
-    });
-  }, [selectedDot, mappedScatterScores, allMappedScatterScores]);
+    return [selectedDot];
+  }, [selectedDot, mappedScatterScores]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;
@@ -1174,12 +1188,32 @@ export function Dashboard() {
                           selectedDot={selectedDot} 
                           onSelectDot={setSelectedDot} 
                           onNavigateSong={handleNavigateSong} 
+                          onUpdateCoords={setSelectedCoords}
                         />
                       )}
                     />
                   )}
                 </ScatterChart>
               </ResponsiveContainer>
+
+              {selectedDot && selectedCoords && (
+                <div 
+                  style={{
+                    position: 'absolute',
+                    left: Math.min(Math.max(selectedCoords.x - 140, 10), (scatterContainerRef.current?.clientWidth || 600) - 310),
+                    top: selectedCoords.y < 210 ? selectedCoords.y + 20 : selectedCoords.y - 215,
+                    zIndex: 100,
+                    pointerEvents: 'auto'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ScatterTooltip 
+                    active={true} 
+                    payload={[{ payload: activeSelectedNode || selectedDot }]} 
+                    selectedDot={selectedDot}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

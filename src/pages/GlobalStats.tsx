@@ -104,10 +104,15 @@ const CustomScatterDot = React.memo((props: any) => {
 const CustomSelectedScatterDot = React.memo((props: any) => {
   const { cx, cy, payload, selectedDot, onSelectDot, onNavigateSong, onUpdateCoords } = props;
   const clickTimerRef = useRef<number | null>(null);
+  const prevCoordsRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (cx != null && cy != null && !isNaN(cx) && !isNaN(cy) && onUpdateCoords) {
-      onUpdateCoords({ x: cx, y: cy });
+      const prev = prevCoordsRef.current;
+      if (!prev || Math.abs(prev.x - cx) > 0.5 || Math.abs(prev.y - cy) > 0.5) {
+        prevCoordsRef.current = { x: cx, y: cy };
+        onUpdateCoords({ x: cx, y: cy });
+      }
     }
   }, [cx, cy, onUpdateCoords]);
 
@@ -232,6 +237,15 @@ export function GlobalStats() {
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
+
+  const handleUpdateGlobalCoords = useCallback((coords: { x: number; y: number }) => {
+    setSelectedCoords(prev => {
+      if (!prev || Math.abs(prev.x - coords.x) > 0.5 || Math.abs(prev.y - coords.y) > 0.5) {
+        return coords;
+      }
+      return prev;
+    });
+  }, []);
 
   useEffect(() => {
     if (!selectedDot) {
@@ -1214,7 +1228,7 @@ export function GlobalStats() {
                               selectedDot={selectedDot} 
                               onSelectDot={setSelectedDot} 
                               onNavigateSong={handleNavigateSong} 
-                              onUpdateCoords={setSelectedCoords}
+                              onUpdateCoords={handleUpdateGlobalCoords}
                             />
                           )}
                         />

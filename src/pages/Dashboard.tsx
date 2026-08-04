@@ -1155,7 +1155,7 @@ export function Dashboard() {
           <div 
             ref={scatterContainerRef}
             className="scrollable-content-wrapper" 
-            style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+            style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'visible', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
             onMouseDown={(e) => {
               dragStartPosRef.current = { x: e.clientX, y: e.clientY };
               hasDraggedRef.current = false;
@@ -1169,7 +1169,7 @@ export function Dashboard() {
               }
             }}
           >
-            <div ref={chartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px' }}>
+            <div ref={chartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px', overflow: 'visible' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart 
                   margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
@@ -1268,7 +1268,7 @@ export function Dashboard() {
               {selectedDot && selectedCoords && (() => {
                 const containerW = chartWrapperRef.current?.clientWidth || 800;
                 const popW = Math.min(290, containerW - 20);
-                const popH = 250;
+                const popH = 220;
 
                 // Smart Recharts placement logic: right vs left
                 let leftPos = selectedCoords.x + 18;
@@ -1277,12 +1277,12 @@ export function Dashboard() {
                 }
                 const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
 
-                // Smart Recharts placement logic: flip UP if dot is in lower half (y > 180) to prevent bottom cutoff
-                let topPos = selectedCoords.y - 20;
-                if (selectedCoords.y > 180 || selectedCoords.y + popH > 380) {
+                // Smart Recharts placement logic: flip UP if dot is in lower half (y > 220)
+                let topPos = selectedCoords.y - 10;
+                if (selectedCoords.y > 220) {
                   topPos = selectedCoords.y - popH - 10;
                 }
-                const clampedTop = Math.min(Math.max(10, topPos), Math.max(10, 420 - popH));
+                const clampedTop = Math.max(10, topPos);
 
                 return (
                   <div 

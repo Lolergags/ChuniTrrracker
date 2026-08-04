@@ -106,8 +106,6 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
           color: 'var(--text-primary)',
           fontSize: '14px',
           maxWidth: '320px',
-          maxHeight: '380px',
-          overflowY: 'auto',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           cursor: onNavigateSong ? 'pointer' : 'default'
         }}

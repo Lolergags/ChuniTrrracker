@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, Legend, LineChart, Line, Brush } from 'recharts';
 import { RotateCcw, User, Music, Activity } from 'lucide-react';
@@ -13,17 +14,200 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const CustomTooltip = React.memo(({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
+const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
+  const [manualPage, setManualPage] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    setManualPage(null);
+  }, [selectedDot]);
+
+  if (active && payload && payload.length && (selectedDot || hoveredDot)) {
+    const rawData = payload[0].payload;
+    const overlaps = rawData.overlappingItems || [];
+    const hasOverlap = overlaps.length > 1;
+
+    let activeChart = rawData;
+    if (selectedDot) {
+      const matchInOverlaps = overlaps.find((item: any) =>
+        (selectedDot.id && item.id === selectedDot.id) ||
+        (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+        ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+        ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      );
+
+      if (matchInOverlaps) {
+        activeChart = matchInOverlaps;
+      }
+    }
+
+    const data = activeChart;
+    const ITEMS_PER_PAGE = 10;
+
+    let selectedIndex = 0;
+    if (data && overlaps.length > 0) {
+      const idx = overlaps.findIndex((item: any) =>
+        (data.chartId && item.chartId === data.chartId) ||
+        (data.id && item.id === data.id) ||
+        ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+        ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
+      );
+      if (idx >= 0) selectedIndex = idx;
+    }
+
+    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
+    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
+    const currentPage = Math.min(Math.max(0, manualPage ?? autoPage), totalPages - 1);
+    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
     return (
-      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title}</p>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant.toFixed(1)}</span></p>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore).toLocaleString()}</span></p>
+      <div 
+        style={{ 
+          backgroundColor: 'var(--bg-secondary)', 
+          padding: '10px', 
+          border: '1px solid var(--border)', 
+          borderRadius: 'var(--radius-md)', 
+          maxWidth: '320px', 
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          cursor: onNavigateSong ? 'pointer' : 'default'
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (onNavigateSong) {
+            onNavigateSong(data);
+          }
+        }}
+      >
+        {hasOverlap && (
+          <div style={{
+            display: 'inline-block',
+            marginBottom: '6px',
+            padding: '2px 8px',
+            background: 'var(--accent-gold)',
+            color: '#000',
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            borderRadius: '4px'
+          }}>
+            ⚡ {overlaps.length} Overlapping Charts
+          </div>
+        )}
+        <p 
+          style={{ fontWeight: 'bold', margin: '0 0 5px 0', fontSize: '1.05rem', wordBreak: 'break-word', cursor: 'pointer' }}
+          title="Double-click to open leaderboard"
+        >
+          {data.title || data.name}
+        </p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant?.toFixed(1)}</span></p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.min(1010000, Math.floor(data.avgScore || data.score || 0)).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
+        
+        {hasOverlap && (
+          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+                Charts at this position ({overlaps.length}):
+              </span>
+              {totalPages > 1 && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  Page {currentPage + 1} / {totalPages}
+                </span>
+              )}
+            </div>
+
+            {visibleOverlaps.map((item: any, idx: number) => {
+              const isSelectedItem = (
+                (data.chartId && item.chartId === data.chartId) ||
+                (data.id && item.id === data.id) ||
+                ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+                ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
+              );
+              return (
+                <div 
+                  key={item.id || item.chartId || idx} 
+                  style={{ 
+                    fontSize: '0.78rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    color: isSelectedItem ? 'var(--accent-gold)' : 'var(--text-secondary)', 
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: isSelectedItem ? 'rgba(255, 215, 0, 0.12)' : 'transparent',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectDot) {
+                      onSelectDot(item);
+                    }
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateSong) {
+                      onNavigateSong(item);
+                    }
+                  }}
+                >
+                  <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
+                    {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.title || item.name}
+                  </span>
+                  <span style={{ fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(item.avgScore || item.score || 0)).toLocaleString()}</span>
+                </div>
+              );
+            })}
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  disabled={currentPage === 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManualPage(Math.max(0, currentPage - 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage === 0 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage === 0 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  ◄ Prev
+                </button>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, overlaps.length)} of {overlaps.length}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManualPage(Math.min(totalPages - 1, currentPage + 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  Next ►
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
-          Double-click dot to view leaderboard
+          {hasOverlap ? 'Click list item to select | Double-click to open' : 'Double-click dot to view leaderboard'}
         </div>
       </div>
     );
@@ -32,11 +216,10 @@ const CustomTooltip = React.memo(({ active, payload }: any) => {
 });
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong } = props;
+  const { cx, cy, fill, payload, hoveredDot, onSelectDot, onNavigateSong, selectedDot } = props;
+  const clickTimerRef = useRef<number | null>(null);
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
-
-  const clickTimerRef = useRef<number | null>(null);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -59,31 +242,73 @@ const CustomScatterDot = React.memo((props: any) => {
     }, 220);
   };
 
-  const isSelected = selectedDot && (
-    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
-    (selectedDot.id && payload.id === selectedDot.id) ||
-    ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) && (selectedDot.songId || selectedDot.song_id) === (payload.songId || payload.song_id) && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore)) ||
-    (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
-      (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-      (other.id && selectedDot.id && other.id === selectedDot.id) ||
-      ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-      ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && (other.score || other.avgScore) === (selectedDot.score || selectedDot.avgScore))
-    ))
-  );
-
   const isHovered = hoveredDot && (
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
     (hoveredDot.id && payload.id === hoveredDot.id) ||
     ((hoveredDot.songId || hoveredDot.song_id) && (payload.songId || payload.song_id) && (hoveredDot.songId || hoveredDot.song_id) === (payload.songId || payload.song_id) && hoveredDot.difficulty === payload.difficulty) ||
-    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
+    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && Math.abs((hoveredDot.score || hoveredDot.avgScore) - (payload.score || payload.avgScore)) < 1)
   );
 
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+  const { dotR } = calculateDotRadius(overlapCount, false, isHovered);
 
-  const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={dotR} 
+      fill={fill || '#ff66ff'} 
+      fillOpacity={isHovered ? 0.9 : 0.65} 
+      stroke={isHovered ? 'rgba(255,255,255,0.8)' : 'none'} 
+      strokeWidth={isHovered ? 1.5 : 0} 
+      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      onClick={handleClick}
+    />
+  );
+});
 
-  if (isSelected && overlapCount > 1) {
+const CustomSelectedScatterDot = React.memo((props: any) => {
+  const { cx, cy, payload, selectedDot, onSelectDot, onNavigateSong, onUpdateCoords } = props;
+  const clickTimerRef = useRef<number | null>(null);
+  const prevCoordsRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (cx != null && cy != null && !isNaN(cx) && !isNaN(cy) && onUpdateCoords) {
+      const prev = prevCoordsRef.current;
+      if (!prev || Math.abs(prev.x - cx) > 0.5 || Math.abs(prev.y - cy) > 0.5) {
+        prevCoordsRef.current = { x: cx, y: cy };
+        onUpdateCoords({ x: cx, y: cy });
+      }
+    }
+  }, [cx, cy, onUpdateCoords]);
+
+  if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      if (onNavigateSong) {
+        onNavigateSong(selectedDot || payload);
+      }
+      return;
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      if (onSelectDot) {
+        onSelectDot(payload);
+      }
+    }, 220);
+  };
+
+  const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+  const { dotR } = calculateDotRadius(overlapCount, true, false);
+
+  if (overlapCount > 1) {
     const badgeOffset = Math.max(7, dotR * 0.75);
     return (
       <g style={{ cursor: 'pointer' }} onClick={handleClick}>
@@ -102,11 +327,11 @@ const CustomScatterDot = React.memo((props: any) => {
       cx={cx} 
       cy={cy} 
       r={dotR} 
-      fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} 
-      fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
-      stroke={isSelected ? 'var(--accent-secondary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
-      strokeWidth={isSelected ? 2.5 : (isHovered ? 1.5 : 0)} 
-      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      fill="#ffffff" 
+      fillOpacity={1} 
+      stroke="var(--accent-secondary)" 
+      strokeWidth={2.5} 
+      style={{ cursor: 'pointer' }} 
       onClick={handleClick}
     />
   );
@@ -173,10 +398,29 @@ export function GlobalStats() {
   const [globalScatterZoomY, setGlobalScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{ x: number; y: number } | null>(null);
   const [hoveredDot, setHoveredDot] = useState<any | null>(null);
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
+  const globalChartWrapperRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef<boolean>(false);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
+
+  const handleUpdateGlobalCoords = useCallback((coords: { x: number; y: number }) => {
+    setSelectedCoords(prev => {
+      if (!prev || Math.abs(prev.x - coords.x) > 0.5 || Math.abs(prev.y - coords.y) > 0.5) {
+        return coords;
+      }
+      return prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedDot) {
+      setSelectedCoords(null);
+    }
+  }, [selectedDot]);
 
   const isMobile = useIsMobile();
 
@@ -200,7 +444,10 @@ export function GlobalStats() {
         api.getPlayerOpDistribution(apiFilters)
       ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
         setHeatmapData(Array.isArray(heatmap) ? heatmap : []);
-        setMetaData(Array.isArray(meta) ? meta : []);
+        setMetaData(Array.isArray(meta) ? meta.map((d: any) => ({
+          ...d,
+          avgScore: Math.min(1010000, Math.floor(d.avgScore || d.score || 0))
+        })) : []);
         setLampData(Array.isArray(lamps) ? lamps : []);
         setOpYieldData(Array.isArray(opYield) ? opYield : []);
         setPlayerOpData(Array.isArray(playerOp) ? playerOp : []);
@@ -323,8 +570,6 @@ export function GlobalStats() {
   }, [validMetaData]);
 
   const visibleScatterData = useMemo(() => {
-    let list = validMetaData;
-
     if (globalScatterZoomX || globalScatterZoomY) {
       const [minX, maxX] = globalScatterZoomX || defaultXDomain;
       const [minY, maxY] = globalScatterZoomY || defaultYDomain;
@@ -337,7 +582,7 @@ export function GlobalStats() {
       const lowY = minY - padY;
       const highY = maxY + padY;
 
-      list = validMetaData.filter((d: any) => 
+      return validMetaData.filter((d: any) => 
         d.constant >= lowX && 
         d.constant <= highX && 
         d.avgScore >= lowY && 
@@ -345,26 +590,10 @@ export function GlobalStats() {
       );
     }
 
-    if (!selectedDot) return list;
+    return validMetaData;
+  }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
-    const selIdx = list.findIndex((item: any) =>
-      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      (selectedDot.id && item.id === selectedDot.id) ||
-      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
-      (item.overlappingItems && item.overlappingItems.some((other: any) =>
-        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-        (other.id && selectedDot.id && other.id === selectedDot.id) ||
-        ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty))
-      ))
-    );
-
-    if (selIdx < 0 || selIdx === list.length - 1) return list;
-
-    const result = [...list];
-    const [selectedItem] = result.splice(selIdx, 1);
-    result.push(selectedItem);
-    return result;
-  }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain, selectedDot]);
+  const orderedGlobalClusterRef = useRef<{ clusterId: string; items: any[] }>({ clusterId: '', items: [] });
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
@@ -374,35 +603,81 @@ export function GlobalStats() {
         return m.overlappingItems.some((other: any) =>
           (other.id && selectedDot.id && other.id === selectedDot.id) ||
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
-          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && 
+           (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && 
+           other.difficulty === selectedDot.difficulty) ||
+          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && 
+           Math.abs(other.constant - selectedDot.constant) < 0.01 && 
+           Math.abs((other.avgScore || other.score) - (selectedDot.avgScore || selectedDot.score)) < 1)
         );
       }
       return (m.id && selectedDot.id && m.id === selectedDot.id) ||
              (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
-             ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01);
+             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && 
+              (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && 
+              m.difficulty === selectedDot.difficulty) ||
+             ((m.title || m.name) === (selectedDot.title || selectedDot.name) && 
+              Math.abs(m.constant - selectedDot.constant) < 0.01 && 
+              Math.abs((m.avgScore || m.score) - (selectedDot.avgScore || selectedDot.score)) < 1);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
-      return parentCluster.overlappingItems;
+      const items = parentCluster.overlappingItems;
+      const clusterId = `${parentCluster.id || parentCluster.chartId || parentCluster.songId}_${parentCluster.constant}_${parentCluster.avgScore || parentCluster.score}`;
+
+      // If this is a new cluster selection, order the selectedDot at index 0
+      if (orderedGlobalClusterRef.current.clusterId !== clusterId) {
+        const selectedMatch = items.find((item: any) =>
+          (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+          (selectedDot.id && item.id === selectedDot.id) ||
+          ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && 
+           (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && 
+           (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+          ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01)
+        );
+
+        if (selectedMatch) {
+          const rest = items.filter((item: any) => item !== selectedMatch);
+          orderedGlobalClusterRef.current = { clusterId, items: [selectedMatch, ...rest] };
+        } else {
+          orderedGlobalClusterRef.current = { clusterId, items };
+        }
+      }
+
+      return orderedGlobalClusterRef.current.items;
     }
 
-    const curX = globalScatterZoomX || defaultXDomain;
-    const curY = globalScatterZoomY || defaultYDomain;
-    const spanX = Math.max(0.1, curX[1] - curX[0]);
-    const spanY = Math.max(100, curY[1] - curY[0]);
-    const keyStepX = spanX / 40;
-    const keyStepY = spanY / 30;
+    return [selectedDot];
+  }, [selectedDot, validMetaData]);
 
-    const selScore = selectedDot.avgScore || selectedDot.score || 0;
-    const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
-    return validMetaData.filter((d: any) => {
-      const dScore = d.avgScore || d.score || 0;
-      const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
-      return dKey === selKey;
-    });
-  }, [selectedDot, validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
+  const activeSelectedNode = useMemo(() => {
+    if (!selectedDot || !visibleScatterData.length) return null;
+
+    const directMatch = visibleScatterData.find((item: any) =>
+      (selectedDot.id && item.id === selectedDot.id) ||
+      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
+      ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+    );
+
+    const baseNode = directMatch || visibleScatterData.find((item: any) =>
+      item.overlappingItems && item.overlappingItems.some((other: any) =>
+        (other.id && selectedDot.id && other.id === selectedDot.id) ||
+        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+        ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+        ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      )
+    );
+
+    if (baseNode) {
+      return {
+        ...baseNode,
+        overlappingItems: overlappingGlobalDots.length > 0 ? overlappingGlobalDots : baseNode.overlappingItems
+      };
+    }
+
+    return null;
+  }, [visibleScatterData, selectedDot, overlappingGlobalDots]);
 
   const currentGlobalDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingGlobalDots.length) return 0;
@@ -427,6 +702,9 @@ export function GlobalStats() {
     if (!selectedDot || overlappingGlobalDots.length <= 1) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;
@@ -1072,15 +1350,33 @@ export function GlobalStats() {
                 ref={globalScatterContainerRef}
                 className="scrollable-content-wrapper" 
                 style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+                onMouseDown={(e) => {
+                  dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+                  hasDraggedRef.current = false;
+                }}
+                onMouseMove={(e) => {
+                  if (dragStartPosRef.current && (e.buttons & 1)) {
+                    const dist = Math.hypot(e.clientX - dragStartPosRef.current.x, e.clientY - dragStartPosRef.current.y);
+                    if (dist > 5) {
+                      hasDraggedRef.current = true;
+                    }
+                  }
+                }}
               >
-                <div className="chart-min-width-md" style={{ height: '430px' }}>
+                <div ref={globalChartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart 
                       margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
+                      onClick={() => {
+                        if (!isPanDragging && !hasDraggedRef.current) {
+                          setSelectedDot(null);
+                          setHoveredDot(null);
+                        }
+                      }}
                     >
                       <defs>
                         <clipPath id="custom-scatter-clip">
-                          <rect x={globalScatterClipX} y="-500" width="10000" height="905" />
+                          <rect x={globalScatterClipX} y="-500" width="10000" height="875" />
                         </clipPath>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -1110,7 +1406,7 @@ export function GlobalStats() {
                         width={globalScatterYWidth}
                       />
                       <ZAxis type="number" dataKey="overlapCount" range={[20, 1200]} name="Overlap Count" />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={selectedDot ? () => null : <CustomTooltip hoveredDot={hoveredDot} />} />
                       <Scatter 
                         name="Charts" 
                         data={visibleScatterData} 
@@ -1133,12 +1429,7 @@ export function GlobalStats() {
                           const last = lastScatterDotClickRef.current;
 
                           if (last.id === dotId && (now - last.time) < 500) {
-                            // Double-click: navigate to song leaderboard
-                            const sId = data.songId || data.song_id;
-                            if (sId) {
-                              const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
-                              navigate(`/analytics?songId=${sId}${diff}`);
-                            }
+                            handleNavigateSong(data);
                             lastScatterDotClickRef.current = { id: '', time: 0 };
                             return;
                           }
@@ -1148,8 +1439,69 @@ export function GlobalStats() {
                           setSelectedDot(data);
                         }}
                       />
+                      {activeSelectedNode && (
+                        <Scatter
+                          name="SelectedChart"
+                          data={[activeSelectedNode]}
+                          isAnimationActive={false}
+                          shape={(props: any) => (
+                            <CustomSelectedScatterDot 
+                              {...props} 
+                              selectedDot={selectedDot} 
+                              onSelectDot={setSelectedDot} 
+                              onNavigateSong={handleNavigateSong} 
+                              onUpdateCoords={handleUpdateGlobalCoords}
+                            />
+                          )}
+                        />
+                      )}
                     </ScatterChart>
                   </ResponsiveContainer>
+
+                  {selectedDot && selectedCoords && createPortal((() => {
+                    const rect = globalChartWrapperRef.current?.getBoundingClientRect() || { left: 0, top: 0, width: 800 };
+                    const circleX = rect.left + selectedCoords.x;
+                    const circleY = rect.top + selectedCoords.y;
+
+                    const containerW = globalChartWrapperRef.current?.clientWidth || rect.width || 800;
+                    const popW = Math.min(290, window.innerWidth - 20);
+                    const popH = 220;
+
+                    // Smart Recharts placement logic: flip LEFT if dot is on right half of chart canvas
+                    let leftPos = circleX + 18;
+                    if (selectedCoords.x > containerW / 2 || selectedCoords.x + popW + 18 > containerW - 20) {
+                      leftPos = circleX - popW - 18;
+                    }
+                    const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, window.innerWidth - popW - 10));
+
+                    // Smart Recharts placement logic: flip UP if dot is in lower/middle half of graph (y > 150)
+                    let topPos = circleY - 10;
+                    if (selectedCoords.y > 150) {
+                      topPos = circleY - popH - 10;
+                    }
+                    const clampedTop = Math.max(10, topPos);
+
+                    return (
+                      <div 
+                        style={{
+                          position: 'fixed',
+                          left: clampedLeft,
+                          top: clampedTop,
+                          zIndex: 10000,
+                          pointerEvents: 'auto'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <CustomTooltip 
+                          active={true} 
+                          payload={[{ payload: activeSelectedNode || selectedDot }]} 
+                          selectedDot={selectedDot}
+                          onSelectDot={setSelectedDot}
+                          onNavigateSong={handleNavigateSong}
+                        />
+                      </div>
+                    );
+                  })(), document.body)}
                 </div>
               </div>
             </div>
@@ -1194,7 +1546,7 @@ export function GlobalStats() {
                       )}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.round(selectedDot.avgScore || selectedDot.score || 0).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
+                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.min(1010000, Math.floor(selectedDot.avgScore || selectedDot.score || 0)).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1304,6 +1656,8 @@ export function GlobalStats() {
                         <button
                           key={idx}
                           onClick={() => setSelectedDot(item)}
+                          onDoubleClick={() => handleNavigateSong(item)}
+                          title="Click to select • Double-click to view song analytics"
                           style={{
                             background: isCurrent ? 'var(--accent-gold)' : 'rgba(255, 255, 255, 0.08)',
                             color: isCurrent ? '#000' : 'var(--text-primary)',
@@ -1325,7 +1679,7 @@ export function GlobalStats() {
                             </span>
                           )}
                           <span>{item.title || item.name}</span>
-                          <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({Math.round(item.avgScore || item.score || 0)?.toLocaleString()})</span>
+                          <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({Math.min(1010000, Math.floor(item.avgScore || item.score || 0)).toLocaleString()})</span>
                         </button>
                       );
                     })}

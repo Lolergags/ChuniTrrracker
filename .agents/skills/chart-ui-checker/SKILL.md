@@ -37,3 +37,12 @@ Use this skill when editing frontend charting components (`Dashboard.tsx`, `Glob
 
 ### 5. Rules of Hooks Invariant
 * **Top-Level Hook Placement**: ALL hooks (`useMemo`, `useCallback`, `useEffect`) inside page components (`Dashboard.tsx`, `GlobalStats.tsx`) MUST be declared at the top level of the function component before ANY conditional logic or early `return` statements (`if (isLoading)`, `if (!activePlayer)`). Failing to do so throws React Error #310.
+
+### 6. Persistent Selection Popovers & React Portal Overlays
+* **Mount Location**: Mount persistent selection cards using `createPortal(..., document.body)` with `position: fixed` and `z-index: 10000`.
+* **Graph Scrollbars**: Keep graph container `overflow-y: hidden`. Mounting via Portal floats popovers above all page elements without creating graph scrollbars.
+* **Placement Math Checks**:
+  * Horizontal flip: `selectedCoords.x > containerW / 2` -> flip left (`circleX - popW - 18`).
+  * Vertical flip: `selectedCoords.y > 150` -> flip up (`circleY - popH - 10`).
+* **Score Formatting**: Ensure score values in scatter tooltips and cluster badges are floored integers capped at $1,010,000$.
+

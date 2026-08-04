@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const LAMP_ORDER = ['AJC', 'AJ', 'FC', 'CLEAR', 'FAILED'];
 const LAMP_NAMES: Record<string, string> = {
@@ -44,23 +44,78 @@ export const LampTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
-export const ScatterTooltip = React.memo(({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const overlaps = data.overlappingItems || [];
+export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
+  const [manualPage, setManualPage] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    setManualPage(null);
+  }, [selectedDot]);
+
+  if (active && payload && payload.length && (selectedDot || hoveredDot)) {
+    const rawData = payload[0].payload;
+    const overlaps = rawData.overlappingItems || [];
     const hasOverlap = overlaps.length > 1;
 
+    let activeChart = rawData;
+    if (selectedDot) {
+      const matchInOverlaps = overlaps.find((item: any) =>
+        (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+        (selectedDot.id && item.id === selectedDot.id) ||
+        ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === selectedDot.difficulty)) ||
+        ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      );
+
+      if (matchInOverlaps) {
+        activeChart = matchInOverlaps;
+      } else if (
+        (selectedDot.chartId && rawData.chartId === selectedDot.chartId) ||
+        (selectedDot.id && rawData.id === selectedDot.id) ||
+        ((selectedDot.songId || selectedDot.song_id) && (rawData.songId || rawData.song_id) && (selectedDot.songId || selectedDot.song_id) === (rawData.songId || rawData.song_id) && (!selectedDot.difficulty || !rawData.difficulty || selectedDot.difficulty === rawData.difficulty)) ||
+        ((rawData.title || rawData.name) === (selectedDot.title || selectedDot.name) && Math.abs(rawData.constant - selectedDot.constant) < 0.01)
+      ) {
+        activeChart = selectedDot;
+      }
+    }
+
+    const data = activeChart;
+    const ITEMS_PER_PAGE = 10;
+
+    let selectedIndex = 0;
+    if (data && overlaps.length > 0) {
+      const idx = overlaps.findIndex((item: any) =>
+        (data.chartId && item.chartId === data.chartId) ||
+        (data.id && item.id === data.id) ||
+        ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+        ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
+      );
+      if (idx >= 0) selectedIndex = idx;
+    }
+
+    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
+    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
+    const currentPage = Math.min(Math.max(0, manualPage ?? autoPage), totalPages - 1);
+    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
     return (
-      <div style={{
-        backgroundColor: 'var(--bg-primary)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: '8px',
-        padding: '12px',
-        color: 'var(--text-primary)',
-        fontSize: '14px',
-        maxWidth: '320px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-      }}>
+      <div 
+        style={{
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '8px',
+          padding: '12px',
+          color: 'var(--text-primary)',
+          fontSize: '14px',
+          maxWidth: '320px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          cursor: onNavigateSong ? 'pointer' : 'default'
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (onNavigateSong) {
+            onNavigateSong(data);
+          }
+        }}
+      >
         {hasOverlap && (
           <div style={{
             display: 'inline-block',
@@ -76,13 +131,16 @@ export const ScatterTooltip = React.memo(({ active, payload }: any) => {
           </div>
         )}
 
-        <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '1.05rem', wordBreak: 'break-word' }}>
+        <p 
+          style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '1.05rem', wordBreak: 'break-word', cursor: 'pointer' }}
+          title="Double-click to open leaderboard"
+        >
           {data.name || data.title}
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Score:</span>
-          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{data.score?.toLocaleString()}</span>
+          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(data.score || data.avgScore || 0)).toLocaleString()}</span>
           
           {data.opDisplay !== undefined && (
             <>
@@ -111,22 +169,111 @@ export const ScatterTooltip = React.memo(({ active, payload }: any) => {
 
         {hasOverlap && (
           <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', marginBottom: '4px' }}>
-              Charts at this position ({overlaps.length}):
-            </div>
-            {overlaps.map((item: any, i: number) => (
-              <div key={i} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', padding: '2px 0' }}>
-                <span style={{ color: item.name === data.name || item.title === data.title ? 'var(--text-primary)' : 'inherit', fontWeight: item.name === data.name || item.title === data.title ? 600 : 400 }}>
-                  • {item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+                Charts at this position ({overlaps.length}):
+              </span>
+              {totalPages > 1 && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  Page {currentPage + 1} / {totalPages}
                 </span>
-                <span style={{ fontFamily: 'monospace' }}>{(item.score || item.avgScore)?.toLocaleString()}</span>
+              )}
+            </div>
+
+            {visibleOverlaps.map((item: any, idx: number) => {
+              const isSelectedItem = (
+                (data.chartId && item.chartId === data.chartId) ||
+                (data.id && item.id === data.id) ||
+                ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+                ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
+              );
+              return (
+                <div 
+                  key={item.id || item.chartId || idx} 
+                  style={{ 
+                    fontSize: '0.78rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    color: isSelectedItem ? 'var(--accent-gold)' : 'var(--text-secondary)', 
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: isSelectedItem ? 'rgba(255, 215, 0, 0.12)' : 'transparent',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectDot) {
+                      onSelectDot(item);
+                    }
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateSong) {
+                      onNavigateSong(item);
+                    }
+                  }}
+                >
+                  <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
+                    {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
+                  </span>
+                  <span style={{ fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(item.score || item.avgScore || 0)).toLocaleString()}</span>
+                </div>
+              );
+            })}
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  disabled={currentPage === 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManualPage(Math.max(0, currentPage - 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage === 0 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage === 0 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  ◄ Prev
+                </button>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, overlaps.length)} of {overlaps.length}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManualPage(Math.min(totalPages - 1, currentPage + 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  Next ►
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )}
 
         <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
-          {hasOverlap ? 'Click circle to inspect & cycle | Double-click to open' : 'Double-click dot to view leaderboard'}
+          {hasOverlap ? 'Click list item to select | Double-click to open' : 'Double-click dot to view leaderboard'}
         </div>
       </div>
     );

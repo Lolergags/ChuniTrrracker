@@ -1271,12 +1271,13 @@ export function Dashboard() {
                 const circleX = rect.left + selectedCoords.x;
                 const circleY = rect.top + selectedCoords.y;
 
+                const containerW = chartWrapperRef.current?.clientWidth || rect.width || 800;
                 const popW = Math.min(290, window.innerWidth - 20);
                 const popH = 220;
 
-                // Smart Recharts placement logic: right vs left
+                // Smart Recharts placement logic: flip LEFT if dot is on right half of chart canvas
                 let leftPos = circleX + 18;
-                if (circleX + popW + 18 > window.innerWidth - 10) {
+                if (selectedCoords.x > containerW / 2 || selectedCoords.x + popW + 18 > containerW - 20) {
                   leftPos = circleX - popW - 18;
                 }
                 const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, window.innerWidth - popW - 10));

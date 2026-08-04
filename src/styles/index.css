@@ -482,3 +482,9 @@ rect:focus {
   clip-path: none !important;
   cursor: pointer;
 }
+
+.recharts-tooltip-wrapper,
+.recharts-tooltip-cursor,
+.recharts-default-tooltip {
+  pointer-events: none !important;
+}

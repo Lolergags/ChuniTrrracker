@@ -13,9 +13,32 @@ import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot } = props;
+  const { cx, cy, fill, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong } = props;
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const clickTimerRef = useRef<number | null>(null);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      if (onNavigateSong) {
+        onNavigateSong(payload);
+      }
+      return;
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      if (onSelectDot) {
+        onSelectDot(payload);
+      }
+    }, 220);
+  };
 
   const isSelected = selectedDot && (
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
@@ -40,13 +63,13 @@ const CustomScatterDot = React.memo((props: any) => {
   const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
   if (isActive && overlapCount > 1) {
-    const badgeOffset = Math.max(6, dotR * 0.75);
+    const badgeOffset = Math.max(7, dotR * 0.75);
     return (
-      <g style={{ cursor: 'pointer' }}>
-        <circle cx={cx} cy={cy} r={dotR + 4.0} fill="none" stroke="var(--accent-gold)" strokeWidth={2} strokeDasharray="3 2" opacity={0.95} />
-        <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1} />
-        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={5.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
-        <text x={cx + badgeOffset} y={cy - badgeOffset + 3} textAnchor="middle" fill="#000" fontSize="8" fontWeight="bold" pointerEvents="none">
+      <g style={{ cursor: 'pointer' }} onClick={handleClick}>
+        <circle cx={cx} cy={cy} r={dotR + 4.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2.5} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1.5} />
+        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={6.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + badgeOffset} y={cy - badgeOffset + 3.5} textAnchor="middle" fill="#000" fontSize="9" fontWeight="bold" pointerEvents="none">
           {overlapCount > 9 ? '+' : overlapCount}
         </text>
       </g>
@@ -61,8 +84,9 @@ const CustomScatterDot = React.memo((props: any) => {
       fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} 
       fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
       stroke={isSelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
-      strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)} 
+      strokeWidth={isSelected ? 2.5 : (isHovered ? 1.5 : 0)} 
       style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      onClick={handleClick}
     />
   );
 });
@@ -426,13 +450,24 @@ export function Dashboard() {
     ), [scatterZoomY, defaultYDomain]
   );
 
+  const handleNavigateSong = useCallback((data: any) => {
+    const sId = data?.songId || data?.song_id;
+    if (sId) {
+      const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+      const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+      navigate(`/analytics?songId=${sId}${diff}${player}`);
+    }
+  }, [activePlayer, navigate]);
+
   const renderScatterDot = useCallback((props: any) => 
     <CustomScatterDot 
       {...props} 
       selectedDot={selectedDot} 
       hoveredDot={hoveredDot} 
+      onSelectDot={setSelectedDot}
+      onNavigateSong={handleNavigateSong}
     />
-  , [selectedDot, hoveredDot]);
+  , [selectedDot, hoveredDot, setSelectedDot, handleNavigateSong]);
 
   useEffect(() => {
     const elem = scatterContainerRef.current;
@@ -507,7 +542,7 @@ export function Dashboard() {
       panRef.current.startScrollLeft = elem.scrollLeft;
       panRef.current.startDomainX = curX;
       panRef.current.startDomainY = curY;
-      setIsPanDragging(true);
+      if (elem) elem.style.cursor = 'grabbing';
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -549,7 +584,7 @@ export function Dashboard() {
     const handleMouseUp = () => {
       if (panRef.current.isDragging) {
         panRef.current.isDragging = false;
-        setIsPanDragging(false);
+        if (elem) elem.style.cursor = 'grab';
       }
     };
 

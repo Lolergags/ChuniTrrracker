@@ -1134,7 +1134,7 @@ export function Dashboard() {
                 >
                   <defs>
                     <clipPath id="custom-scatter-clip">
-                      <rect x={scatterClipX} y="-500" width="10000" height="905" />
+                      <rect x={scatterClipX} y="-500" width="10000" height="878" />
                     </clipPath>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -1179,9 +1179,7 @@ export function Dashboard() {
                     }}
                     onMouseLeave={() => setHoveredDot(null)}
                     onClick={(node: any) => {
-                      const data = node?.payload || node;
-                      if (!data || (!data.name && !data.title)) return;
-
+                      const data = node.payload || node;
                       const dotId = `${data.chartId || data.songId || ''}_${data.difficulty || ''}`;
                       const now = Date.now();
                       const last = lastScatterDotClickRef.current;
@@ -1216,24 +1214,36 @@ export function Dashboard() {
                 </ScatterChart>
               </ResponsiveContainer>
 
-              {selectedDot && selectedCoords && (
-                <div 
-                  style={{
-                    position: 'absolute',
-                    left: Math.min(Math.max(selectedCoords.x - 140, 10), (scatterContainerRef.current?.clientWidth || 600) - 310),
-                    top: selectedCoords.y < 230 ? selectedCoords.y + 30 : selectedCoords.y - 230,
-                    zIndex: 100,
-                    pointerEvents: 'auto'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ScatterTooltip 
-                    active={true} 
-                    payload={[{ payload: activeSelectedNode || selectedDot }]} 
-                    selectedDot={selectedDot}
-                  />
-                </div>
-              )}
+              {selectedDot && selectedCoords && (() => {
+                const popW = 280;
+                const popH = 180;
+                const containerW = scatterContainerRef.current?.clientWidth || 600;
+                const leftPos = (selectedCoords.x + 22 + popW <= containerW - 10)
+                  ? selectedCoords.x + 22
+                  : selectedCoords.x - popW - 22;
+                const clampedLeft = Math.min(Math.max(leftPos, 10), containerW - popW - 10);
+                const topPos = selectedCoords.y - (popH / 2);
+                const clampedTop = Math.min(Math.max(topPos, 10), 430 - popH - 10);
+
+                return (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      left: clampedLeft,
+                      top: clampedTop,
+                      zIndex: 100,
+                      pointerEvents: 'auto'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ScatterTooltip 
+                      active={true} 
+                      payload={[{ payload: activeSelectedNode || selectedDot }]} 
+                      selectedDot={selectedDot}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

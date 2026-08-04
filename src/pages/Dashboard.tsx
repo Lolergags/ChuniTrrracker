@@ -1282,9 +1282,9 @@ export function Dashboard() {
                 }
                 const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, window.innerWidth - popW - 10));
 
-                // Smart Recharts placement logic: flip UP if dot is in lower half of graph
+                // Smart Recharts placement logic: flip UP if dot is in lower/middle half of graph (y > 150)
                 let topPos = circleY - 10;
-                if (selectedCoords.y > 220) {
+                if (selectedCoords.y > 150) {
                   topPos = circleY - popH - 10;
                 }
                 const clampedTop = Math.max(10, topPos);

@@ -14,7 +14,11 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
 const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
-  const [page, setPage] = useState(0);
+  const [manualPage, setManualPage] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    setManualPage(null);
+  }, [selectedDot]);
 
   if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
@@ -38,24 +42,21 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
     const data = activeChart;
     const ITEMS_PER_PAGE = 10;
 
-    let sortedOverlaps = overlaps;
+    let selectedIndex = 0;
     if (data && overlaps.length > 0) {
-      const matchIdx = overlaps.findIndex((item: any) =>
+      const idx = overlaps.findIndex((item: any) =>
         (data.chartId && item.chartId === data.chartId) ||
         (data.id && item.id === data.id) ||
         ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
         ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
       );
-      if (matchIdx > 0) {
-        const selectedItem = overlaps[matchIdx];
-        const rest = overlaps.filter((_: any, idx: number) => idx !== matchIdx);
-        sortedOverlaps = [selectedItem, ...rest];
-      }
+      if (idx >= 0) selectedIndex = idx;
     }
 
-    const totalPages = Math.ceil(sortedOverlaps.length / ITEMS_PER_PAGE) || 1;
-    const currentPage = Math.min(Math.max(0, page), totalPages - 1);
-    const visibleOverlaps = sortedOverlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
+    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
+    const currentPage = Math.min(Math.max(0, manualPage ?? autoPage), totalPages - 1);
+    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
     return (
       <div 
@@ -161,7 +162,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
                   disabled={currentPage === 0}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setPage((p: number) => Math.max(0, p - 1));
+                    setManualPage(Math.max(0, currentPage - 1));
                   }}
                   style={{
                     background: 'rgba(255,255,255,0.08)',
@@ -184,7 +185,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
                   disabled={currentPage >= totalPages - 1}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setPage((p: number) => Math.min(totalPages - 1, p + 1));
+                    setManualPage(Math.min(totalPages - 1, currentPage + 1));
                   }}
                   style={{
                     background: 'rgba(255,255,255,0.08)',

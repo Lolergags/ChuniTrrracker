@@ -50,7 +50,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot }: any) => {
 });
 
 const CustomScatterDot = React.memo((props: any) => {
-  const { cx, cy, fill, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong } = props;
+  const { cx, cy, fill, payload, hoveredDot, onSelectDot, onNavigateSong, selectedDot } = props;
   const clickTimerRef = useRef<number | null>(null);
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
@@ -76,26 +76,6 @@ const CustomScatterDot = React.memo((props: any) => {
     }, 220);
   };
 
-  const isDirectMatch = Boolean(selectedDot && (
-    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
-    (selectedDot.id && payload.id === selectedDot.id) ||
-    ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) && (selectedDot.songId || selectedDot.song_id) === (payload.songId || payload.song_id) && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && Math.abs((selectedDot.score || selectedDot.avgScore) - (payload.score || payload.avgScore)) < 1)
-  ));
-
-  const isClusterMatch = Boolean(selectedDot && !isDirectMatch && payload.overlappingItems && payload.overlappingItems.some((other: any) =>
-    (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-    (other.id && selectedDot.id && other.id === selectedDot.id) ||
-    ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-    ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-  ) && (
-    (payload.overlappingItems[0]?.chartId && payload.chartId && payload.overlappingItems[0].chartId === payload.chartId) ||
-    (payload.overlappingItems[0]?.id && payload.id && payload.overlappingItems[0].id === payload.id) ||
-    ((payload.overlappingItems[0]?.songId || payload.overlappingItems[0]?.song_id) === (payload.songId || payload.song_id))
-  ));
-
-  const isHighlighted = isDirectMatch || isClusterMatch;
-
   const isHovered = hoveredDot && (
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
     (hoveredDot.id && payload.id === hoveredDot.id) ||
@@ -104,10 +84,54 @@ const CustomScatterDot = React.memo((props: any) => {
   );
 
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+  const { dotR } = calculateDotRadius(overlapCount, false, isHovered);
 
-  const { dotR } = calculateDotRadius(overlapCount, isHighlighted, isHovered);
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={dotR} 
+      fill={fill || '#ff66ff'} 
+      fillOpacity={isHovered ? 0.9 : 0.65} 
+      stroke={isHovered ? 'rgba(255,255,255,0.8)' : 'none'} 
+      strokeWidth={isHovered ? 1.5 : 0} 
+      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      onClick={handleClick}
+    />
+  );
+});
 
-  if (isHighlighted && overlapCount > 1) {
+const CustomSelectedScatterDot = React.memo((props: any) => {
+  const { cx, cy, payload, selectedDot, onSelectDot, onNavigateSong } = props;
+  const clickTimerRef = useRef<number | null>(null);
+
+  if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      if (onNavigateSong) {
+        onNavigateSong(selectedDot || payload);
+      }
+      return;
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      if (onSelectDot) {
+        onSelectDot(payload);
+      }
+    }, 220);
+  };
+
+  const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+  const { dotR } = calculateDotRadius(overlapCount, true, false);
+
+  if (overlapCount > 1) {
     const badgeOffset = Math.max(7, dotR * 0.75);
     return (
       <g style={{ cursor: 'pointer' }} onClick={handleClick}>
@@ -126,11 +150,11 @@ const CustomScatterDot = React.memo((props: any) => {
       cx={cx} 
       cy={cy} 
       r={dotR} 
-      fill={isHighlighted ? '#ffffff' : (fill || '#ff66ff')} 
-      fillOpacity={isHighlighted ? 1 : (isHovered ? 0.9 : 0.65)} 
-      stroke={isHighlighted ? 'var(--accent-secondary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
-      strokeWidth={isHighlighted ? 2.5 : (isHovered ? 1.5 : 0)} 
-      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      fill="#ffffff" 
+      fillOpacity={1} 
+      stroke="var(--accent-secondary)" 
+      strokeWidth={2.5} 
+      style={{ cursor: 'pointer' }} 
       onClick={handleClick}
     />
   );
@@ -347,8 +371,6 @@ export function GlobalStats() {
   }, [validMetaData]);
 
   const visibleScatterData = useMemo(() => {
-    let list = validMetaData;
-
     if (globalScatterZoomX || globalScatterZoomY) {
       const [minX, maxX] = globalScatterZoomX || defaultXDomain;
       const [minY, maxY] = globalScatterZoomY || defaultYDomain;
@@ -361,7 +383,7 @@ export function GlobalStats() {
       const lowY = minY - padY;
       const highY = maxY + padY;
 
-      list = validMetaData.filter((d: any) => 
+      return validMetaData.filter((d: any) => 
         d.constant >= lowX && 
         d.constant <= highX && 
         d.avgScore >= lowY && 
@@ -369,39 +391,29 @@ export function GlobalStats() {
       );
     }
 
-    const result = list.map((item: any) => ({
-      ...item,
-      _isSelectedNode: false
-    }));
+    return validMetaData;
+  }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
-    if (!selectedDot) return result;
+  const activeSelectedNode = useMemo(() => {
+    if (!selectedDot || !visibleScatterData.length) return null;
 
-    let selIdx = result.findIndex((item: any) =>
+    const directMatch = visibleScatterData.find((item: any) =>
       (selectedDot.id && item.id === selectedDot.id) ||
       (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === selectedDot.difficulty)) ||
       ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
     );
+    if (directMatch) return directMatch;
 
-    if (selIdx < 0) {
-      selIdx = result.findIndex((item: any) =>
-        item.overlappingItems && item.overlappingItems.some((other: any) =>
-          (other.id && selectedDot.id && other.id === selectedDot.id) ||
-          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-        )
-      );
-    }
-
-    if (selIdx >= 0) {
-      const [selectedItem] = result.splice(selIdx, 1);
-      selectedItem._isSelectedNode = true;
-      result.push(selectedItem);
-    }
-
-    return result;
-  }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain, selectedDot]);
+    return visibleScatterData.find((item: any) =>
+      item.overlappingItems && item.overlappingItems.some((other: any) =>
+        (other.id && selectedDot.id && other.id === selectedDot.id) ||
+        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+        ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+        ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      )
+    ) || null;
+  }, [visibleScatterData, selectedDot]);
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
@@ -1169,12 +1181,7 @@ export function GlobalStats() {
                           const last = lastScatterDotClickRef.current;
 
                           if (last.id === dotId && (now - last.time) < 500) {
-                            // Double-click: navigate to song leaderboard
-                            const sId = data.songId || data.song_id;
-                            if (sId) {
-                              const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
-                              navigate(`/analytics?songId=${sId}${diff}`);
-                            }
+                            handleNavigateSong(data);
                             lastScatterDotClickRef.current = { id: '', time: 0 };
                             return;
                           }
@@ -1184,6 +1191,21 @@ export function GlobalStats() {
                           setSelectedDot(data);
                         }}
                       />
+                      {activeSelectedNode && (
+                        <Scatter
+                          name="SelectedChart"
+                          data={[activeSelectedNode]}
+                          isAnimationActive={false}
+                          shape={(props: any) => (
+                            <CustomSelectedScatterDot 
+                              {...props} 
+                              selectedDot={selectedDot} 
+                              onSelectDot={setSelectedDot} 
+                              onNavigateSong={handleNavigateSong} 
+                            />
+                          )}
+                        />
+                      )}
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>

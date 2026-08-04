@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useDeferredValue, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { Search, ChevronRight, RotateCcw, UserX } from 'lucide-react';
@@ -1155,7 +1156,7 @@ export function Dashboard() {
           <div 
             ref={scatterContainerRef}
             className="scrollable-content-wrapper" 
-            style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'visible', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+            style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
             onMouseDown={(e) => {
               dragStartPosRef.current = { x: e.clientX, y: e.clientY };
               hasDraggedRef.current = false;
@@ -1169,7 +1170,7 @@ export function Dashboard() {
               }
             }}
           >
-            <div ref={chartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px', overflow: 'visible' }}>
+            <div ref={chartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart 
                   margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
@@ -1265,32 +1266,35 @@ export function Dashboard() {
                 </ScatterChart>
               </ResponsiveContainer>
 
-              {selectedDot && selectedCoords && (() => {
-                const containerW = chartWrapperRef.current?.clientWidth || 800;
-                const popW = Math.min(290, containerW - 20);
+              {selectedDot && selectedCoords && createPortal((() => {
+                const rect = chartWrapperRef.current?.getBoundingClientRect() || { left: 0, top: 0, width: 800 };
+                const circleX = rect.left + selectedCoords.x;
+                const circleY = rect.top + selectedCoords.y;
+
+                const popW = Math.min(290, window.innerWidth - 20);
                 const popH = 220;
 
                 // Smart Recharts placement logic: right vs left
-                let leftPos = selectedCoords.x + 18;
-                if (selectedCoords.x + popW + 18 > containerW - 10) {
-                  leftPos = selectedCoords.x - popW - 18;
+                let leftPos = circleX + 18;
+                if (circleX + popW + 18 > window.innerWidth - 10) {
+                  leftPos = circleX - popW - 18;
                 }
-                const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
+                const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, window.innerWidth - popW - 10));
 
-                // Smart Recharts placement logic: flip UP if dot is in lower half (y > 220)
-                let topPos = selectedCoords.y - 10;
+                // Smart Recharts placement logic: flip UP if dot is in lower half of graph
+                let topPos = circleY - 10;
                 if (selectedCoords.y > 220) {
-                  topPos = selectedCoords.y - popH - 10;
+                  topPos = circleY - popH - 10;
                 }
                 const clampedTop = Math.max(10, topPos);
 
                 return (
                   <div 
                     style={{
-                      position: 'absolute',
+                      position: 'fixed',
                       left: clampedLeft,
                       top: clampedTop,
-                      zIndex: 1000,
+                      zIndex: 10000,
                       pointerEvents: 'auto'
                     }}
                     onClick={(e) => e.stopPropagation()}
@@ -1304,7 +1308,7 @@ export function Dashboard() {
                     />
                   </div>
                 );
-              })()}
+              })(), document.body)}
             </div>
           </div>
         </div>

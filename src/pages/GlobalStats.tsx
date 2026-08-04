@@ -13,14 +13,32 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const CustomTooltip = React.memo(({ active, payload }: any) => {
+const CustomTooltip = React.memo(({ active, payload, selectedDot }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const rawData = payload[0].payload;
+    const overlaps = rawData.overlappingItems || [];
+
+    let activeChart = rawData;
+    if (selectedDot) {
+      const matchInOverlaps = overlaps.find((item: any) =>
+        (selectedDot.id && item.id === selectedDot.id) ||
+        (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+        ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+        ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      );
+
+      if (matchInOverlaps) {
+        activeChart = matchInOverlaps;
+      }
+    }
+
+    const data = activeChart;
+
     return (
       <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title}</p>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant.toFixed(1)}</span></p>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore).toLocaleString()}</span></p>
+        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title || data.name}</p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant?.toFixed(1)}</span></p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore || data.score || 0).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
         <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
           Double-click dot to view leaderboard
@@ -1128,7 +1146,7 @@ export function GlobalStats() {
                         width={globalScatterYWidth}
                       />
                       <ZAxis type="number" dataKey="overlapCount" range={[20, 1200]} name="Overlap Count" />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip selectedDot={selectedDot} />} />
                       <Scatter 
                         name="Charts" 
                         data={visibleScatterData} 

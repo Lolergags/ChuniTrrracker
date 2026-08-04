@@ -44,11 +44,34 @@ export const LampTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
-export const ScatterTooltip = React.memo(({ active, payload }: any) => {
+export const ScatterTooltip = React.memo(({ active, payload, selectedDot }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const overlaps = data.overlappingItems || [];
+    const rawData = payload[0].payload;
+    const overlaps = rawData.overlappingItems || [];
     const hasOverlap = overlaps.length > 1;
+
+    let activeChart = rawData;
+    if (selectedDot) {
+      const matchInOverlaps = overlaps.find((item: any) =>
+        (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+        (selectedDot.id && item.id === selectedDot.id) ||
+        ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+        ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      );
+
+      if (matchInOverlaps) {
+        activeChart = matchInOverlaps;
+      } else if (
+        (selectedDot.chartId && rawData.chartId === selectedDot.chartId) ||
+        (selectedDot.id && rawData.id === selectedDot.id) ||
+        ((selectedDot.songId || selectedDot.song_id) && (rawData.songId || rawData.song_id) && (selectedDot.songId || selectedDot.song_id) === (rawData.songId || rawData.song_id) && (!selectedDot.difficulty || !rawData.difficulty || selectedDot.difficulty === rawData.difficulty)) ||
+        ((rawData.title || rawData.name) === (selectedDot.title || selectedDot.name) && Math.abs(rawData.constant - selectedDot.constant) < 0.01)
+      ) {
+        activeChart = selectedDot;
+      }
+    }
+
+    const data = activeChart;
 
     return (
       <div style={{
@@ -82,7 +105,7 @@ export const ScatterTooltip = React.memo(({ active, payload }: any) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Score:</span>
-          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{data.score?.toLocaleString()}</span>
+          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{(data.score || data.avgScore)?.toLocaleString()}</span>
           
           {data.opDisplay !== undefined && (
             <>
@@ -114,14 +137,22 @@ export const ScatterTooltip = React.memo(({ active, payload }: any) => {
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', marginBottom: '4px' }}>
               Charts at this position ({overlaps.length}):
             </div>
-            {overlaps.map((item: any, i: number) => (
-              <div key={i} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', padding: '2px 0' }}>
-                <span style={{ color: item.name === data.name || item.title === data.title ? 'var(--text-primary)' : 'inherit', fontWeight: item.name === data.name || item.title === data.title ? 600 : 400 }}>
-                  • {item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
-                </span>
-                <span style={{ fontFamily: 'monospace' }}>{(item.score || item.avgScore)?.toLocaleString()}</span>
-              </div>
-            ))}
+            {overlaps.map((item: any, i: number) => {
+              const isSelectedItem = (
+                (data.chartId && item.chartId === data.chartId) ||
+                (data.id && item.id === data.id) ||
+                ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+                ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
+              );
+              return (
+                <div key={i} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', padding: '2px 0' }}>
+                  <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
+                    {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
+                  </span>
+                  <span style={{ fontFamily: 'monospace' }}>{(item.score || item.avgScore)?.toLocaleString()}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 

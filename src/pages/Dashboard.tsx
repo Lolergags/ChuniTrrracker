@@ -1100,7 +1100,7 @@ export function Dashboard() {
                     width={scatterYWidth}
                   />
                   <ZAxis type="number" dataKey="overlapCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Overlap Count" />
-                  <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Tooltip content={<ScatterTooltip selectedDot={selectedDot} />} cursor={{ strokeDasharray: '3 3' }} />
                   <Scatter 
                     name="Scores" 
                     data={visibleDashboardScatterData} 

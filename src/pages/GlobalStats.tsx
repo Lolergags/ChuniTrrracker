@@ -36,7 +36,23 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
     const data = activeChart;
 
     return (
-      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', maxWidth: '320px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+      <div 
+        style={{ 
+          backgroundColor: 'var(--bg-secondary)', 
+          padding: '10px', 
+          border: '1px solid var(--border)', 
+          borderRadius: 'var(--radius-md)', 
+          maxWidth: '320px', 
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          cursor: onNavigateSong ? 'pointer' : 'default'
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (onNavigateSong) {
+            onNavigateSong(data);
+          }
+        }}
+      >
         {hasOverlap && (
           <div style={{
             display: 'inline-block',
@@ -51,7 +67,12 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
             ⚡ {overlaps.length} Overlapping Charts
           </div>
         )}
-        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0', fontSize: '1.05rem', wordBreak: 'break-word' }}>{data.title || data.name}</p>
+        <p 
+          style={{ fontWeight: 'bold', margin: '0 0 5px 0', fontSize: '1.05rem', wordBreak: 'break-word', cursor: 'pointer' }}
+          title="Double-click to open leaderboard"
+        >
+          {data.title || data.name}
+        </p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant?.toFixed(1)}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore || data.score || 0).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>

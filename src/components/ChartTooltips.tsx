@@ -44,7 +44,7 @@ export const LampTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
-export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hoveredDot }: any) => {
+export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
   if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
     const overlaps = rawData.overlappingItems || [];
@@ -145,7 +145,32 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
                 ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
               );
               return (
-                <div key={i} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', padding: '2px 0' }}>
+                <div 
+                  key={i} 
+                  style={{ 
+                    fontSize: '0.78rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    color: isSelectedItem ? 'var(--accent-gold)' : 'var(--text-secondary)', 
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: isSelectedItem ? 'rgba(255, 215, 0, 0.12)' : 'transparent',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectDot) {
+                      onSelectDot(item);
+                    }
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateSong) {
+                      onNavigateSong(item);
+                    }
+                  }}
+                >
                   <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
                     {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
                   </span>
@@ -157,7 +182,7 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
         )}
 
         <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
-          {hasOverlap ? 'Click circle to inspect & cycle | Double-click to open' : 'Double-click dot to view leaderboard'}
+          {hasOverlap ? 'Click list item to select | Double-click to open' : 'Double-click dot to view leaderboard'}
         </div>
       </div>
     );

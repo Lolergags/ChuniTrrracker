@@ -1240,6 +1240,8 @@ export function Dashboard() {
                       active={true} 
                       payload={[{ payload: activeSelectedNode || selectedDot }]} 
                       selectedDot={selectedDot}
+                      onSelectDot={setSelectedDot}
+                      onNavigateSong={handleNavigateSong}
                     />
                   </div>
                 );

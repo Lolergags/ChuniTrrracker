@@ -13,10 +13,11 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot }: any) => {
+const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
   if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
     const overlaps = rawData.overlappingItems || [];
+    const hasOverlap = overlaps.length > 1;
 
     let activeChart = rawData;
     if (selectedDot) {
@@ -35,13 +36,77 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot }: 
     const data = activeChart;
 
     return (
-      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{data.title || data.name}</p>
+      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', maxWidth: '320px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+        {hasOverlap && (
+          <div style={{
+            display: 'inline-block',
+            marginBottom: '6px',
+            padding: '2px 8px',
+            background: 'var(--accent-gold)',
+            color: '#000',
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            borderRadius: '4px'
+          }}>
+            ⚡ {overlaps.length} Overlapping Charts
+          </div>
+        )}
+        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0', fontSize: '1.05rem', wordBreak: 'break-word' }}>{data.title || data.name}</p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant?.toFixed(1)}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore || data.score || 0).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
+        
+        {hasOverlap && (
+          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', marginBottom: '4px' }}>
+              Charts at this position ({overlaps.length}):
+            </div>
+            {overlaps.map((item: any, i: number) => {
+              const isSelectedItem = (
+                (data.chartId && item.chartId === data.chartId) ||
+                (data.id && item.id === data.id) ||
+                ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+                ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
+              );
+              return (
+                <div 
+                  key={i} 
+                  style={{ 
+                    fontSize: '0.78rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    color: isSelectedItem ? 'var(--accent-gold)' : 'var(--text-secondary)', 
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: isSelectedItem ? 'rgba(255, 215, 0, 0.12)' : 'transparent',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectDot) {
+                      onSelectDot(item);
+                    }
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateSong) {
+                      onNavigateSong(item);
+                    }
+                  }}
+                >
+                  <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
+                    {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.title || item.name}
+                  </span>
+                  <span style={{ fontFamily: 'monospace' }}>{(item.avgScore || item.score)?.toLocaleString()}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center' }}>
-          Double-click dot to view leaderboard
+          {hasOverlap ? 'Click list item to select | Double-click to open' : 'Double-click dot to view leaderboard'}
         </div>
       </div>
     );
@@ -1268,6 +1333,8 @@ export function GlobalStats() {
                           active={true} 
                           payload={[{ payload: activeSelectedNode || selectedDot }]} 
                           selectedDot={selectedDot}
+                          onSelectDot={setSelectedDot}
+                          onNavigateSong={handleNavigateSong}
                         />
                       </div>
                     );

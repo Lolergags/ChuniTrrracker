@@ -36,23 +36,26 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
     }
 
     const data = activeChart;
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
-    let selectedIndex = 0;
-    if (data && overlaps.length) {
-      const idx = overlaps.findIndex((item: any) =>
+    let sortedOverlaps = overlaps;
+    if (data && overlaps.length > 0) {
+      const matchIdx = overlaps.findIndex((item: any) =>
         (data.chartId && item.chartId === data.chartId) ||
         (data.id && item.id === data.id) ||
         ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
         ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
       );
-      if (idx >= 0) selectedIndex = idx;
+      if (matchIdx > 0) {
+        const selectedItem = overlaps[matchIdx];
+        const rest = overlaps.filter((_: any, idx: number) => idx !== matchIdx);
+        sortedOverlaps = [selectedItem, ...rest];
+      }
     }
 
-    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
-    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
-    const currentPage = Math.min(Math.max(0, page !== 0 ? page : autoPage), totalPages - 1);
-    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedOverlaps.length / ITEMS_PER_PAGE) || 1;
+    const currentPage = Math.min(Math.max(0, page), totalPages - 1);
+    const visibleOverlaps = sortedOverlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
     return (
       <div 

@@ -426,24 +426,7 @@ export function Dashboard() {
     return mappedScatterScores;
   }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
-  const activeSelectedNode = useMemo(() => {
-    if (!selectedDot || !visibleDashboardScatterData.length) return null;
-
-    const directMatch = visibleDashboardScatterData.find((item: any) =>
-      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
-      ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs(item.score - selectedDot.score) < 1)
-    );
-    if (directMatch) return directMatch;
-
-    return visibleDashboardScatterData.find((item: any) =>
-      item.overlappingItems && item.overlappingItems.some((other: any) =>
-        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-        (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-        ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs(other.score - selectedDot.score) < 1)
-      )
-    ) || null;
-  }, [visibleDashboardScatterData, selectedDot]);
+  const orderedClusterRef = useRef<{ clusterId: string; items: any[] }>({ clusterId: '', items: [] });
 
   const overlappingDots = useMemo(() => {
     if (!selectedDot) return [];
@@ -472,11 +455,61 @@ export function Dashboard() {
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
-      return parentCluster.overlappingItems;
+      const items = parentCluster.overlappingItems;
+      const p = parentCluster as any;
+      const clusterId = `${p.id || p.chartId || p.songId}_${p.constant}_${p.score || p.avgScore}`;
+      
+      // If this is a new cluster selection, order the selectedDot at index 0
+      if (orderedClusterRef.current.clusterId !== clusterId) {
+        const selectedMatch = items.find((item: any) =>
+          (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+          (selectedDot.id && item.id === selectedDot.id) ||
+          ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && 
+           (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && 
+           (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+          ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01)
+        );
+
+        if (selectedMatch) {
+          const rest = items.filter((item: any) => item !== selectedMatch);
+          orderedClusterRef.current = { clusterId, items: [selectedMatch, ...rest] };
+        } else {
+          orderedClusterRef.current = { clusterId, items };
+        }
+      }
+
+      return orderedClusterRef.current.items;
     }
 
     return [selectedDot];
   }, [selectedDot, mappedScatterScores]);
+
+  const activeSelectedNode = useMemo(() => {
+    if (!selectedDot || !visibleDashboardScatterData.length) return null;
+
+    const directMatch = visibleDashboardScatterData.find((item: any) =>
+      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
+      ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs(item.score - selectedDot.score) < 1)
+    );
+
+    const baseNode = directMatch || visibleDashboardScatterData.find((item: any) =>
+      item.overlappingItems && item.overlappingItems.some((other: any) =>
+        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+        (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+        ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs(other.score - selectedDot.score) < 1)
+      )
+    );
+
+    if (baseNode) {
+      return {
+        ...baseNode,
+        overlappingItems: overlappingDots.length > 0 ? overlappingDots : baseNode.overlappingItems
+      };
+    }
+
+    return null;
+  }, [visibleDashboardScatterData, selectedDot, overlappingDots]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;

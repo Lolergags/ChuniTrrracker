@@ -588,26 +588,7 @@ export function GlobalStats() {
     return validMetaData;
   }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
 
-  const activeSelectedNode = useMemo(() => {
-    if (!selectedDot || !visibleScatterData.length) return null;
-
-    const directMatch = visibleScatterData.find((item: any) =>
-      (selectedDot.id && item.id === selectedDot.id) ||
-      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
-      ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-    );
-    if (directMatch) return directMatch;
-
-    return visibleScatterData.find((item: any) =>
-      item.overlappingItems && item.overlappingItems.some((other: any) =>
-        (other.id && selectedDot.id && other.id === selectedDot.id) ||
-        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-        ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-        ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-      )
-    ) || null;
-  }, [visibleScatterData, selectedDot]);
+  const orderedGlobalClusterRef = useRef<{ clusterId: string; items: any[] }>({ clusterId: '', items: [] });
 
   const overlappingGlobalDots = useMemo(() => {
     if (!selectedDot) return [];
@@ -636,11 +617,62 @@ export function GlobalStats() {
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
-      return parentCluster.overlappingItems;
+      const items = parentCluster.overlappingItems;
+      const clusterId = `${parentCluster.id || parentCluster.chartId || parentCluster.songId}_${parentCluster.constant}_${parentCluster.avgScore || parentCluster.score}`;
+
+      // If this is a new cluster selection, order the selectedDot at index 0
+      if (orderedGlobalClusterRef.current.clusterId !== clusterId) {
+        const selectedMatch = items.find((item: any) =>
+          (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+          (selectedDot.id && item.id === selectedDot.id) ||
+          ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && 
+           (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && 
+           (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+          ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01)
+        );
+
+        if (selectedMatch) {
+          const rest = items.filter((item: any) => item !== selectedMatch);
+          orderedGlobalClusterRef.current = { clusterId, items: [selectedMatch, ...rest] };
+        } else {
+          orderedGlobalClusterRef.current = { clusterId, items };
+        }
+      }
+
+      return orderedGlobalClusterRef.current.items;
     }
 
     return [selectedDot];
   }, [selectedDot, validMetaData]);
+
+  const activeSelectedNode = useMemo(() => {
+    if (!selectedDot || !visibleScatterData.length) return null;
+
+    const directMatch = visibleScatterData.find((item: any) =>
+      (selectedDot.id && item.id === selectedDot.id) ||
+      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+      ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
+      ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+    );
+
+    const baseNode = directMatch || visibleScatterData.find((item: any) =>
+      item.overlappingItems && item.overlappingItems.some((other: any) =>
+        (other.id && selectedDot.id && other.id === selectedDot.id) ||
+        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+        ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+        ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+      )
+    );
+
+    if (baseNode) {
+      return {
+        ...baseNode,
+        overlappingItems: overlappingGlobalDots.length > 0 ? overlappingGlobalDots : baseNode.overlappingItems
+      };
+    }
+
+    return null;
+  }, [visibleScatterData, selectedDot, overlappingGlobalDots]);
 
   const currentGlobalDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingGlobalDots.length) return 0;

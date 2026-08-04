@@ -351,9 +351,14 @@ export function GlobalStats() {
       );
     }
 
-    if (!selectedDot) return list;
+    const result = list.map((item: any) => ({
+      ...item,
+      _isSelectedNode: false
+    }));
 
-    let selIdx = list.findIndex((item: any) =>
+    if (!selectedDot) return result;
+
+    let selIdx = result.findIndex((item: any) =>
       (selectedDot.id && item.id === selectedDot.id) ||
       (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
       ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
@@ -361,7 +366,7 @@ export function GlobalStats() {
     );
 
     if (selIdx < 0) {
-      selIdx = list.findIndex((item: any) =>
+      selIdx = result.findIndex((item: any) =>
         item.overlappingItems && item.overlappingItems.some((other: any) =>
           (other.id && selectedDot.id && other.id === selectedDot.id) ||
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
@@ -371,11 +376,12 @@ export function GlobalStats() {
       );
     }
 
-    if (selIdx < 0 || selIdx === list.length - 1) return list;
+    if (selIdx >= 0) {
+      const [selectedItem] = result.splice(selIdx, 1);
+      selectedItem._isSelectedNode = true;
+      result.push(selectedItem);
+    }
 
-    const result = [...list];
-    const [selectedItem] = result.splice(selIdx, 1);
-    result.push(selectedItem);
     return result;
   }, [validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain, selectedDot]);
 
@@ -436,6 +442,9 @@ export function GlobalStats() {
     if (!selectedDot || overlappingGlobalDots.length <= 1) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIndex = (currentGlobalDotIndex + 1) % overlappingGlobalDots.length;

@@ -39,22 +39,7 @@ const CustomScatterDot = React.memo((props: any) => {
     }, 220);
   };
 
-  const isDirectMatch = Boolean(selectedDot && (
-    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
-    (selectedDot.songId && payload.songId === selectedDot.songId && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && Math.abs((selectedDot.score || selectedDot.avgScore) - (payload.score || payload.avgScore)) < 1)
-  ));
-
-  const isClusterMatch = Boolean(selectedDot && !isDirectMatch && payload.overlappingItems && payload.overlappingItems.some((other: any) =>
-    (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-    (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-    ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-  ) && (
-    (payload.overlappingItems[0]?.chartId && payload.chartId && payload.overlappingItems[0].chartId === payload.chartId) ||
-    (payload.overlappingItems[0]?.songId && payload.songId && payload.overlappingItems[0].songId === payload.songId)
-  ));
-
-  const isHighlighted = isDirectMatch || isClusterMatch;
+  const isHighlighted = Boolean(payload._isSelectedNode);
 
   const isHovered = hoveredDot && (
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
@@ -369,22 +354,35 @@ export function Dashboard() {
       );
     }
 
-    if (!selectedDot) return list;
+    const result = list.map((item: any) => ({
+      ...item,
+      _isSelectedNode: false
+    }));
 
-    const selIdx = list.findIndex((item: any) =>
+    if (!selectedDot) return result;
+
+    let selIdx = result.findIndex((item: any) =>
       (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
       (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
-      (item.overlappingItems && item.overlappingItems.some((other: any) =>
-        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-        (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty))
-      ))
+      ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
     );
 
-    if (selIdx < 0 || selIdx === list.length - 1) return list;
+    if (selIdx < 0) {
+      selIdx = result.findIndex((item: any) =>
+        item.overlappingItems && item.overlappingItems.some((other: any) =>
+          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+          (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+        )
+      );
+    }
 
-    const result = [...list];
-    const [selectedItem] = result.splice(selIdx, 1);
-    result.push(selectedItem);
+    if (selIdx >= 0) {
+      const [selectedItem] = result.splice(selIdx, 1);
+      selectedItem._isSelectedNode = true;
+      result.push(selectedItem);
+    }
+
     return result;
   }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain, selectedDot]);
 
@@ -443,6 +441,9 @@ export function Dashboard() {
     if (!selectedDot || overlappingDots.length <= 1) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIndex = (currentDotIndex + 1) % overlappingDots.length;

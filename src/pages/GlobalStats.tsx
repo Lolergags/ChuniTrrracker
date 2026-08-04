@@ -79,17 +79,16 @@ const CustomScatterDot = React.memo((props: any) => {
     ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
   );
 
-  const isActive = isSelected || isHovered;
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
 
   const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
 
-  if (isActive && overlapCount > 1) {
+  if (isSelected && overlapCount > 1) {
     const badgeOffset = Math.max(7, dotR * 0.75);
     return (
       <g style={{ cursor: 'pointer' }} onClick={handleClick}>
         <circle cx={cx} cy={cy} r={dotR + 4.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2.5} strokeDasharray="3 2" opacity={0.95} />
-        <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || '#ff66ff')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={dotR} fill="#ffffff" fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1.5} />
         <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={6.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
         <text x={cx + badgeOffset} y={cy - badgeOffset + 3.5} textAnchor="middle" fill="#000" fontSize="9" fontWeight="bold" pointerEvents="none">
           {overlapCount > 9 ? '+' : overlapCount}

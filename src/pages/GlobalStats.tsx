@@ -62,14 +62,18 @@ const CustomScatterDot = React.memo((props: any) => {
     (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
     (selectedDot.id && payload.id === selectedDot.id) ||
     ((selectedDot.songId || selectedDot.song_id) && (payload.songId || payload.song_id) && (selectedDot.songId || selectedDot.song_id) === (payload.songId || payload.song_id) && (!selectedDot.difficulty || !payload.difficulty || selectedDot.difficulty === payload.difficulty)) ||
-    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && (selectedDot.score || selectedDot.avgScore) === (payload.score || payload.avgScore))
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01 && Math.abs((selectedDot.score || selectedDot.avgScore) - (payload.score || payload.avgScore)) < 1)
   ));
 
-  const isClusterMatch = Boolean(selectedDot && payload.overlappingItems && payload.overlappingItems.some((other: any) =>
+  const isClusterMatch = Boolean(selectedDot && !isDirectMatch && payload.overlappingItems && payload.overlappingItems.some((other: any) =>
     (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
     (other.id && selectedDot.id && other.id === selectedDot.id) ||
     ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-    ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && (other.score || other.avgScore) === (selectedDot.score || selectedDot.avgScore))
+    ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
+  ) && (
+    (payload.overlappingItems[0]?.chartId && payload.chartId && payload.overlappingItems[0].chartId === payload.chartId) ||
+    (payload.overlappingItems[0]?.id && payload.id && payload.overlappingItems[0].id === payload.id) ||
+    ((payload.overlappingItems[0]?.songId || payload.overlappingItems[0]?.song_id) === (payload.songId || payload.song_id))
   ));
 
   const isHighlighted = isDirectMatch || isClusterMatch;
@@ -78,7 +82,7 @@ const CustomScatterDot = React.memo((props: any) => {
     (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
     (hoveredDot.id && payload.id === hoveredDot.id) ||
     ((hoveredDot.songId || hoveredDot.song_id) && (payload.songId || payload.song_id) && (hoveredDot.songId || hoveredDot.song_id) === (payload.songId || payload.song_id) && hoveredDot.difficulty === payload.difficulty) ||
-    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
+    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && Math.abs((hoveredDot.score || hoveredDot.avgScore) - (payload.score || payload.avgScore)) < 1)
   );
 
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;

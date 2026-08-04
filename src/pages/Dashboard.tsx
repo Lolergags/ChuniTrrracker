@@ -150,26 +150,10 @@ export function Dashboard() {
   const [scatterZoomY, setScatterZoomY] = useState<[number, number] | null>(null);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
-  const [selectedCoords, setSelectedCoords] = useState<{ x: number; y: number } | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
-
-  const handleUpdateCoords = useCallback((coords: { x: number; y: number }) => {
-    setSelectedCoords(prev => {
-      if (!prev || Math.abs(prev.x - coords.x) > 0.5 || Math.abs(prev.y - coords.y) > 0.5) {
-        return coords;
-      }
-      return prev;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!selectedDot) {
-      setSelectedCoords(null);
-    }
-  }, [selectedDot]);
 
   const isMobile = useIsMobile();
 
@@ -1211,7 +1195,19 @@ export function Dashboard() {
                     width={scatterYWidth}
                   />
                   <ZAxis type="number" dataKey="overlapCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Overlap Count" />
-                  <Tooltip content={selectedDot ? () => null : <ScatterTooltip hoveredDot={hoveredDot} />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Tooltip 
+                    active={Boolean(selectedDot) || undefined}
+                    content={
+                      <ScatterTooltip 
+                        selectedDot={selectedDot} 
+                        hoveredDot={hoveredDot} 
+                        onSelectDot={setSelectedDot} 
+                        onNavigateSong={handleNavigateSong} 
+                      />
+                    } 
+                    cursor={{ strokeDasharray: '3 3' }}
+                    wrapperStyle={{ pointerEvents: 'auto', zIndex: 1000 }}
+                  />
                   <Scatter 
                     name="Scores" 
                     data={visibleDashboardScatterData} 
@@ -1253,52 +1249,12 @@ export function Dashboard() {
                           selectedDot={selectedDot} 
                           onSelectDot={setSelectedDot} 
                           onNavigateSong={handleNavigateSong} 
-                          onUpdateCoords={handleUpdateCoords}
                         />
                       )}
                     />
                   )}
                 </ScatterChart>
               </ResponsiveContainer>
-
-              {selectedDot && selectedCoords && (() => {
-                const containerW = scatterContainerRef.current?.clientWidth || 600;
-                const popW = Math.min(290, containerW - 20);
-                const popH = 180;
-
-                let leftPos = selectedCoords.x + 24;
-                if (leftPos + popW > containerW - 10) {
-                  leftPos = selectedCoords.x - popW - 24;
-                }
-                const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
-
-                let topPos = selectedCoords.y - 20;
-                if (topPos + popH > 420) {
-                  topPos = 420 - popH - 10;
-                }
-                const clampedTop = Math.max(10, topPos);
-
-                return (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      left: clampedLeft,
-                      top: clampedTop,
-                      zIndex: 100,
-                      pointerEvents: 'auto'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ScatterTooltip 
-                      active={true} 
-                      payload={[{ payload: activeSelectedNode || selectedDot }]} 
-                      selectedDot={selectedDot}
-                      onSelectDot={setSelectedDot}
-                      onNavigateSong={handleNavigateSong}
-                    />
-                  </div>
-                );
-              })()}
             </div>
           </div>
         </div>

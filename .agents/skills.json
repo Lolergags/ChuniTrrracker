@@ -1,0 +1,9 @@
+{
+  "skills": [
+    "./skills/kamaitachi-sync/SKILL.md",
+    "./skills/sqlite-audit/SKILL.md",
+    "./skills/op-math-verifier/SKILL.md",
+    "./skills/docker-deploy/SKILL.md",
+    "./skills/chart-ui-checker/SKILL.md"
+  ]
+}

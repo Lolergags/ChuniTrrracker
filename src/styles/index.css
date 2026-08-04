@@ -131,7 +131,7 @@ main.container {
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .nav-logo {
@@ -164,6 +164,7 @@ main.container {
 .nav-search-form {
   display: flex;
   position: relative;
+  z-index: 101;
 }
 
 .nav-search-container {
@@ -479,4 +480,11 @@ rect:focus {
 .recharts-scatter-symbol,
 .recharts-symbols {
   clip-path: none !important;
+  cursor: pointer;
+}
+
+.recharts-tooltip-wrapper,
+.recharts-tooltip-cursor,
+.recharts-default-tooltip {
+  pointer-events: none !important;
 }

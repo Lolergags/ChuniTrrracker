@@ -16,7 +16,7 @@ interface ScatterScrollbarProps {
   marginBottom?: string | number;
 }
 
-export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
+export const ScatterScrollbar = React.memo<ScatterScrollbarProps>(({
   min,
   max,
   currentZoom,
@@ -33,6 +33,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const savedScrollYRef = useRef<number | null>(null);
 
   const fullSpan = Math.max(0.1, max - min);
   const curMin = currentZoom ? Math.max(min, currentZoom[0]) : min;
@@ -46,6 +47,11 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     setInputMin(curMin.toString());
     setInputMax(curMax.toString());
   }, [curMin, curMax]);
+
+  const openEditor = () => {
+    savedScrollYRef.current = window.scrollY;
+    setIsEditing(true);
+  };
 
   const dragRef = useRef<{
     startPos: number;
@@ -64,6 +70,8 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   };
 
   const handleApplyInputs = () => {
+    const targetScrollY = savedScrollYRef.current ?? window.scrollY;
+
     const [finalMin, finalMax] = sanitizeRangeInputs(
       inputMin,
       inputMax,
@@ -86,6 +94,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     onZoomChange([finalMin, finalMax]);
     setInputMin(finalMin.toString());
     setInputMax(finalMax.toString());
+
+    // 4. Multi-stage scroll position lock for Brave Mobile / iOS soft keyboard animations
+    const restoreScroll = () => window.scrollTo({ top: targetScrollY, behavior: 'instant' });
+    restoreScroll();
+    requestAnimationFrame(restoreScroll);
+    [50, 150, 300, 450].forEach(delay => setTimeout(restoreScroll, delay));
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -166,49 +180,61 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
+  const scrollbarRafRef = useRef<number | null>(null);
+
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const minStep = orientation === 'horizontal' ? 0.1 : 1000;
-    const { startPos, startMin, startMax, mode } = dragRef.current;
+    if (scrollbarRafRef.current !== null) return;
 
-    let deltaVal: number;
-    if (orientation === 'horizontal') {
-      const deltaX = e.clientX - startPos;
-      deltaVal = (deltaX / rect.width) * fullSpan;
-    } else {
-      const deltaY = startPos - e.clientY;
-      deltaVal = (deltaY / rect.height) * fullSpan;
-    }
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    if (mode === 'pan') {
-      let newMin = startMin + deltaVal;
-      let newMax = startMax + deltaVal;
+    scrollbarRafRef.current = requestAnimationFrame(() => {
+      scrollbarRafRef.current = null;
+      if (!containerRef.current) return;
 
-      if (newMin < min) {
-        newMin = min;
-        newMax = min + zoomSpan;
-      } else if (newMax > max) {
-        newMax = max;
-        newMin = max - zoomSpan;
+      const rect = containerRef.current.getBoundingClientRect();
+      const minStep = orientation === 'horizontal' ? 0.1 : 10;
+      const { startPos, startMin, startMax, mode } = dragRef.current;
+
+      let deltaVal: number;
+      if (orientation === 'horizontal') {
+        const deltaX = clientX - startPos;
+        deltaVal = (deltaX / rect.width) * fullSpan;
+      } else {
+        const deltaY = startPos - clientY;
+        deltaVal = (deltaY / rect.height) * fullSpan;
       }
-      onZoomChange([
-        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
-        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
-      ]);
-    } else if (mode === 'min') {
-      let newMin = Math.max(min, Math.min(startMax - minStep, startMin + deltaVal));
-      onZoomChange([
-        orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
-        startMax
-      ]);
-    } else if (mode === 'max') {
-      let newMax = Math.min(max, Math.max(startMin + minStep, startMax + deltaVal));
-      onZoomChange([
-        startMin,
-        orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
-      ]);
-    }
+
+      if (mode === 'pan') {
+        let newMin = startMin + deltaVal;
+        let newMax = startMax + deltaVal;
+
+        if (newMin < min) {
+          newMin = min;
+          newMax = min + zoomSpan;
+        } else if (newMax > max) {
+          newMax = max;
+          newMin = max - zoomSpan;
+        }
+        onZoomChange([
+          orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+          orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+        ]);
+      } else if (mode === 'min') {
+        let newMin = Math.max(min, Math.min(startMax - minStep, startMin + deltaVal));
+        onZoomChange([
+          orientation === 'horizontal' ? Number(newMin.toFixed(2)) : Math.round(newMin),
+          startMax
+        ]);
+      } else if (mode === 'max') {
+        let newMax = Math.min(max, Math.max(startMin + minStep, startMax + deltaVal));
+        onZoomChange([
+          startMin,
+          orientation === 'horizontal' ? Number(newMax.toFixed(2)) : Math.round(newMax)
+        ]);
+      }
+    });
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -221,8 +247,8 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   };
 
   if (orientation === 'vertical') {
-    const bottomPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
-    const heightPercent = Math.max(14, Math.min(100 - bottomPercent, (zoomSpan / fullSpan) * 100));
+    const heightPercent = Math.max(4, Math.min(100, (zoomSpan / fullSpan) * 100));
+    const bottomPercent = Math.max(0, Math.min(100 - heightPercent, ((curMin - min) / fullSpan) * 100));
 
     return (
       <div style={{
@@ -252,7 +278,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
         }}>
           {isZoomed ? (
             <span
-              onClick={() => setIsEditing(true)}
+              onClick={openEditor}
               title="Click to type exact score values"
               style={{
                 background: 'rgba(56, 189, 248, 0.15)',
@@ -267,7 +293,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             </span>
           ) : (
             <span
-              onClick={() => setIsEditing(true)}
+              onClick={openEditor}
               title="Click to type exact score values"
               style={{ opacity: 0.6, cursor: 'pointer' }}
             >
@@ -276,8 +302,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           )}
         </div>
 
-        {/* Absolute Floating Popover Editor for Vertical Mode (Kept in DOM to prevent mobile unmount scroll jump) */}
-        <div 
+        {/* Absolute Floating Popover Editor for Vertical Mode */}
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleApplyInputs();
+          }}
           onTouchStart={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onBlur={(e) => {
@@ -308,8 +338,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
             <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Score:</label>
             <input
-              type="number"
-              step="1000"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={inputMax}
               onChange={(e) => setInputMax(e.target.value)}
               onKeyDown={(e) => {
@@ -321,8 +352,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             />
             <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Min Score:</label>
             <input
-              type="number"
-              step="1000"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={inputMin}
               onChange={(e) => setInputMin(e.target.value)}
               onKeyDown={(e) => {
@@ -333,7 +365,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
               style={{ width: '100%', fontSize: '0.75rem', padding: '0.2rem 0.3rem', background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
             />
           </div>
-        </div>
+        </form>
 
         {/* Slim 18px Vertical Track Bar */}
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center' }}>
@@ -375,19 +407,19 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '1px 0',
+                padding: '2px 0',
                 boxSizing: 'border-box',
                 transition: isDragging ? 'none' : 'bottom 0.15s ease, height 0.15s ease'
               }}
             >
               {/* Top Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
+                <div style={{ width: '8px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
 
               {/* Bottom Handle Line */}
               <div style={{ width: '100%', height: '4px', cursor: 'ns-resize', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ width: '10px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
+                <div style={{ width: '8px', height: '3px', background: accentColor, borderRadius: '1.5px' }} />
               </div>
             </div>
           </div>
@@ -397,8 +429,8 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
   }
 
   // Ultra-Compact Horizontal Orientation (18px Track Height with Floating Popover)
-  const leftPercent = Math.max(0, Math.min(100, ((curMin - min) / fullSpan) * 100));
-  const widthPercent = Math.max(4, Math.min(100 - leftPercent, (zoomSpan / fullSpan) * 100));
+  const widthPercent = Math.max(4, Math.min(100, (zoomSpan / fullSpan) * 100));
+  const leftPercent = Math.max(0, Math.min(100 - widthPercent, ((curMin - min) / fullSpan) * 100));
   const tickValues = [1, 3, 5, 7, 9, 11, 13, 15].filter(v => v >= min && v <= max);
 
   return (
@@ -410,8 +442,12 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       paddingLeft: paddingLeft || 0,
       paddingRight: paddingRight || 0
     }}>
-      {/* Floating Popover Editor for Horizontal Mode (Kept in DOM to prevent mobile unmount scroll jump) */}
-      <div 
+      {/* Floating Popover Editor for Horizontal Mode */}
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleApplyInputs();
+        }}
         onTouchStart={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onBlur={(e) => {
@@ -443,10 +479,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
             <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Min Level:</label>
             <input
-              type="number"
-              step="0.1"
-              min="1.0"
-              max="15.4"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9.]*"
               value={inputMin}
               onChange={(e) => setInputMin(e.target.value)}
               onKeyDown={(e) => {
@@ -461,10 +496,9 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
             <label style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>Max Level:</label>
             <input
-              type="number"
-              step="0.1"
-              min="1.0"
-              max="15.4"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9.]*"
               value={inputMax}
               onChange={(e) => setInputMax(e.target.value)}
               onKeyDown={(e) => {
@@ -476,14 +510,14 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             />
           </div>
         </div>
-      </div>
+      </form>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label || 'Level Constant'}</span>
           {isZoomed ? (
             <span 
-              onClick={() => setIsEditing(true)}
+              onClick={openEditor}
               title="Click to type exact values"
               style={{ fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.15)', color: accentColor, padding: '0.05rem 0.3rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
             >
@@ -491,7 +525,7 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
             </span>
           ) : (
             <span 
-              onClick={() => setIsEditing(true)}
+              onClick={openEditor}
               title="Click to type exact values"
               style={{ fontSize: '0.68rem', opacity: 0.6, cursor: 'pointer' }}
             >
@@ -557,4 +591,4 @@ export const ScatterScrollbar: React.FC<ScatterScrollbarProps> = ({
       </div>
     </div>
   );
-};
+});

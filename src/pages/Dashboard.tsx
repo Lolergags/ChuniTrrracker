@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useDeferredValue, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useDeferredValue, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from 'recharts';
 import { Search, ChevronRight, RotateCcw, UserX } from 'lucide-react';
@@ -8,9 +8,88 @@ import type { ApiPlayerStats, ApiProcessedScore } from '../lib/types/index.js';
 import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
-import { clampDomainX, clampDomainY, getSmartYTicks, panDomain } from '../lib/utils/scatterZoom.js';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, calculateDotRadius } from '../lib/utils/scatterZoom.js';
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
+
+const CustomScatterDot = React.memo((props: any) => {
+  const { cx, cy, fill, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong } = props;
+
+  if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
+
+  const clickTimerRef = useRef<number | null>(null);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      if (onNavigateSong) {
+        onNavigateSong(payload);
+      }
+      return;
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      if (onSelectDot) {
+        onSelectDot(payload);
+      }
+    }, 220);
+  };
+
+  const isSelected = selectedDot && (
+    (selectedDot.chartId && payload.chartId === selectedDot.chartId) ||
+    (selectedDot.songId && payload.songId === selectedDot.songId) ||
+    ((selectedDot.name || selectedDot.title) === (payload.name || payload.title) && Math.abs(selectedDot.constant - payload.constant) < 0.01) ||
+    (payload.overlappingItems && payload.overlappingItems.some((other: any) =>
+      (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+      (other.songId && selectedDot.songId && other.songId === selectedDot.songId) ||
+      ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+    ))
+  );
+
+  const isHovered = hoveredDot && (
+    (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
+    (hoveredDot.songId && payload.songId === hoveredDot.songId && payload.difficulty === hoveredDot.difficulty) ||
+    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && (hoveredDot.score || hoveredDot.avgScore) === (payload.score || payload.avgScore))
+  );
+
+  const isActive = isSelected || isHovered;
+  const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
+
+  const { dotR } = calculateDotRadius(overlapCount, isSelected, isHovered);
+
+  if (isActive && overlapCount > 1) {
+    const badgeOffset = Math.max(7, dotR * 0.75);
+    return (
+      <g style={{ cursor: 'pointer' }} onClick={handleClick}>
+        <circle cx={cx} cy={cy} r={dotR + 4.5} fill="none" stroke="var(--accent-gold)" strokeWidth={2.5} strokeDasharray="3 2" opacity={0.95} />
+        <circle cx={cx} cy={cy} r={dotR} fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} fillOpacity={0.95} stroke="var(--accent-gold)" strokeWidth={1.5} />
+        <circle cx={cx + badgeOffset} cy={cy - badgeOffset} r={6.5} fill="var(--accent-gold)" stroke="#000" strokeWidth={1} />
+        <text x={cx + badgeOffset} y={cy - badgeOffset + 3.5} textAnchor="middle" fill="#000" fontSize="9" fontWeight="bold" pointerEvents="none">
+          {overlapCount > 9 ? '+' : overlapCount}
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={dotR} 
+      fill={isSelected ? '#ffffff' : (fill || 'var(--accent-primary)')} 
+      fillOpacity={isSelected ? 1 : (isHovered ? 0.9 : 0.65)} 
+      stroke={isSelected ? 'var(--accent-primary)' : (isHovered ? 'rgba(255,255,255,0.8)' : 'none')} 
+      strokeWidth={isSelected ? 2.5 : (isHovered ? 1.5 : 0)} 
+      style={{ cursor: 'pointer', transition: 'r 0.15s ease' }} 
+      onClick={handleClick}
+    />
+  );
+});
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -19,6 +98,7 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [playerInput, setPlayerInput] = useState(activePlayer || '');
+  const [hoveredDot, setHoveredDot] = useState<any | null>(null);
 
   useEffect(() => {
     setPlayerInput(activePlayer || '');
@@ -29,6 +109,7 @@ export function Dashboard() {
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
+  const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
 
   const isMobile = useIsMobile();
 
@@ -62,22 +143,36 @@ export function Dashboard() {
   const [sortConfig, setSortConfig] = useState<{ key: keyof ApiProcessedScore | 'lampValue', direction: 'asc' | 'desc' } | null>({ key: 'op', direction: 'desc' });
   const itemsPerPage = 10;
 
+  const prevPlayerRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!activePlayer) return;
-    setIsLoading(true);
-    setError(null);
-    Promise.all([
-      api.getPlayer(activePlayer, filters),
-      api.getPlayerScores(activePlayer, 5000, filters)
-    ]).then(([playerStats, playerScores]) => {
-      setStats(playerStats);
-      setScores(playerScores);
-    }).catch(err => {
-      console.error(err);
-      setError(err.message || 'Failed to load player data');
-    }).finally(() => {
-      setIsLoading(false);
-    });
+    const isPlayerChange = prevPlayerRef.current !== activePlayer;
+    prevPlayerRef.current = activePlayer;
+    
+    const fetchFn = () => {
+      setIsLoading(true);
+      setError(null);
+      Promise.all([
+        api.getPlayer(activePlayer, filters),
+        api.getPlayerScores(activePlayer, 5000, filters)
+      ]).then(([playerStats, playerScores]) => {
+        setStats(playerStats);
+        setScores(playerScores);
+      }).catch(err => {
+        console.error(err);
+        setError(err.message || 'Failed to load player data');
+      }).finally(() => {
+        setIsLoading(false);
+      });
+    };
+
+    if (isPlayerChange) {
+      fetchFn();
+    } else {
+      const timer = setTimeout(fetchFn, 300);
+      return () => clearTimeout(timer);
+    }
   }, [activePlayer, filters]);
 
   useEffect(() => {
@@ -95,6 +190,13 @@ export function Dashboard() {
     );
   }, [scores]);
 
+  const scatterMinMaxC = useMemo(() => {
+    const constants = uniqueScores.map(s => s.constant);
+    const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
+    const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
+    return { minC, maxC };
+  }, [uniqueScores]);
+
   const sortedScores = useMemo(() => {
     let sortableItems = [...uniqueScores];
     if (sortConfig !== null) {
@@ -110,6 +212,9 @@ export function Dashboard() {
         } else if (sortConfig.key === 'constant') {
           valA = a.constant;
           valB = b.constant;
+        } else if (sortConfig.key === 'opPercent') {
+          valA = a.opPercent ?? ((a.op / (((a.constant * 5000 + 15000) / 5) * 5)) * 100);
+          valB = b.opPercent ?? ((b.op / (((b.constant * 5000 + 15000) / 5) * 5)) * 100);
         } else {
           valA = a[sortConfig.key as keyof ApiProcessedScore];
           valB = b[sortConfig.key as keyof ApiProcessedScore];
@@ -181,6 +286,189 @@ export function Dashboard() {
   const defaultYRef = useRef<[number, number]>(defaultYDomain);
   defaultYRef.current = defaultYDomain;
 
+  const allMappedScatterScores = useMemo(() => {
+    return scores.filter(s => s.score >= 975000).map(s => ({
+      name: s.songTitle,
+      score: s.score,
+      constant: s.constant,
+      opDisplay: Number((s.op / 10000).toFixed(2)),
+      lamp: s.lamp,
+      songId: s.songId,
+      difficulty: s.difficulty,
+      chartId: s.chartId
+    }));
+  }, [scores]);
+
+  const mappedScatterScores = useMemo(() => {
+    const curX = scatterZoomX || defaultXDomain;
+    const curY = scatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
+    const grid = new Map<string, any[]>();
+    for (const item of allMappedScatterScores) {
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(item.score / keyStepY)}`;
+      let list = grid.get(key);
+      if (!list) {
+        list = [];
+        grid.set(key, list);
+      }
+      list.push(item);
+    }
+
+    return uniqueScores.map(s => {
+      const item = {
+        name: s.songTitle,
+        score: s.score,
+        constant: s.constant,
+        opDisplay: Number((s.op / 10000).toFixed(2)),
+        lamp: s.lamp,
+        songId: s.songId,
+        difficulty: s.difficulty,
+        chartId: s.chartId
+      };
+      
+      const key = `${Math.round(item.constant / keyStepX)}_${Math.round(item.score / keyStepY)}`;
+      const overlappingItems = grid.get(key) || [item];
+      
+      return {
+        ...item,
+        overlappingItems,
+        overlapCount: overlappingItems.length
+      };
+    });
+  }, [uniqueScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+
+  const visibleDashboardScatterData = useMemo(() => {
+    if (!scatterZoomX && !scatterZoomY) {
+      return mappedScatterScores;
+    }
+
+    const [minX, maxX] = scatterZoomX || defaultXDomain;
+    const [minY, maxY] = scatterZoomY || defaultYDomain;
+
+    const padX = (maxX - minX) * 0.15;
+    const padY = (maxY - minY) * 0.15;
+
+    const lowX = minX - padX;
+    const highX = maxX + padX;
+    const lowY = minY - padY;
+    const highY = maxY + padY;
+
+    return mappedScatterScores.filter((s: any) =>
+      s.constant >= lowX &&
+      s.constant <= highX &&
+      s.score >= lowY &&
+      s.score <= highY
+    );
+  }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+
+  const overlappingDots = useMemo(() => {
+    if (!selectedDot) return [];
+
+    const parentCluster = mappedScatterScores.find((m: any) => {
+      if (m.overlappingItems && m.overlappingItems.length > 0) {
+        return m.overlappingItems.some((other: any) =>
+          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+          (other.songId && selectedDot.songId && other.songId === selectedDot.songId) ||
+          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+        );
+      }
+      return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
+             (m.songId && selectedDot.songId && m.songId === selectedDot.songId) ||
+             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && Math.abs(m.constant - selectedDot.constant) < 0.01);
+    });
+
+    if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
+      return parentCluster.overlappingItems;
+    }
+
+    const curX = scatterZoomX || defaultXDomain;
+    const curY = scatterZoomY || defaultYDomain;
+    const spanX = Math.max(0.1, curX[1] - curX[0]);
+    const spanY = Math.max(100, curY[1] - curY[0]);
+    const keyStepX = spanX / 40;
+    const keyStepY = spanY / 30;
+
+    const selScore = selectedDot.score || selectedDot.avgScore || 0;
+    const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
+    return allMappedScatterScores.filter((d: any) => {
+      const dScore = d.score || d.avgScore || 0;
+      const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
+      return dKey === selKey;
+    });
+  }, [selectedDot, mappedScatterScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+
+  const currentDotIndex = useMemo(() => {
+    if (!selectedDot || !overlappingDots.length) return 0;
+    const selSongId = selectedDot.songId || selectedDot.song_id;
+    const selChartId = selectedDot.chartId || selectedDot.id;
+    const selScore = selectedDot.score || selectedDot.avgScore || 0;
+
+    const idx = overlappingDots.findIndex((d: any) => {
+      const dSongId = d.songId || d.song_id;
+      const dChartId = d.chartId || d.id;
+      const dScore = d.score || d.avgScore || 0;
+
+      if (dChartId && selChartId && dChartId === selChartId) return true;
+      if (dSongId && selSongId && dSongId === selSongId && d.difficulty && selectedDot.difficulty && d.difficulty === selectedDot.difficulty) return true;
+      return (d.name || d.title) === (selectedDot.name || selectedDot.title) && Math.abs(d.constant - selectedDot.constant) < 0.01 && Math.abs(dScore - selScore) < 5;
+    });
+
+    return idx >= 0 ? idx : 0;
+  }, [selectedDot, overlappingDots]);
+
+  useEffect(() => {
+    if (!selectedDot || overlappingDots.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (currentDotIndex + 1) % overlappingDots.length;
+        setSelectedDot(overlappingDots[nextIndex]);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (currentDotIndex - 1 + overlappingDots.length) % overlappingDots.length;
+        setSelectedDot(overlappingDots[prevIndex]);
+      } else if (e.key === 'Escape') {
+        setSelectedDot(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDot, overlappingDots, currentDotIndex]);
+
+  const smartYTicks = useMemo(() => 
+    getSmartYTicks(
+      scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], 
+      scatterZoomY ? scatterZoomY[1] : 1010000, 
+      defaultYDomain[0]
+    ), [scatterZoomY, defaultYDomain]
+  );
+
+  const handleNavigateSong = useCallback((data: any) => {
+    const sId = data?.songId || data?.song_id;
+    if (sId) {
+      const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+      const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+      navigate(`/analytics?songId=${sId}${diff}${player}`);
+    }
+  }, [activePlayer, navigate]);
+
+  const renderScatterDot = useCallback((props: any) => 
+    <CustomScatterDot 
+      {...props} 
+      selectedDot={selectedDot} 
+      hoveredDot={hoveredDot} 
+      onSelectDot={setSelectedDot}
+      onNavigateSong={handleNavigateSong}
+    />
+  , [selectedDot, hoveredDot, setSelectedDot, handleNavigateSong]);
+
   useEffect(() => {
     const elem = scatterContainerRef.current;
     if (!elem) return;
@@ -208,10 +496,10 @@ export function Dashboard() {
       const { defX, defY, curX, curY } = getDomains();
 
       const rect = elem.getBoundingClientRect();
-      const plotLeft = rect.left + 85;
-      const plotWidth = Math.max(100, rect.width - 105);
-      const plotTop = rect.top + 20;
-      const plotHeight = Math.max(100, rect.height - 60);
+      const plotLeft = rect.left + 65;
+      const plotWidth = Math.max(100, rect.width - 95);
+      const plotTop = rect.top + 25;
+      const plotHeight = Math.max(100, rect.height - 70);
 
       const xFrac = Math.max(0, Math.min(1, (e.clientX - plotLeft) / plotWidth));
       const yFrac = Math.max(0, Math.min(1, 1 - (e.clientY - plotTop) / plotHeight));
@@ -219,11 +507,10 @@ export function Dashboard() {
       const focalX = curX[0] + xFrac * (curX[1] - curX[0]);
       const focalY = curY[0] + yFrac * (curY[1] - curY[0]);
 
-      const zoomFactor = e.deltaY < 0 ? 0.85 : 1.3;
+      // Exponential scaling based on deltaY magnitude for smooth wheel & trackpad zooming
+      const zoomFactor = Math.pow(1.002, e.deltaY);
       const spanX = (curX[1] - curX[0]) * zoomFactor;
       const spanY = (curY[1] - curY[0]) * zoomFactor;
-
-      if (spanX < 0.2 && spanY < 1000 && e.deltaY < 0) return;
 
       const rawMinX = focalX - xFrac * spanX;
       const rawMaxX = focalX + (1 - xFrac) * spanX;
@@ -255,11 +542,14 @@ export function Dashboard() {
       panRef.current.startScrollLeft = elem.scrollLeft;
       panRef.current.startDomainX = curX;
       panRef.current.startDomainY = curY;
-      setIsPanDragging(true);
+      if (elem) elem.style.cursor = 'grabbing';
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!panRef.current.isDragging) return;
+      const moveDist = Math.hypot(e.clientX - panRef.current.startX, e.clientY - panRef.current.startY);
+      if (moveDist < 6) return;
+
       e.preventDefault();
       const { defX, defY } = getDomains();
 
@@ -294,7 +584,7 @@ export function Dashboard() {
     const handleMouseUp = () => {
       if (panRef.current.isDragging) {
         panRef.current.isDragging = false;
-        setIsPanDragging(false);
+        if (elem) elem.style.cursor = 'grab';
       }
     };
 
@@ -705,12 +995,12 @@ export function Dashboard() {
                     </ul>
                   );
                 }} />
-                <Bar dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
-                <Bar dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
-                <Bar dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
-                <Bar dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
-                <Bar dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
-                <Bar dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
+                <Bar isAnimationActive={false} dataKey="AJC" stackId="a" fill="var(--rank-ajc)" name="All Justice Critical" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="AJ" stackId="a" fill="var(--rank-aj)" name="All Justice" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="FC" stackId="a" fill="var(--rank-fc)" name="Full Combo" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="CLEAR" stackId="a" fill="var(--rank-clear)" name="Clear" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="FAILED" stackId="a" fill="var(--rank-failed)" name="Failed" activeBar={false} />
+                <Bar isAnimationActive={false} dataKey="UNPLAYED" stackId="a" fill="rgba(255,255,255,0.05)" stroke="none" activeBar={false} legendType="none" tooltipType="none" name="Unplayed" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -746,7 +1036,7 @@ export function Dashboard() {
             accentColor="var(--accent-primary)"
             label="Score"
             marginTop="25px"
-            marginBottom="25px"
+            marginBottom="45px"
           />
 
           <div 
@@ -761,7 +1051,7 @@ export function Dashboard() {
                 >
                   <defs>
                     <clipPath id="custom-scatter-clip">
-                      <rect x={scatterClipX} y="-500" width="10000" height="875" />
+                      <rect x={scatterClipX} y="-500" width="10000" height="905" />
                     </clipPath>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -780,7 +1070,7 @@ export function Dashboard() {
                     name="Score" 
                     allowDataOverflow={true}
                     domain={scatterZoomY || defaultYDomain} 
-                    ticks={getSmartYTicks(scatterZoomY ? scatterZoomY[0] : defaultYDomain[0], scatterZoomY ? scatterZoomY[1] : 1010000, defaultYDomain[0])}
+                    ticks={smartYTicks}
                     stroke="var(--text-secondary)"
                     tick={{ fontSize: isMobile ? 11 : 13, fill: 'var(--text-secondary)' }}
                     tickFormatter={(val) => {
@@ -790,27 +1080,45 @@ export function Dashboard() {
                     }}
                     width={scatterYWidth}
                   />
-                  <ZAxis type="number" dataKey="playCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Play Count" />
+                  <ZAxis type="number" dataKey="overlapCount" domain={[0, 'dataMax']} range={[20, 1200]} name="Overlap Count" />
                   <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                   <Scatter 
                     name="Scores" 
-                    data={uniqueScores.map(s => ({
-                      name: s.songTitle,
-                      score: s.score,
-                      constant: s.constant,
-                      opDisplay: Number((s.op / 10000).toFixed(2)),
-                      playCount: s.playCount || 1,
-                      lamp: s.lamp,
-                      songId: s.songId,
-                      difficulty: s.difficulty
-                    }))} 
+                    data={visibleDashboardScatterData} 
+                    isAnimationActive={false}
                     fill="var(--accent-primary)" 
                     fillOpacity={0.6}
-                    onClick={(node: any) => {
+                    shape={renderScatterDot}
+                    onMouseEnter={(node: any) => {
                       if (node && (node.payload || node.name)) {
-                        setSelectedDot(node.payload || node);
+                        setHoveredDot(node.payload || node);
                       }
-                    }} 
+                    }}
+                    onMouseLeave={() => setHoveredDot(null)}
+                    onClick={(node: any) => {
+                      const data = node?.payload || node;
+                      if (!data || (!data.name && !data.title)) return;
+
+                      const dotId = `${data.chartId || data.songId || ''}_${data.difficulty || ''}`;
+                      const now = Date.now();
+                      const last = lastScatterDotClickRef.current;
+
+                      if (last.id === dotId && (now - last.time) < 500) {
+                        // Double-click: navigate to song leaderboard
+                        const sId = data.songId || data.song_id;
+                        if (sId) {
+                          const diff = data.difficulty ? `&diff=${data.difficulty}` : '';
+                          const player = activePlayer ? `&player=${encodeURIComponent(activePlayer)}` : '';
+                          navigate(`/analytics?songId=${sId}${diff}${player}`);
+                        }
+                        lastScatterDotClickRef.current = { id: '', time: 0 };
+                        return;
+                      }
+
+                      // First click: select the dot (keeps UI panel open)
+                      lastScatterDotClickRef.current = { id: dotId, time: now };
+                      setSelectedDot(data);
+                    }}
                   />
                 </ScatterChart>
               </ResponsiveContainer>
@@ -818,24 +1126,17 @@ export function Dashboard() {
           </div>
         </div>
 
-        {(() => {
-          const constants = uniqueScores.map(s => s.constant);
-          const minC = constants.length ? Math.max(1.0, Math.min(...constants) - 0.2) : 1.0;
-          const maxC = constants.length ? Math.min(15.4, Math.max(...constants) + 0.2) : 15.4;
-          return (
-            <ScatterScrollbar
-              orientation="horizontal"
-              min={minC}
-              max={maxC}
-              currentZoom={scatterZoomX}
-              onZoomChange={setScatterZoomX}
-              accentColor="var(--accent-primary)"
-              label="Level Constant"
-              paddingLeft={isMobile ? '65px' : '85px'}
-              paddingRight="30px"
-            />
-          );
-        })()}
+        <ScatterScrollbar
+          orientation="horizontal"
+          min={scatterMinMaxC.minC}
+          max={scatterMinMaxC.maxC}
+          currentZoom={scatterZoomX}
+          onZoomChange={setScatterZoomX}
+          accentColor="var(--accent-primary)"
+          label="Level Constant"
+          paddingLeft={isMobile ? '65px' : '85px'}
+          paddingRight="30px"
+        />
 
         {selectedDot && (
           <div style={{
@@ -845,64 +1146,165 @@ export function Dashboard() {
             border: '1px solid var(--accent-primary)',
             borderRadius: 'var(--radius-md)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.75rem'
+            flexDirection: 'column',
+            gap: '0.6rem'
           }}>
-            <div>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                {selectedDot.name || selectedDot.title}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>{selectedDot.name || selectedDot.title}</span>
+                  {selectedDot.difficulty && (
+                    <span className={`badge badge-${selectedDot.difficulty.toLowerCase()}`}>
+                      {selectedDot.difficulty}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Score: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.score?.toLocaleString()}</strong> {selectedDot.opDisplay ? `| OP: ${selectedDot.opDisplay}` : ''}
+                </div>
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Score: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.score?.toLocaleString()}</strong> {selectedDot.opDisplay ? `| OP: ${selectedDot.opDisplay}` : ''}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {selectedDot.lamp && (
-                <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
-                  {selectedDot.lamp}
-                </span>
-              )}
-              {selectedDot.songId && selectedDot.difficulty && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {overlappingDots.length > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-gold)' }}>
+                    <button
+                      onClick={() => {
+                        const prevIndex = (currentDotIndex - 1 + overlappingDots.length) % overlappingDots.length;
+                        setSelectedDot(overlappingDots[prevIndex]);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="Previous overlapping chart"
+                    >
+                      ◄ Prev
+                    </button>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', padding: '0 0.25rem' }}>
+                      {currentDotIndex + 1} / {overlappingDots.length} Overlapping
+                    </span>
+                    <button
+                      onClick={() => {
+                        const nextIndex = (currentDotIndex + 1) % overlappingDots.length;
+                        setSelectedDot(overlappingDots[nextIndex]);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="Next overlapping chart"
+                    >
+                      Next ►
+                    </button>
+                  </div>
+                )}
+                {selectedDot.lamp && (
+                  <span className={`badge badge-${selectedDot.lamp.toLowerCase()}`}>
+                    {selectedDot.lamp}
+                  </span>
+                )}
+                {selectedDot.songId && selectedDot.difficulty && (
+                  <button
+                    onClick={() => navigate(`/analytics?songId=${selectedDot.songId}&diff=${selectedDot.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
+                    style={{
+                      background: 'var(--accent-primary)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    View Leaderboard ➔
+                  </button>
+                )}
                 <button
-                  onClick={() => navigate(`/analytics?songId=${selectedDot.songId}&diff=${selectedDot.difficulty}&player=${encodeURIComponent(activePlayer)}`)}
+                  onClick={() => setSelectedDot(null)}
                   style={{
-                    background: 'var(--accent-primary)',
-                    color: '#fff',
+                    background: 'rgba(255, 255, 255, 0.1)',
                     border: 'none',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.3rem'
+                    justifyContent: 'center',
+                    fontSize: '0.8rem'
                   }}
                 >
-                  View Leaderboard ➔
+                  ✕
                 </button>
-              )}
-              <button
-                onClick={() => setSelectedDot(null)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem'
-                }}
-              >
-                ✕
-              </button>
+              </div>
             </div>
+
+            {/* Overlapping Charts Selection Pills */}
+            {overlappingDots.length > 1 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+                paddingTop: '0.4rem',
+                borderTop: '1px dashed rgba(255, 255, 255, 0.12)'
+              }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 600 }}>Select Overlapping Chart:</span>
+                {overlappingDots.map((item: any, idx: number) => {
+                  const isCurrent = idx === currentDotIndex;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedDot(item)}
+                      style={{
+                        background: isCurrent ? 'var(--accent-gold)' : 'rgba(255, 255, 255, 0.08)',
+                        color: isCurrent ? '#000' : 'var(--text-primary)',
+                        border: isCurrent ? '1px solid var(--accent-gold)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: 'var(--radius-full)',
+                        padding: '0.2rem 0.6rem',
+                        fontSize: '0.78rem',
+                        fontWeight: isCurrent ? 700 : 400,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {item.difficulty && (
+                        <span className={`badge badge-${item.difficulty.toLowerCase()}`} style={{ padding: '0.1rem 0.35rem', fontSize: '0.7rem' }}>
+                          {item.difficulty}
+                        </span>
+                      )}
+                      <span>{item.name || item.title}</span>
+                      <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({(item.score || item.avgScore)?.toLocaleString()})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -927,6 +1329,9 @@ export function Dashboard() {
               <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('op')}>
                 OP {sortConfig?.key === 'op' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
               </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('opPercent')}>
+                OP% {sortConfig?.key === 'opPercent' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -947,6 +1352,7 @@ export function Dashboard() {
                 <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '1.1rem' }}>{score.score.toLocaleString()}</td>
                 <td style={{ padding: '1rem', color: `var(--rank-${score.lamp.toLowerCase()})`, fontWeight: 'bold' }}>{score.lamp}</td>
                 <td style={{ padding: '1rem', color: 'var(--accent-secondary)', fontWeight: 'bold' }}>{(score.op / 10000).toFixed(2)}</td>
+                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{(score.opPercent ?? ((score.op / (((score.constant * 5000 + 15000) / 5) * 5)) * 100)).toFixed(2)}%</td>
               </tr>
             ))}
           </tbody>
@@ -968,6 +1374,7 @@ export function Dashboard() {
               Page 
               <input 
                 type="number" 
+                tabIndex={-1}
                 value={page || ''} 
                 onChange={(e) => {
                   const val = parseInt(e.target.value);

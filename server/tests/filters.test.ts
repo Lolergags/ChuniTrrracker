@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getChartFilterConditions, CHRONOLOGICAL_VERSIONS } from '../utils/filters.js';
+import { getChartFilterConditions, CHRONOLOGICAL_VERSIONS, AOMN_REMOVE_SONG_IDS } from '../utils/filters.js';
 
 describe('getChartFilterConditions', () => {
   it('should default to JP active and exclude WE charts', () => {
@@ -40,8 +40,8 @@ describe('getChartFilterConditions', () => {
   });
 
   it('should not filter difficulty if diff is ALL', () => {
-    const { conditions, bindings } = getChartFilterConditions({ diff: 'ALL' });
-    expect(conditions).not.toContain("charts.difficulty IN ('MAS', 'ULT')");
+    const { conditions } = getChartFilterConditions({ diff: 'ALL' });
+    expect(conditions.some(c => c.includes("charts.difficulty IN"))).toBe(false);
   });
 
   it('should apply cumulative version filtering', () => {
@@ -74,5 +74,29 @@ describe('getChartFilterConditions', () => {
   it('should return 1 = 0 condition when selecting only ULT on PL_OFFLINE', () => {
     const { conditions } = getChartFilterConditions({ server: 'PL_OFFLINE', diff: ['ULT'] });
     expect(conditions).toContain("1 = 0");
+  });
+
+  it('should add player rating min and max conditions when playersAlias is provided', () => {
+    const { conditions, bindings } = getChartFilterConditions(
+      { ratingMin: '15.00', ratingMax: '17.50' },
+      'songs',
+      'charts',
+      'p'
+    );
+    expect(conditions).toContain('p.kamaitachi_rating >= ?');
+    expect(conditions).toContain('p.kamaitachi_rating <= ?');
+    expect(bindings).toEqual([15.00, 17.50]);
+  });
+
+  it('should contain all chronological versions in exact release order', () => {
+    expect(CHRONOLOGICAL_VERSIONS[0]).toBe('CHUNITHM');
+    expect(CHRONOLOGICAL_VERSIONS[CHRONOLOGICAL_VERSIONS.length - 1]).toBe('MATE');
+    expect(CHRONOLOGICAL_VERSIONS).toContain('PARADISE LOST');
+    expect(CHRONOLOGICAL_VERSIONS).toContain('X-VERSE-X');
+  });
+
+  it('should verify AOMN_REMOVE_SONG_IDS is non-empty array', () => {
+    expect(Array.isArray(AOMN_REMOVE_SONG_IDS)).toBe(true);
+    expect(AOMN_REMOVE_SONG_IDS.length).toBeGreaterThan(50);
   });
 });

@@ -13,8 +13,12 @@ if (!fs.existsSync(dbDir)) {
 
 const db = new Database(DB_PATH);
 
-// Enable WAL mode for better concurrent read performance
+// Enable high-performance WAL mode and RAM caching settings
 db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('temp_store = MEMORY');
+db.pragma('cache_size = -64000');
+db.pragma('mmap_size = 268435456');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
@@ -76,6 +80,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id);
   CREATE INDEX IF NOT EXISTS idx_scores_chart ON scores(chart_id);
   CREATE INDEX IF NOT EXISTS idx_scores_op ON scores(op DESC);
+  CREATE INDEX IF NOT EXISTS idx_scores_player_op ON scores(player_id, op DESC);
 `);
 
 // Explicit schema migrations using PRAGMA table_info
@@ -103,6 +108,11 @@ if (!chartCols.includes('version')) {
 db.exec(`UPDATE charts SET version = (SELECT songs.version FROM songs WHERE songs.id = charts.song_id) WHERE version = '' OR version IS NULL`);
 
 // Index charts version after column migration and backfill
-db.exec(`CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version)`);
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_charts_version ON charts(version);
+  CREATE INDEX IF NOT EXISTS idx_scores_player_chart_op ON scores(player_id, chart_id, op, score);
+  CREATE INDEX IF NOT EXISTS idx_charts_ver_diff_song ON charts(version, difficulty, song_id, id);
+  CREATE INDEX IF NOT EXISTS idx_scores_chart_player ON scores(chart_id, player_id);
+`);
 
 export default db;

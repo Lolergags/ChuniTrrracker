@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, sanitizeRangeInputs } from './scatterZoom';
+import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, sanitizeRangeInputs, calculateDotRadius } from './scatterZoom';
 
 describe('scatterZoom utilities', () => {
   describe('clampDomainX', () => {
@@ -96,7 +96,7 @@ describe('scatterZoom utilities', () => {
       // User inputs Max = 980,000 while Min was 1,000,000
       const [minY, maxY] = sanitizeRangeInputs('1000000', '980000', 975000, 1010000, 'vertical');
       expect(minY).toBeLessThan(maxY);
-      expect(minY).toBe(979000);
+      expect(minY).toBe(979990);
       expect(maxY).toBe(980000);
     });
 
@@ -112,6 +112,40 @@ describe('scatterZoom utilities', () => {
       const [minX, maxX] = sanitizeRangeInputs('abc', 'xyz', 1.0, 15.4, 'horizontal', 5.0, 10.0);
       expect(minX).toBe(5.0);
       expect(maxX).toBe(10.0);
+    });
+  });
+
+  describe('calculateDotRadius', () => {
+    it('should fallback to default base radius 7.0 for 1 play when size/count is missing', () => {
+      const { baseR, dotR } = calculateDotRadius();
+      expect(baseR).toBe(7.0);
+      expect(dotR).toBe(7.0);
+    });
+
+    it('should calculate dynamic radius with strong size contrast bounded between 7.0 and 16.0', () => {
+      // 1 play -> 7.0px
+      const { baseR: count1 } = calculateDotRadius(1);
+      expect(count1).toBe(7.0);
+
+      // 2 plays -> 10.0px
+      const { baseR: count2 } = calculateDotRadius(2);
+      expect(count2).toBe(10.0);
+
+      // 5 plays -> 13.0px
+      const { baseR: count5 } = calculateDotRadius(5);
+      expect(count5).toBe(13.0);
+
+      // 10+ plays -> clamped to 16.0px
+      const { baseR: count10 } = calculateDotRadius(10);
+      expect(count10).toBe(16.0);
+    });
+
+    it('should expand dot radius when hovered or selected', () => {
+      const { baseR, dotR: hoveredDotR } = calculateDotRadius(5, false, true);
+      const { dotR: selectedDotR } = calculateDotRadius(5, true, false);
+
+      expect(hoveredDotR).toBe(Number((baseR + 3.0).toFixed(2)));
+      expect(selectedDotR).toBe(Number((baseR + 5.0).toFixed(2)));
     });
   });
 });

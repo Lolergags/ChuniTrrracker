@@ -14,7 +14,8 @@ describe('Leaderboard Query Edge Cases', () => {
         artist TEXT NOT NULL,
         genre TEXT NOT NULL DEFAULT '',
         version TEXT NOT NULL DEFAULT '',
-        jacket_url TEXT NOT NULL DEFAULT ''
+        jacket_url TEXT NOT NULL DEFAULT '',
+        is_jp_active INTEGER NOT NULL DEFAULT 1
       );
 
       CREATE TABLE IF NOT EXISTS charts (
@@ -25,6 +26,7 @@ describe('Leaderboard Query Edge Cases', () => {
         level TEXT NOT NULL,
         note_count INTEGER NOT NULL DEFAULT 0,
         charter TEXT NOT NULL DEFAULT '',
+        version TEXT NOT NULL DEFAULT '',
         UNIQUE(song_id, difficulty)
       );
 
@@ -115,5 +117,43 @@ describe('Leaderboard Query Edge Cases', () => {
     
     // Validate we don't crash when strictly calling toFixed (what the UI does)
     expect(mappedResult.opPercent.toFixed(2)).toBe("0.00");
+  });
+
+  it('should correctly aggregate batch possession scores for multiple top players in one query', () => {
+    // Seed songs, charts, players and scores
+    db.prepare(`INSERT INTO songs (id, title, artist, is_jp_active) VALUES (1, 'Song 1', 'Artist 1', 1)`).run();
+    db.prepare(`INSERT INTO charts (id, song_id, difficulty, constant, level, version) VALUES (1, 1, 'MAS', 14.0, '14', 'CHUNITHM')`).run();
+
+    db.prepare(`INSERT INTO players (id, username) VALUES (1, 'Player1'), (2, 'Player2')`).run();
+    db.prepare(`INSERT INTO scores (player_id, chart_id, score, lamp, op) VALUES (1, 1, 1008000, 'AJC', 100000), (2, 1, 980000, 'CLEAR', 80000)`).run();
+
+    const topPlayerIds = [1, 2];
+    const playerPlaceholders = topPlayerIds.map(() => '?').join(',');
+    const batchPossessionQuery = `
+      SELECT 
+        s.player_id,
+        SUM(CASE WHEN s.score >= 1007500 THEN 1 ELSE 0 END) as sss,
+        SUM(CASE WHEN s.score >= 1000000 THEN 1 ELSE 0 END) as ss,
+        SUM(CASE WHEN s.score >= 990000 THEN 1 ELSE 0 END) as sPlus,
+        SUM(CASE WHEN s.score >= 975000 THEN 1 ELSE 0 END) as s
+      FROM scores s
+      JOIN charts c ON s.chart_id = c.id
+      JOIN songs ON c.song_id = songs.id
+      WHERE s.player_id IN (${playerPlaceholders}) 
+        AND c.difficulty IN ('MAS', 'ULT') 
+        AND c.version IN ('CHUNITHM')
+      GROUP BY s.player_id
+    `;
+
+    const rows = db.prepare(batchPossessionQuery).all(...topPlayerIds) as any[];
+    expect(rows.length).toBe(2);
+
+    const p1 = rows.find((r: any) => r.player_id === 1);
+    const p2 = rows.find((r: any) => r.player_id === 2);
+
+    expect(p1.sss).toBe(1);
+    expect(p1.ss).toBe(1);
+    expect(p2.sss).toBe(0);
+    expect(p2.s).toBe(1);
   });
 });

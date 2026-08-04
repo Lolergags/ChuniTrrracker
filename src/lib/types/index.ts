@@ -40,6 +40,7 @@ export interface ApiPlayerStats {
 
 export interface ApiProcessedScore {
   songId: number;
+  chartId?: number;
   songTitle: string;
   artist: string;
   difficulty: string;
@@ -48,6 +49,7 @@ export interface ApiProcessedScore {
   score: number;
   lamp: LampType;
   op: number;
+  opPercent?: number;
   timeAchieved: number;
   playCount?: number;
 }

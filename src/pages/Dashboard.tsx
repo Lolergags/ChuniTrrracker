@@ -153,6 +153,7 @@ export function Dashboard() {
   const [selectedCoords, setSelectedCoords] = useState<{ x: number; y: number } | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleUpdateCoords = useCallback((coords: { x: number; y: number }) => {
     setSelectedCoords(prev => {
@@ -1120,13 +1121,23 @@ export function Dashboard() {
             ref={scatterContainerRef}
             className="scrollable-content-wrapper" 
             style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
+            onMouseDown={(e) => {
+              dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+            }}
           >
             <div className="chart-min-width-md" style={{ height: '430px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart 
                   margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
-                  onClick={() => {
-                    if (!isPanDragging) {
+                  onClick={(e: any) => {
+                    const start = dragStartPosRef.current;
+                    const clientX = e?.clientX ?? e?.nativeEvent?.clientX;
+                    const clientY = e?.clientY ?? e?.nativeEvent?.clientY;
+                    const dist = (start && clientX != null && clientY != null) 
+                      ? Math.hypot(clientX - start.x, clientY - start.y) 
+                      : 0;
+
+                    if (!isPanDragging && dist < 6) {
                       setSelectedDot(null);
                       setHoveredDot(null);
                     }

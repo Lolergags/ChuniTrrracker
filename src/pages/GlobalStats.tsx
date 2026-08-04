@@ -422,8 +422,24 @@ export function GlobalStats() {
 
   const isMobile = useIsMobile();
 
+  const [globalContainerWidth, setGlobalContainerWidth] = useState(800);
+
+  useEffect(() => {
+    if (!globalScatterContainerRef.current) return;
+    const updateWidth = () => {
+      if (globalScatterContainerRef.current) {
+        setGlobalContainerWidth(globalScatterContainerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(globalScatterContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const globalScatterYWidth = globalScatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
   const globalScatterClipX = 20 + globalScatterYWidth;
+  const globalScatterClipWidth = Math.max(100, globalContainerWidth - globalScatterClipX - 30);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1371,7 +1387,7 @@ export function GlobalStats() {
                     >
                       <defs>
                         <clipPath id="custom-scatter-clip">
-                          <rect x={globalScatterClipX} y="-500" width="10000" height="878" />
+                          <rect x={globalScatterClipX} y="-500" width={globalScatterClipWidth} height="870" />
                         </clipPath>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

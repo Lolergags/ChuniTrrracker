@@ -173,8 +173,24 @@ export function Dashboard() {
 
   const isMobile = useIsMobile();
 
+  const [containerWidth, setContainerWidth] = useState(800);
+
+  useEffect(() => {
+    if (!scatterContainerRef.current) return;
+    const updateWidth = () => {
+      if (scatterContainerRef.current) {
+        setContainerWidth(scatterContainerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(scatterContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const scatterYWidth = scatterZoomY ? (isMobile ? 35 : 45) : (isMobile ? 45 : 55);
   const scatterClipX = 20 + scatterYWidth;
+  const scatterClipWidth = Math.max(100, containerWidth - scatterClipX - 30);
   
   const filteredPlayers = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -1181,7 +1197,7 @@ export function Dashboard() {
                 >
                   <defs>
                     <clipPath id="custom-scatter-clip">
-                      <rect x={scatterClipX} y="-500" width="10000" height="878" />
+                      <rect x={scatterClipX} y="-500" width={scatterClipWidth} height="870" />
                     </clipPath>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

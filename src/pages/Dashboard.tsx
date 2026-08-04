@@ -390,25 +390,21 @@ export function Dashboard() {
       if (m.overlappingItems && m.overlappingItems.length > 0) {
         return m.overlappingItems.some((other: any) =>
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          (other.songId && selectedDot.songId && other.songId === selectedDot.songId) ||
-          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+          (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs(other.score - selectedDot.score) < 1)
         );
       }
       return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             (m.songId && selectedDot.songId && m.songId === selectedDot.songId) ||
-             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && Math.abs(m.constant - selectedDot.constant) < 0.01);
+             (m.songId && selectedDot.songId && m.songId === selectedDot.songId && (!m.difficulty || !selectedDot.difficulty || m.difficulty === selectedDot.difficulty)) ||
+             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && Math.abs(m.constant - selectedDot.constant) < 0.01 && Math.abs(m.score - selectedDot.score) < 1);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
       return parentCluster.overlappingItems;
     }
 
-    const curX = scatterZoomX || defaultXDomain;
-    const curY = scatterZoomY || defaultYDomain;
-    const spanX = Math.max(0.1, curX[1] - curX[0]);
-    const spanY = Math.max(100, curY[1] - curY[0]);
-    const keyStepX = spanX / 40;
-    const keyStepY = spanY / 30;
+    const keyStepX = 0.15;
+    const keyStepY = 1500;
 
     const selScore = selectedDot.score || selectedDot.avgScore || 0;
     const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
@@ -417,7 +413,7 @@ export function Dashboard() {
       const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
       return dKey === selKey;
     });
-  }, [selectedDot, mappedScatterScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+  }, [selectedDot, mappedScatterScores, allMappedScatterScores]);
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;

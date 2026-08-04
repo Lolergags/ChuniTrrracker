@@ -374,26 +374,22 @@ export function GlobalStats() {
         return m.overlappingItems.some((other: any) =>
           (other.id && selectedDot.id && other.id === selectedDot.id) ||
           (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
-          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01)
+          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
+          ((other.title || other.name) === (selectedDot.title || selectedDot.name) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs((other.avgScore || other.score) - (selectedDot.avgScore || selectedDot.score)) < 1)
         );
       }
       return (m.id && selectedDot.id && m.id === selectedDot.id) ||
              (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id)) ||
-             ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01);
+             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && (!m.difficulty || !selectedDot.difficulty || m.difficulty === selectedDot.difficulty)) ||
+             ((m.title || m.name) === (selectedDot.title || selectedDot.name) && Math.abs(m.constant - selectedDot.constant) < 0.01 && Math.abs((m.avgScore || m.score) - (selectedDot.avgScore || selectedDot.score)) < 1);
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
       return parentCluster.overlappingItems;
     }
 
-    const curX = globalScatterZoomX || defaultXDomain;
-    const curY = globalScatterZoomY || defaultYDomain;
-    const spanX = Math.max(0.1, curX[1] - curX[0]);
-    const spanY = Math.max(100, curY[1] - curY[0]);
-    const keyStepX = spanX / 40;
-    const keyStepY = spanY / 30;
+    const keyStepX = 0.15;
+    const keyStepY = 1500;
 
     const selScore = selectedDot.avgScore || selectedDot.score || 0;
     const selKey = `${Math.round(selectedDot.constant / keyStepX)}_${Math.round(selScore / keyStepY)}`;
@@ -402,7 +398,7 @@ export function GlobalStats() {
       const dKey = `${Math.round(d.constant / keyStepX)}_${Math.round(dScore / keyStepY)}`;
       return dKey === selKey;
     });
-  }, [selectedDot, validMetaData, globalScatterZoomX, globalScatterZoomY, defaultXDomain, defaultYDomain]);
+  }, [selectedDot, validMetaData]);
 
   const currentGlobalDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingGlobalDots.length) return 0;

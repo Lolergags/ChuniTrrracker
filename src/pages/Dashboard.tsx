@@ -27,7 +27,7 @@ const CustomScatterDot = React.memo((props: any) => {
       window.clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
       if (onNavigateSong) {
-        onNavigateSong(payload);
+        onNavigateSong(selectedDot || payload);
       }
       return;
     }
@@ -343,28 +343,46 @@ export function Dashboard() {
   }, [uniqueScores, allMappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
 
   const visibleDashboardScatterData = useMemo(() => {
-    if (!scatterZoomX && !scatterZoomY) {
-      return mappedScatterScores;
+    let list = mappedScatterScores;
+
+    if (scatterZoomX || scatterZoomY) {
+      const [minX, maxX] = scatterZoomX || defaultXDomain;
+      const [minY, maxY] = scatterZoomY || defaultYDomain;
+
+      const padX = (maxX - minX) * 0.15;
+      const padY = (maxY - minY) * 0.15;
+
+      const lowX = minX - padX;
+      const highX = maxX + padX;
+      const lowY = minY - padY;
+      const highY = maxY + padY;
+
+      list = mappedScatterScores.filter((s: any) =>
+        s.constant >= lowX &&
+        s.constant <= highX &&
+        s.score >= lowY &&
+        s.score <= highY
+      );
     }
 
-    const [minX, maxX] = scatterZoomX || defaultXDomain;
-    const [minY, maxY] = scatterZoomY || defaultYDomain;
+    if (!selectedDot) return list;
 
-    const padX = (maxX - minX) * 0.15;
-    const padY = (maxY - minY) * 0.15;
-
-    const lowX = minX - padX;
-    const highX = maxX + padX;
-    const lowY = minY - padY;
-    const highY = maxY + padY;
-
-    return mappedScatterScores.filter((s: any) =>
-      s.constant >= lowX &&
-      s.constant <= highX &&
-      s.score >= lowY &&
-      s.score <= highY
+    const selIdx = list.findIndex((item: any) =>
+      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
+      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
+      (item.overlappingItems && item.overlappingItems.some((other: any) =>
+        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
+        (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty))
+      ))
     );
-  }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain]);
+
+    if (selIdx < 0 || selIdx === list.length - 1) return list;
+
+    const result = [...list];
+    const [selectedItem] = result.splice(selIdx, 1);
+    result.push(selectedItem);
+    return result;
+  }, [mappedScatterScores, scatterZoomX, scatterZoomY, defaultXDomain, defaultYDomain, selectedDot]);
 
   const overlappingDots = useMemo(() => {
     if (!selectedDot) return [];

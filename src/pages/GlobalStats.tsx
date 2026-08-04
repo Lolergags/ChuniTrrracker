@@ -1302,6 +1302,8 @@ export function GlobalStats() {
                         <button
                           key={idx}
                           onClick={() => setSelectedDot(item)}
+                          onDoubleClick={() => handleNavigateSong(item)}
+                          title="Click to select • Double-click to view song analytics"
                           style={{
                             background: isCurrent ? 'var(--accent-gold)' : 'rgba(255, 255, 255, 0.08)',
                             color: isCurrent ? '#000' : 'var(--text-primary)',

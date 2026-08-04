@@ -14,10 +14,9 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const CustomScatterDot = React.memo((props: any) => {
   const { cx, cy, fill, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong } = props;
+  const clickTimerRef = useRef<number | null>(null);
 
   if (cx == null || cy == null || isNaN(cx) || isNaN(cy)) return null;
-
-  const clickTimerRef = useRef<number | null>(null);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

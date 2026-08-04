@@ -14,6 +14,8 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
 const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, onSelectDot, onNavigateSong }: any) => {
+  const [page, setPage] = useState(0);
+
   if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
     const overlaps = rawData.overlappingItems || [];
@@ -34,6 +36,23 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
     }
 
     const data = activeChart;
+    const ITEMS_PER_PAGE = 5;
+
+    let selectedIndex = 0;
+    if (data && overlaps.length) {
+      const idx = overlaps.findIndex((item: any) =>
+        (data.chartId && item.chartId === data.chartId) ||
+        (data.id && item.id === data.id) ||
+        ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
+        ((item.title || item.name) === (data.title || data.name) && Math.abs(item.constant - data.constant) < 0.01)
+      );
+      if (idx >= 0) selectedIndex = idx;
+    }
+
+    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
+    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
+    const currentPage = Math.min(Math.max(0, page !== 0 ? page : autoPage), totalPages - 1);
+    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
     return (
       <div 
@@ -79,10 +98,18 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
         
         {hasOverlap && (
           <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', marginBottom: '4px' }}>
-              Charts at this position ({overlaps.length}):
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+                Charts at this position ({overlaps.length}):
+              </span>
+              {totalPages > 1 && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  Page {currentPage + 1} / {totalPages}
+                </span>
+              )}
             </div>
-            {overlaps.map((item: any, i: number) => {
+
+            {visibleOverlaps.map((item: any, idx: number) => {
               const isSelectedItem = (
                 (data.chartId && item.chartId === data.chartId) ||
                 (data.id && item.id === data.id) ||
@@ -91,7 +118,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
               );
               return (
                 <div 
-                  key={i} 
+                  key={item.id || item.chartId || idx} 
                   style={{ 
                     fontSize: '0.78rem', 
                     display: 'flex', 
@@ -123,6 +150,54 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
                 </div>
               );
             })}
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  disabled={currentPage === 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPage((p: number) => Math.max(0, p - 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage === 0 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage === 0 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  ◄ Prev
+                </button>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, overlaps.length)} of {overlaps.length}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPage((p: number) => Math.min(totalPages - 1, p + 1));
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: currentPage >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--text-primary)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600
+                  }}
+                >
+                  Next ►
+                </button>
+              </div>
+            )}
           </div>
         )}
 

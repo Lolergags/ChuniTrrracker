@@ -1,6 +1,6 @@
 # Contribution & Git Workflow Policy
 
-This repository enforces strict workflow policies to maintain codebase quality, branch isolation, and automated deployment safety.
+This repository enforces workflow policies to maintain codebase quality, branch isolation, and automated deployment safety.
 
 ## 🌿 Branching Strategy
 
@@ -30,16 +30,16 @@ This repository enforces strict workflow policies to maintain codebase quality, 
   * `workflow:` CI/CD pipeline or repository rule updates
   * `chore:` Maintenance tasks
 
-## 🛑 Pull Request Policy (Strict Permission Requirement)
+## 🤖 AI Agent Workflow Rules (Specific to AI Coding Assistants & Bots)
 
-* **Explicit Authorization Required**: AI agents and automated tools MUST NOT automatically open Pull Requests (`gh pr create`) or merge branches into `main` after completing work on a feature branch.
-* **Approval vs. Directive**: Approving an audit report, design proposal, or implementation plan does NOT constitute permission to open a Pull Request.
-* **Explicit User Command**: A Pull Request may ONLY be created when the user explicitly requests it in a direct message (e.g. *"make a pull request and push to main"*).
+* **Explicit User Authorization Required**: AI agents and automated assistants MUST NOT automatically open Pull Requests (`gh pr create`) or merge branches into `main` after completing work on a feature branch.
+* **Approvals vs. PR Directives**: User approval of an audit report, design proposal, or implementation plan does NOT grant permission to open a Pull Request.
+* **Explicit Directive**: An AI agent may ONLY create a Pull Request when the user explicitly requests it in a prompt (e.g. *"make a pull request and push to main"*).
 * Feature branch commits MUST remain strictly isolated on their feature branch until that explicit directive is given.
 
-## ✅ Verification Checklist Before PR Authorization
+## ✅ Human Contributor Guidelines
 
-Before requesting a PR:
-1. `npm run test:all` must pass 100% with zero errors across all vitest unit tests and oxlint checks.
-2. New features or bug fixes must include corresponding automated unit tests.
-3. Feature branch must be pushed to `origin/<branch-name>` for remote tracking.
+Human contributors opening manual PRs should follow standard git etiquette:
+1. Work on a feature branch (`feat/*`, `fix/*`, `refactor/*`).
+2. Ensure `npm run test:all` passes cleanly locally.
+3. Open a Pull Request on GitHub when ready for review.

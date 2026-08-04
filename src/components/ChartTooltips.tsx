@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { isSameChart, formatScatterScore, OVERLAP_PAGE_SIZE } from '../lib/utils/scatterTooltipPlacement.js';
 
 const LAMP_ORDER = ['AJC', 'AJ', 'FC', 'CLEAR', 'FAILED'];
 const LAMP_NAMES: Record<string, string> = {
@@ -51,53 +52,42 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
     setManualPage(null);
   }, [selectedDot]);
 
-  if (active && payload && payload.length && (selectedDot || hoveredDot)) {
-    const rawData = payload[0].payload;
-    const overlaps = rawData.overlappingItems || [];
-    const hasOverlap = overlaps.length > 1;
+  const rawData = payload && payload.length ? payload[0].payload : null;
+  const overlaps: any[] = useMemo(() => rawData?.overlappingItems || [], [rawData]);
+  const hasOverlap = overlaps.length > 1;
 
-    let activeChart = rawData;
-    if (selectedDot) {
-      const matchInOverlaps = overlaps.find((item: any) =>
-        (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-        (selectedDot.id && item.id === selectedDot.id) ||
-        ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === selectedDot.difficulty)) ||
-        ((item.title || item.name) === (selectedDot.title || selectedDot.name) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs((item.score || item.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-      );
+  const activeChart = useMemo(() => {
+    if (!rawData) return null;
+    if (!selectedDot) return rawData;
 
-      if (matchInOverlaps) {
-        activeChart = matchInOverlaps;
-      } else if (
-        (selectedDot.chartId && rawData.chartId === selectedDot.chartId) ||
-        (selectedDot.id && rawData.id === selectedDot.id) ||
-        ((selectedDot.songId || selectedDot.song_id) && (rawData.songId || rawData.song_id) && (selectedDot.songId || selectedDot.song_id) === (rawData.songId || rawData.song_id) && (!selectedDot.difficulty || !rawData.difficulty || selectedDot.difficulty === rawData.difficulty)) ||
-        ((rawData.title || rawData.name) === (selectedDot.title || selectedDot.name) && Math.abs(rawData.constant - selectedDot.constant) < 0.01)
-      ) {
-        activeChart = selectedDot;
-      }
-    }
+    const matchInOverlaps = overlaps.find((item: any) => isSameChart(selectedDot, item));
+    if (matchInOverlaps) return matchInOverlaps;
 
+    if (isSameChart(selectedDot, rawData)) return selectedDot;
+
+    return rawData;
+  }, [rawData, selectedDot, overlaps]);
+
+  const selectedIndex = useMemo(() => {
+    if (!activeChart || overlaps.length === 0) return 0;
+    const idx = overlaps.findIndex((item: any) => isSameChart(activeChart, item));
+    return idx >= 0 ? idx : 0;
+  }, [activeChart, overlaps]);
+
+  const totalPages = Math.ceil(overlaps.length / OVERLAP_PAGE_SIZE) || 1;
+  const autoPage = Math.floor(selectedIndex / OVERLAP_PAGE_SIZE);
+  const currentPage = Math.min(Math.max(0, manualPage ?? autoPage), totalPages - 1);
+  const visibleOverlaps = useMemo(() => {
+    return overlaps.slice(currentPage * OVERLAP_PAGE_SIZE, (currentPage + 1) * OVERLAP_PAGE_SIZE);
+  }, [overlaps, currentPage]);
+
+  if (active && payload && payload.length && (selectedDot || hoveredDot) && activeChart) {
     const data = activeChart;
-    const ITEMS_PER_PAGE = 10;
-
-    let selectedIndex = 0;
-    if (data && overlaps.length > 0) {
-      const idx = overlaps.findIndex((item: any) =>
-        (data.chartId && item.chartId === data.chartId) ||
-        (data.id && item.id === data.id) ||
-        ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
-        ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
-      );
-      if (idx >= 0) selectedIndex = idx;
-    }
-
-    const totalPages = Math.ceil(overlaps.length / ITEMS_PER_PAGE) || 1;
-    const autoPage = Math.floor(selectedIndex / ITEMS_PER_PAGE);
-    const currentPage = Math.min(Math.max(0, manualPage ?? autoPage), totalPages - 1);
-    const visibleOverlaps = overlaps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+    const displayScore = formatScatterScore(data.score ?? data.avgScore);
 
     return (
       <div 
+        role="tooltip"
         style={{
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid rgba(255,255,255,0.15)',
@@ -140,7 +130,7 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Score:</span>
-          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(data.score || data.avgScore || 0)).toLocaleString()}</span>
+          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{displayScore.toLocaleString()}</span>
           
           {data.opDisplay !== undefined && (
             <>
@@ -181,15 +171,15 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
             </div>
 
             {visibleOverlaps.map((item: any, idx: number) => {
-              const isSelectedItem = (
-                (data.chartId && item.chartId === data.chartId) ||
-                (data.id && item.id === data.id) ||
-                ((data.songId || data.song_id) && (item.songId || item.song_id) && (data.songId || data.song_id) === (item.songId || item.song_id) && (!data.difficulty || !item.difficulty || data.difficulty === item.difficulty)) ||
-                ((item.name || item.title) === (data.name || data.title) && Math.abs(item.constant - data.constant) < 0.01)
-              );
+              const isSelectedItem = isSameChart(data, item);
+              const itemDisplayScore = formatScatterScore(item.score ?? item.avgScore);
+
               return (
                 <div 
                   key={item.id || item.chartId || idx} 
+                  role="button"
+                  tabIndex={0}
+                  aria-selected={isSelectedItem}
                   style={{ 
                     fontSize: '0.78rem', 
                     display: 'flex', 
@@ -213,11 +203,18 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
                       onNavigateSong(item);
                     }
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (onSelectDot) onSelectDot(item);
+                    }
+                  }}
                 >
                   <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
                     {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
                   </span>
-                  <span style={{ fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(item.score || item.avgScore || 0)).toLocaleString()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{itemDisplayScore.toLocaleString()}</span>
                 </div>
               );
             })}
@@ -226,6 +223,7 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
                 <button
                   type="button"
+                  aria-label="Previous page"
                   disabled={currentPage === 0}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -245,10 +243,11 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
                   ◄ Prev
                 </button>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                  {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, overlaps.length)} of {overlaps.length}
+                  {currentPage * OVERLAP_PAGE_SIZE + 1}-{Math.min((currentPage + 1) * OVERLAP_PAGE_SIZE, overlaps.length)} of {overlaps.length}
                 </span>
                 <button
                   type="button"
+                  aria-label="Next page"
                   disabled={currentPage >= totalPages - 1}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -280,3 +279,4 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
   }
   return null;
 });
+

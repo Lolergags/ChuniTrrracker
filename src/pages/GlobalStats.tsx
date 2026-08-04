@@ -66,6 +66,8 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
           border: '1px solid var(--border)', 
           borderRadius: 'var(--radius-md)', 
           maxWidth: '320px', 
+          maxHeight: '380px',
+          overflowY: 'auto',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           cursor: onNavigateSong ? 'pointer' : 'default'
         }}
@@ -1460,7 +1462,7 @@ export function GlobalStats() {
                   {selectedDot && selectedCoords && (() => {
                     const containerW = globalChartWrapperRef.current?.clientWidth || 800;
                     const popW = Math.min(290, containerW - 20);
-                    const popH = 180;
+                    const popH = 250;
 
                     // Smart Recharts placement logic: right vs left
                     let leftPos = selectedCoords.x + 18;
@@ -1469,12 +1471,12 @@ export function GlobalStats() {
                     }
                     const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
 
-                    // Smart Recharts placement logic: down vs up
+                    // Smart Recharts placement logic: flip UP if dot is in lower half (y > 180) to prevent bottom cutoff
                     let topPos = selectedCoords.y - 20;
-                    if (selectedCoords.y + popH > 410) {
+                    if (selectedCoords.y > 180 || selectedCoords.y + popH > 380) {
                       topPos = selectedCoords.y - popH - 10;
                     }
-                    const clampedTop = Math.max(10, topPos);
+                    const clampedTop = Math.min(Math.max(10, topPos), Math.max(10, 420 - popH));
 
                     return (
                       <div 

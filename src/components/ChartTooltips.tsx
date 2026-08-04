@@ -44,8 +44,8 @@ export const LampTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
-export const ScatterTooltip = React.memo(({ active, payload, selectedDot }: any) => {
-  if (active && payload && payload.length) {
+export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hoveredDot }: any) => {
+  if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
     const overlaps = rawData.overlappingItems || [];
     const hasOverlap = overlaps.length > 1;

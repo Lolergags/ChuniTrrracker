@@ -13,8 +13,8 @@ import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
 const GRADES = ['SSS+', 'SSS', 'SS+', 'SS', 'S+', 'S', '< S'];
 
-const CustomTooltip = React.memo(({ active, payload, selectedDot }: any) => {
-  if (active && payload && payload.length) {
+const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot }: any) => {
+  if (active && payload && payload.length && (selectedDot || hoveredDot)) {
     const rawData = payload[0].payload;
     const overlaps = rawData.overlappingItems || [];
 
@@ -1154,6 +1154,7 @@ export function GlobalStats() {
                       onClick={() => {
                         if (!isPanDragging) {
                           setSelectedDot(null);
+                          setHoveredDot(null);
                         }
                       }}
                     >
@@ -1189,7 +1190,7 @@ export function GlobalStats() {
                         width={globalScatterYWidth}
                       />
                       <ZAxis type="number" dataKey="overlapCount" range={[20, 1200]} name="Overlap Count" />
-                      <Tooltip content={selectedDot ? () => null : <CustomTooltip />} />
+                      <Tooltip content={selectedDot ? () => null : <CustomTooltip hoveredDot={hoveredDot} />} />
                       <Scatter 
                         name="Charts" 
                         data={visibleScatterData} 

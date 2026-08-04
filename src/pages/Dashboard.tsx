@@ -152,6 +152,7 @@ export function Dashboard() {
   const [selectedDot, setSelectedDot] = useState<any | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<{ x: number; y: number } | null>(null);
   const scatterContainerRef = useRef<HTMLDivElement>(null);
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
@@ -1168,7 +1169,7 @@ export function Dashboard() {
               }
             }}
           >
-            <div className="chart-min-width-md" style={{ height: '430px' }}>
+            <div ref={chartWrapperRef} className="chart-min-width-md" style={{ position: 'relative', height: '430px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart 
                   margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
@@ -1265,14 +1266,14 @@ export function Dashboard() {
               </ResponsiveContainer>
 
               {selectedDot && selectedCoords && (() => {
-                const containerW = scatterContainerRef.current?.clientWidth || 600;
+                const containerW = chartWrapperRef.current?.clientWidth || 800;
                 const popW = Math.min(290, containerW - 20);
                 const popH = 180;
 
                 // Smart Recharts placement logic: right vs left
-                let leftPos = selectedCoords.x + 20;
-                if (selectedCoords.x + popW + 20 > containerW - 10) {
-                  leftPos = selectedCoords.x - popW - 20;
+                let leftPos = selectedCoords.x + 18;
+                if (selectedCoords.x + popW + 18 > containerW - 10) {
+                  leftPos = selectedCoords.x - popW - 18;
                 }
                 const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, containerW - popW - 10));
 

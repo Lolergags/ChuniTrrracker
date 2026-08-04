@@ -97,7 +97,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
           {data.title || data.name}
         </p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Level: <span style={{ color: 'var(--text-primary)' }}>{data.difficulty} {data.constant?.toFixed(1)}</span></p>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.round(data.avgScore || data.score || 0).toLocaleString()}</span></p>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Avg Score: <span style={{ color: 'var(--text-primary)' }}>{Math.min(1010000, Math.floor(data.avgScore || data.score || 0)).toLocaleString()}</span></p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Plays: <span style={{ color: 'var(--text-primary)' }}>{data.playCount}</span></p>
         
         {hasOverlap && (
@@ -150,7 +150,7 @@ const CustomTooltip = React.memo(({ active, payload, selectedDot, hoveredDot, on
                   <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
                     {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.title || item.name}
                   </span>
-                  <span style={{ fontFamily: 'monospace' }}>{(item.avgScore || item.score)?.toLocaleString()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(item.avgScore || item.score || 0)).toLocaleString()}</span>
                 </div>
               );
             })}
@@ -426,7 +426,10 @@ export function GlobalStats() {
         api.getPlayerOpDistribution(apiFilters)
       ]).then(([heatmap, meta, lamps, opYield, playerOp]) => {
         setHeatmapData(Array.isArray(heatmap) ? heatmap : []);
-        setMetaData(Array.isArray(meta) ? meta : []);
+        setMetaData(Array.isArray(meta) ? meta.map((d: any) => ({
+          ...d,
+          avgScore: Math.min(1010000, Math.floor(d.avgScore || d.score || 0))
+        })) : []);
         setLampData(Array.isArray(lamps) ? lamps : []);
         setOpYieldData(Array.isArray(opYield) ? opYield : []);
         setPlayerOpData(Array.isArray(playerOp) ? playerOp : []);
@@ -1490,7 +1493,7 @@ export function GlobalStats() {
                       )}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.round(selectedDot.avgScore || selectedDot.score || 0).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
+                      Constant: <strong style={{ color: 'var(--text-primary)' }}>{selectedDot.constant?.toFixed(1)}</strong> | Avg Score: <strong style={{ color: 'var(--text-primary)' }}>{Math.min(1010000, Math.floor(selectedDot.avgScore || selectedDot.score || 0)).toLocaleString()}</strong> {selectedDot.playCount ? `| Plays: ${selectedDot.playCount.toLocaleString()}` : ''}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1623,7 +1626,7 @@ export function GlobalStats() {
                             </span>
                           )}
                           <span>{item.title || item.name}</span>
-                          <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({Math.round(item.avgScore || item.score || 0)?.toLocaleString()})</span>
+                          <span style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.72rem' }}>({Math.min(1010000, Math.floor(item.avgScore || item.score || 0)).toLocaleString()})</span>
                         </button>
                       );
                     })}

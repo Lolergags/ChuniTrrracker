@@ -140,7 +140,7 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Score:</span>
-          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{(data.score || data.avgScore)?.toLocaleString()}</span>
+          <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(data.score || data.avgScore || 0)).toLocaleString()}</span>
           
           {data.opDisplay !== undefined && (
             <>
@@ -217,7 +217,7 @@ export const ScatterTooltip = React.memo(({ active, payload, selectedDot, hovere
                   <span style={{ color: isSelectedItem ? 'var(--accent-gold)' : 'inherit', fontWeight: isSelectedItem ? 700 : 400 }}>
                     {isSelectedItem ? '► ' : '• '}{item.difficulty ? `[${item.difficulty}] ` : ''}{item.name || item.title}
                   </span>
-                  <span style={{ fontFamily: 'monospace' }}>{(item.score || item.avgScore)?.toLocaleString()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{Math.min(1010000, Math.floor(item.score || item.avgScore || 0)).toLocaleString()}</span>
                 </div>
               );
             })}

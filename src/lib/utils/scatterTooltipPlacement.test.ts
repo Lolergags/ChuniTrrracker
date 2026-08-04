@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calculatePopoverPlacement,
   formatScatterScore,
+  isSameChart,
   orderClusterForSelection
 } from './scatterTooltipPlacement.js';
 
@@ -88,6 +89,33 @@ describe('scatterTooltipPlacement utilities', () => {
       expect(formatScatterScore(null)).toBe(0);
       expect(formatScatterScore(undefined)).toBe(0);
       expect(formatScatterScore(NaN)).toBe(0);
+    });
+  });
+
+  describe('isSameChart', () => {
+    it('returns true when chartId or id match', () => {
+      expect(isSameChart({ chartId: 10 }, { chartId: 10 })).toBe(true);
+      expect(isSameChart({ id: 'c1' }, { id: 'c1' })).toBe(true);
+    });
+
+    it('returns true when songId and difficulty match', () => {
+      expect(isSameChart({ songId: 1, difficulty: 'MAS' }, { songId: 1, difficulty: 'MAS' })).toBe(true);
+    });
+
+    it('returns false when songId matches but difficulty is different', () => {
+      expect(isSameChart({ songId: 1, difficulty: 'MAS' }, { songId: 1, difficulty: 'ULT' })).toBe(false);
+    });
+
+    it('returns true when title, constant, and score match', () => {
+      expect(isSameChart(
+        { title: 'Track A', constant: 14.5, score: 1007500 },
+        { title: 'Track A', constant: 14.5001, score: 1007500.2 }
+      )).toBe(true);
+    });
+
+    it('returns false for null or non-matching charts', () => {
+      expect(isSameChart(null, { chartId: 1 })).toBe(false);
+      expect(isSameChart({ title: 'A' }, { title: 'B' })).toBe(false);
     });
   });
 

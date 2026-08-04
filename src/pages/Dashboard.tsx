@@ -10,6 +10,7 @@ import { GlobalFilterBar } from '../components/GlobalFilterBar.js';
 import { PlayerAutocomplete } from '../components/PlayerAutocomplete.js';
 import { LampTooltip, ScatterTooltip } from '../components/ChartTooltips.js';
 import { clampDomainX, clampDomainY, getSmartYTicks, panDomain, calculateDotRadius } from '../lib/utils/scatterZoom.js';
+import { calculatePopoverPlacement, isSameChart, orderClusterForSelection, PORTAL_Z_INDEX } from '../lib/utils/scatterTooltipPlacement.js';
 import { useIsMobile } from '../lib/hooks/useIsMobile.js';
 import { ScatterScrollbar } from '../components/ScatterScrollbar.js';
 
@@ -40,11 +41,7 @@ const CustomScatterDot = React.memo((props: any) => {
     }, 220);
   };
 
-  const isHovered = hoveredDot && (
-    (hoveredDot.chartId && payload.chartId === hoveredDot.chartId) ||
-    (hoveredDot.songId && payload.songId === hoveredDot.songId && payload.difficulty === hoveredDot.difficulty) ||
-    ((hoveredDot.name || hoveredDot.title) === (payload.name || payload.title) && Math.abs(hoveredDot.constant - payload.constant) < 0.01 && Math.abs((hoveredDot.score || hoveredDot.avgScore) - (payload.score || payload.avgScore)) < 1)
-  );
+  const isHovered = hoveredDot && isSameChart(hoveredDot, payload);
 
   const overlapCount = payload.overlappingItems?.length || payload.overlapCount || 1;
   const { dotR } = calculateDotRadius(overlapCount, false, isHovered);
@@ -434,26 +431,8 @@ export function Dashboard() {
     if (!selectedDot) return [];
 
     const parentCluster = mappedScatterScores.find((m: any) => {
-      if (m.overlappingItems && m.overlappingItems.length > 0) {
-        return m.overlappingItems.some((other: any) =>
-          (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-          (other.id && selectedDot.id && other.id === selectedDot.id) ||
-          ((other.songId || other.song_id) && (selectedDot.songId || selectedDot.song_id) && 
-           (other.songId || other.song_id) === (selectedDot.songId || selectedDot.song_id) && 
-           other.difficulty === selectedDot.difficulty) ||
-          ((other.name || other.title) === (selectedDot.name || selectedDot.title) && 
-           Math.abs(other.constant - selectedDot.constant) < 0.01 && 
-           Math.abs((other.score || other.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1)
-        );
-      }
-      return (m.chartId && selectedDot.chartId && m.chartId === selectedDot.chartId) ||
-             (m.id && selectedDot.id && m.id === selectedDot.id) ||
-             ((m.songId || m.song_id) && (selectedDot.songId || selectedDot.song_id) && 
-              (m.songId || m.song_id) === (selectedDot.songId || selectedDot.song_id) && 
-              m.difficulty === selectedDot.difficulty) ||
-             ((m.name || m.title) === (selectedDot.name || selectedDot.title) && 
-              Math.abs(m.constant - selectedDot.constant) < 0.01 && 
-              Math.abs((m.score || m.avgScore) - (selectedDot.score || selectedDot.avgScore)) < 1);
+      const items = m.overlappingItems && m.overlappingItems.length > 0 ? m.overlappingItems : [m];
+      return items.some((other: any) => isSameChart(other, selectedDot));
     });
 
     if (parentCluster && parentCluster.overlappingItems && parentCluster.overlappingItems.length > 0) {
@@ -461,23 +440,9 @@ export function Dashboard() {
       const p = parentCluster as any;
       const clusterId = `${p.id || p.chartId || p.songId}_${p.constant}_${p.score || p.avgScore}`;
       
-      // If this is a new cluster selection, order the selectedDot at index 0
       if (orderedClusterRef.current.clusterId !== clusterId) {
-        const selectedMatch = items.find((item: any) =>
-          (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-          (selectedDot.id && item.id === selectedDot.id) ||
-          ((selectedDot.songId || selectedDot.song_id) && (item.songId || item.song_id) && 
-           (selectedDot.songId || selectedDot.song_id) === (item.songId || item.song_id) && 
-           (!selectedDot.difficulty || !item.difficulty || selectedDot.difficulty === item.difficulty)) ||
-          ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01)
-        );
-
-        if (selectedMatch) {
-          const rest = items.filter((item: any) => item !== selectedMatch);
-          orderedClusterRef.current = { clusterId, items: [selectedMatch, ...rest] };
-        } else {
-          orderedClusterRef.current = { clusterId, items };
-        }
+        const ordered = orderClusterForSelection(items, selectedDot, item => item.id || item.chartId || item.songId);
+        orderedClusterRef.current = { clusterId, items: ordered };
       }
 
       return orderedClusterRef.current.items;
@@ -489,18 +454,10 @@ export function Dashboard() {
   const activeSelectedNode = useMemo(() => {
     if (!selectedDot || !visibleDashboardScatterData.length) return null;
 
-    const directMatch = visibleDashboardScatterData.find((item: any) =>
-      (selectedDot.chartId && item.chartId === selectedDot.chartId) ||
-      (selectedDot.songId && item.songId === selectedDot.songId && (!selectedDot.difficulty || !item.difficulty || item.difficulty === selectedDot.difficulty)) ||
-      ((item.name || item.title) === (selectedDot.name || selectedDot.title) && Math.abs(item.constant - selectedDot.constant) < 0.01 && Math.abs(item.score - selectedDot.score) < 1)
-    );
+    const directMatch = visibleDashboardScatterData.find((item: any) => isSameChart(selectedDot, item));
 
     const baseNode = directMatch || visibleDashboardScatterData.find((item: any) =>
-      item.overlappingItems && item.overlappingItems.some((other: any) =>
-        (other.chartId && selectedDot.chartId && other.chartId === selectedDot.chartId) ||
-        (other.songId && selectedDot.songId && other.songId === selectedDot.songId && (!other.difficulty || !selectedDot.difficulty || other.difficulty === selectedDot.difficulty)) ||
-        ((other.name || other.title) === (selectedDot.name || selectedDot.title) && Math.abs(other.constant - selectedDot.constant) < 0.01 && Math.abs(other.score - selectedDot.score) < 1)
-      )
+      item.overlappingItems && item.overlappingItems.some((other: any) => isSameChart(selectedDot, other))
     );
 
     if (baseNode) {
@@ -515,20 +472,7 @@ export function Dashboard() {
 
   const currentDotIndex = useMemo(() => {
     if (!selectedDot || !overlappingDots.length) return 0;
-    const selSongId = selectedDot.songId || selectedDot.song_id;
-    const selChartId = selectedDot.chartId || selectedDot.id;
-    const selScore = selectedDot.score || selectedDot.avgScore || 0;
-
-    const idx = overlappingDots.findIndex((d: any) => {
-      const dSongId = d.songId || d.song_id;
-      const dChartId = d.chartId || d.id;
-      const dScore = d.score || d.avgScore || 0;
-
-      if (dChartId && selChartId && dChartId === selChartId) return true;
-      if (dSongId && selSongId && dSongId === selSongId && d.difficulty && selectedDot.difficulty && d.difficulty === selectedDot.difficulty) return true;
-      return (d.name || d.title) === (selectedDot.name || selectedDot.title) && Math.abs(d.constant - selectedDot.constant) < 0.01 && Math.abs(dScore - selScore) < 5;
-    });
-
+    const idx = overlappingDots.findIndex((d: any) => isSameChart(selectedDot, d));
     return idx >= 0 ? idx : 0;
   }, [selectedDot, overlappingDots]);
 
@@ -1272,30 +1216,22 @@ export function Dashboard() {
                 const circleY = rect.top + selectedCoords.y;
 
                 const containerW = chartWrapperRef.current?.clientWidth || rect.width || 800;
-                const popW = Math.min(290, window.innerWidth - 20);
-                const popH = 220;
-
-                // Smart Recharts placement logic: flip LEFT if dot is on right half of chart canvas
-                let leftPos = circleX + 18;
-                if (selectedCoords.x > containerW / 2 || selectedCoords.x + popW + 18 > containerW - 20) {
-                  leftPos = circleX - popW - 18;
-                }
-                const clampedLeft = Math.min(Math.max(10, leftPos), Math.max(10, window.innerWidth - popW - 10));
-
-                // Smart Recharts placement logic: flip UP if dot is in lower/middle half of graph (y > 150)
-                let topPos = circleY - 10;
-                if (selectedCoords.y > 150) {
-                  topPos = circleY - popH - 10;
-                }
-                const clampedTop = Math.max(10, topPos);
+                const { clampedLeft, clampedTop } = calculatePopoverPlacement({
+                  circleX,
+                  circleY,
+                  selectedCoordsX: selectedCoords.x,
+                  selectedCoordsY: selectedCoords.y,
+                  containerW,
+                  windowWidth: window.innerWidth
+                });
 
                 return (
                   <div 
                     style={{
                       position: 'fixed',
-                      left: clampedLeft,
-                      top: clampedTop,
-                      zIndex: 10000,
+                      left: `${clampedLeft}px`,
+                      top: `${clampedTop}px`,
+                      zIndex: PORTAL_Z_INDEX,
                       pointerEvents: 'auto'
                     }}
                     onClick={(e) => e.stopPropagation()}

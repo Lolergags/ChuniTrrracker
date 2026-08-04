@@ -323,6 +323,7 @@ export function GlobalStats() {
   const globalScatterContainerRef = useRef<HTMLDivElement>(null);
   const lastScatterDotClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef<boolean>(false);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(true);
 
   const handleUpdateGlobalCoords = useCallback((coords: { x: number; y: number }) => {
@@ -1235,21 +1236,23 @@ export function GlobalStats() {
                 style={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'hidden', cursor: isPanDragging ? 'grabbing' : 'grab', touchAction: 'pan-x pan-y' }}
                 onMouseDown={(e) => {
                   dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+                  hasDraggedRef.current = false;
+                }}
+                onMouseMove={(e) => {
+                  if (dragStartPosRef.current && (e.buttons & 1)) {
+                    const dist = Math.hypot(e.clientX - dragStartPosRef.current.x, e.clientY - dragStartPosRef.current.y);
+                    if (dist > 5) {
+                      hasDraggedRef.current = true;
+                    }
+                  }
                 }}
               >
                 <div className="chart-min-width-md" style={{ height: '430px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart 
                       margin={{ top: 25, right: 30, bottom: 25, left: 20 }}
-                      onClick={(e: any) => {
-                        const start = dragStartPosRef.current;
-                        const clientX = e?.clientX ?? e?.nativeEvent?.clientX;
-                        const clientY = e?.clientY ?? e?.nativeEvent?.clientY;
-                        const dist = (start && clientX != null && clientY != null) 
-                          ? Math.hypot(clientX - start.x, clientY - start.y) 
-                          : 0;
-
-                        if (!isPanDragging && dist < 6) {
+                      onClick={() => {
+                        if (!isPanDragging && !hasDraggedRef.current) {
                           setSelectedDot(null);
                           setHoveredDot(null);
                         }
